@@ -264,7 +264,7 @@
         <option value="">Select destination</option>
         {#each DESTINATIONS as dest}
           <option value={dest.id}>
-            {dest.flag} {dest.name} — ${dest.baseRate.toFixed(2)}/lb
+            {dest.flag} {dest.name} — {'$'}{dest.baseRate.toFixed(2)}/lb
           </option>
         {/each}
       </select>
@@ -377,7 +377,7 @@
         <Alert class="bg-blue-50 border-blue-200">
           <Info class="h-4 w-4 text-blue-600" />
           <AlertDescription class="text-blue-700">
-            Heavy package (>{PRICING.HEAVY_WEIGHT_THRESHOLD} lbs): ${PRICING.HANDLING_FEE} handling fee applies.
+            Heavy package (&gt;{PRICING.HEAVY_WEIGHT_THRESHOLD} lbs): {'$'}{PRICING.HANDLING_FEE} handling fee applies.
           </AlertDescription>
         </Alert>
       {/if}
@@ -396,7 +396,7 @@
           <option value={service.id}>
             {service.name} — {service.delivery_days}-{service.delivery_days + 2} days
             {#if service.id === 'express'}(+{PRICING.EXPRESS_PERCENTAGE}%){/if}
-            {#if service.id === 'door_to_door'}(+${PRICING.DOOR_TO_DOOR_FEE} pickup){/if}
+            {#if service.id === 'door_to_door'}(+{'$'}{PRICING.DOOR_TO_DOOR_FEE} pickup){/if}
           </option>
         {/each}
       </select>
@@ -416,10 +416,10 @@
           Add Shipping Insurance
         </Label>
         <p class="text-xs text-muted-foreground mt-1">
-          Coverage: ${PRICING.INSURANCE_RATE.toFixed(2)} per $100 value 
-          (min. ${PRICING.INSURANCE_MIN})
+          Coverage: {'$'}{PRICING.INSURANCE_RATE.toFixed(2)} per $100 value 
+          (min. {'$'}{PRICING.INSURANCE_MIN})
           {#if declaredValue && includeInsurance}
-            — Est. ${calculateInsuranceFee(declaredValue, true).toFixed(2)}
+            — Est. {'$'}{calculateInsuranceFee(declaredValue, true).toFixed(2)}
           {/if}
         </p>
       </div>
@@ -473,9 +473,9 @@
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-slate-600">
-                Base Cost ({calculationResult.billableWeight.toFixed(1)} lbs × ${calculationResult.ratePerLb.toFixed(2)})
+                Base Cost ({calculationResult.billableWeight.toFixed(1)} lbs × {'$'}{calculationResult.ratePerLb.toFixed(2)})
               </span>
-              <span class="font-medium">${calculationResult.baseCost.toFixed(2)}</span>
+              <span class="font-medium">{'$'}{calculationResult.baseCost.toFixed(2)}</span>
             </div>
             
             {#if calculationResult.expressFee > 0}
@@ -484,7 +484,7 @@
                   <Zap class="h-3 w-3" />
                   Express Surcharge (+{PRICING.EXPRESS_PERCENTAGE}%)
                 </span>
-                <span class="font-medium">${calculationResult.expressFee.toFixed(2)}</span>
+                <span class="font-medium">{'$'}{calculationResult.expressFee.toFixed(2)}</span>
               </div>
             {/if}
 
@@ -494,7 +494,7 @@
                   <Truck class="h-3 w-3" />
                   Door-to-Door Pickup
                 </span>
-                <span class="font-medium">${calculationResult.doorToDoorFee.toFixed(2)}</span>
+                <span class="font-medium">{'$'}{calculationResult.doorToDoorFee.toFixed(2)}</span>
               </div>
             {/if}
             
@@ -502,24 +502,24 @@
               <div class="flex justify-between text-orange-700">
                 <span class="flex items-center gap-1">
                   <Package class="h-3 w-3" />
-                  Heavy Package Handling (>{PRICING.HEAVY_WEIGHT_THRESHOLD} lbs)
+                  Heavy Package Handling (&gt;{PRICING.HEAVY_WEIGHT_THRESHOLD} lbs)
                 </span>
-                <span class="font-medium">${calculationResult.handlingFee.toFixed(2)}</span>
+                <span class="font-medium">{'$'}{calculationResult.handlingFee.toFixed(2)}</span>
               </div>
             {/if}
 
             <div class="flex justify-between border-t pt-2">
               <span class="text-slate-700">Subtotal</span>
-              <span class="font-semibold">${calculationResult.subtotal.toFixed(2)}</span>
+              <span class="font-semibold">{'$'}{calculationResult.subtotal.toFixed(2)}</span>
             </div>
             
             {#if calculationResult.insuranceFee > 0}
               <div class="flex justify-between text-green-700">
                 <span class="flex items-center gap-1">
                   <Shield class="h-3 w-3" />
-                  Insurance (${declaredValue} value)
+                  Insurance ({'$'}{declaredValue} value)
                 </span>
-                <span class="font-medium">${calculationResult.insuranceFee.toFixed(2)}</span>
+                <span class="font-medium">{'$'}{calculationResult.insuranceFee.toFixed(2)}</span>
               </div>
             {/if}
           </div>
@@ -528,7 +528,7 @@
           <div class="flex justify-between items-center border-t-2 border-primary-300 pt-4">
             <span class="text-xl font-bold text-slate-800">Total</span>
             <span class="text-3xl font-bold text-primary-600">
-              ${calculationResult.total.toFixed(2)}
+              {'$'}{calculationResult.total.toFixed(2)}
             </span>
           </div>
           
@@ -566,8 +566,8 @@
         <p>2. Billable Weight = Max(Actual, Dimensional)</p>
         <p>3. Base Cost = Billable × Rate</p>
         <p>4. Express Fee = Base × {PRICING.EXPRESS_PERCENTAGE}%</p>
-        <p>5. Handling Fee = ${PRICING.HANDLING_FEE} if weight > {PRICING.HEAVY_WEIGHT_THRESHOLD} lbs</p>
-        <p>6. Insurance = Max(${PRICING.INSURANCE_MIN}, Value÷100 × ${PRICING.INSURANCE_RATE})</p>
+        <p>5. Handling Fee = {'$'}{PRICING.HANDLING_FEE} if weight &gt; {PRICING.HEAVY_WEIGHT_THRESHOLD} lbs</p>
+        <p>6. Insurance = Max({'$'}{PRICING.INSURANCE_MIN}, Value÷100 × {'$'}{PRICING.INSURANCE_RATE})</p>
         <p class="font-bold pt-1 border-t">Total = Base + Express + Handling + Insurance + Door-to-Door</p>
       </div>
     </details>

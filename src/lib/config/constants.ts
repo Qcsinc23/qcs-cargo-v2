@@ -37,8 +37,8 @@ export const TRUST_SIGNALS = [
   { label: 'TSA Licensed', value: '✓' }
 ];
 
-// Services
-export const SERVICES = [
+// Services (for display/marketing purposes)
+export const SERVICES_INFO = [
   {
     id: 'standard',
     name: 'Standard Air Freight',

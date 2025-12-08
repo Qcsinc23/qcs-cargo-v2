@@ -1,44 +1,44 @@
-export const SERVICES = {
-  standard: {
+export interface Service {
+  id: string;
+  name: string;
+  description: string;
+  features: string[];
+  rate_multiplier: number;
+  delivery_days: number;
+  icon: string;
+  additionalFee?: number;
+}
+
+export const SERVICES: Service[] = [
+  {
+    id: 'standard',
     name: 'Standard Air Freight',
     description: 'Fixed weekly departures with real-time tracking',
     features: ['Competitive bulk rates', 'Professional handling', 'Insurance options'],
-    multiplier: 1.0,
-    transitDays: '3-5',
+    rate_multiplier: 1.0,
+    delivery_days: 3,
     icon: 'plane'
   },
-  express: {
+  {
+    id: 'express',
     name: 'Express Delivery',
     description: 'Urgent shipments with priority processing',
     features: ['Same-day processing', 'Priority customs clearance', 'Next-flight guarantee'],
-    multiplier: 1.25,
-    transitDays: '1-2',
+    rate_multiplier: 1.5,
+    delivery_days: 1,
     icon: 'zap'
   },
-  door_to_door: {
+  {
+    id: 'door_to_door',
     name: 'Door-to-Door Service',
     description: 'Complete logistics from pickup to final delivery',
     features: ['Free pickup in NJ area', 'Last-mile delivery', 'Signature confirmation'],
-    multiplier: 1.0,
+    rate_multiplier: 1.2,
+    delivery_days: 3,
     additionalFee: 25.00,
-    transitDays: '3-5',
     icon: 'home'
-  },
-  consolidated: {
-    name: 'Consolidated Cargo',
-    description: 'Cost-effective option for multiple packages',
-    features: ['Volume discounts', 'Secure consolidation', 'Weekly consolidation windows'],
-    discount: 0.30, // Up to 30% savings
-    transitDays: '5-7',
-    icon: 'package'
   }
-} as const;
+];
 
-export type ServiceType = keyof typeof SERVICES;
-export type Service = (typeof SERVICES)[ServiceType];
-
-export const SERVICE_LIST = Object.entries(SERVICES).map(([id, service]) => ({
-  id: id as ServiceType,
-  ...service
-}));
+export type ServiceId = typeof SERVICES[number]['id'];
 

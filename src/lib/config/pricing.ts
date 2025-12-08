@@ -134,7 +134,7 @@ export function calculateShippingQuote(params: {
     includeCustoms = false
   } = params;
 
-  const dest = DESTINATIONS[destination];
+  const dest = DESTINATIONS.find(d => d.id === destination);
   if (!dest) {
     throw new Error(`Invalid destination: ${destination}`);
   }

@@ -8,6 +8,7 @@
     render?: (value: unknown, row: T) => string;
   };
 
+  // eslint-disable-next-line no-undef
   type T = $$Generic;
 
   export let columns: Column<T>[];
@@ -50,6 +51,7 @@
             {#each columns as column}
               <td class={cn('py-3 px-4', column.class)}>
                 {#if column.render}
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html column.render(getValue(row, String(column.key)), row)}
                 {:else}
                   {getValue(row, String(column.key)) ?? '-'}
@@ -77,6 +79,7 @@
             <span class="text-sm text-muted-foreground">{column.label}</span>
             <span class="text-sm font-medium text-right">
               {#if column.render}
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                 {@html column.render(getValue(row, String(column.key)), row)}
               {:else}
                 {getValue(row, String(column.key)) ?? '-'}

@@ -218,3 +218,4 @@ export function formatTransitTime(days: { min: number; max: number }): string {
   return `${days.min}-${days.max} days`;
 }
 
+

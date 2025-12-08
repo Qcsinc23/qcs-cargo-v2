@@ -20,7 +20,7 @@ export const emailSchema = z
 // Phone validation schema (flexible for international)
 export const phoneSchema = z
   .string()
-  .regex(/^[\d\s\-\+\(\)]+$/, 'Please enter a valid phone number')
+  .regex(/^[\d\s+()-]+$/, 'Please enter a valid phone number')
   .min(10, 'Phone number is too short')
   .max(20, 'Phone number is too long')
   .optional()
@@ -31,7 +31,7 @@ export const nameSchema = z
   .string()
   .min(2, 'Name must be at least 2 characters')
   .max(100, 'Name is too long')
-  .regex(/^[a-zA-Z\s\-'\.]+$/, 'Name contains invalid characters');
+  .regex(/^[a-zA-Z\s'.-]+$/, 'Name contains invalid characters');
 
 // Login form schema
 export const loginSchema = z.object({

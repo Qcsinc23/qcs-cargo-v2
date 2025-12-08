@@ -72,8 +72,8 @@
         throw new Error('Invalid service or destination');
       }
 
-      // Basic rate calculation (simplified - actual rates from API)
-      const baseRate = billableWeight * service.rate_multiplier * destinationData.rate_multiplier;
+      // Basic rate calculation: weight × destination base rate × service multiplier
+      const baseRate = billableWeight * destinationData.baseRate * service.rate_multiplier;
       
       // Insurance calculation (1% of declared value, minimum $2)
       const insurance = declaredValue ? Math.max(declaredValue * 0.01, 2) : 0;

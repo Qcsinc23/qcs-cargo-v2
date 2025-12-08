@@ -1,7 +1,12 @@
-export { default as Header } from './Header.svelte';
-export { default as Footer } from './Footer.svelte';
-export { default as MobileNav } from './MobileNav.svelte';
-export { default as MobileBottomNav } from './MobileBottomNav.svelte';
-export { default as Sidebar } from './Sidebar.svelte';
+// General layout components
 export { default as SkipLink } from './SkipLink.svelte';
 export { default as OfflineIndicator } from './OfflineIndicator.svelte';
+
+// Public layout
+export { default as PublicHeader } from './PublicHeader.svelte';
+export { default as PublicFooter } from './PublicFooter.svelte';
+
+// Dashboard layout
+export { default as Header } from './dashboard/Header.svelte';
+export { default as Sidebar } from './dashboard/Sidebar.svelte';
+export { default as MobileBottomNav } from './dashboard/MobileBottomNav.svelte';

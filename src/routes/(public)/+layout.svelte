@@ -1,15 +1,16 @@
 <script lang="ts">
-  import '../app.css';
-  import { Toaster } from 'svelte-sonner';
-  import { SkipLink, OfflineIndicator } from '$lib/components/layout';
+  import { PublicHeader, PublicFooter } from '$lib/components/layout';
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   export let data;
+  $: user = data.user;
 </script>
 
-<SkipLink />
+<div class="flex min-h-screen flex-col">
+  <PublicHeader {user} />
 
-<slot />
+  <main id="main-content" class="flex-1">
+    <slot />
+  </main>
 
-<OfflineIndicator />
-<Toaster position="top-right" richColors />
+  <PublicFooter />
+</div>

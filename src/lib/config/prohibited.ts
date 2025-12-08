@@ -109,7 +109,7 @@ export interface ProhibitedCheckResult {
   status: 'allowed' | 'restricted' | 'prohibited';
 }
 
-export function checkProhibitedItem(query: string): ProhibitedCheckResult {
+export function checkProhibitedItemSingle(query: string): ProhibitedCheckResult {
   const normalizedQuery = query.toLowerCase().trim();
   
   if (normalizedQuery.length < 2) {
@@ -132,6 +132,21 @@ export function checkProhibitedItem(query: string): ProhibitedCheckResult {
     found: false,
     status: 'allowed'
   };
+}
+
+// Returns all matching items for a query
+export function checkProhibitedItem(query: string): ProhibitedItem[] {
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+  
+  return PROHIBITED_ITEMS.filter(item => 
+    item.keywords.some(keyword => 
+      normalizedQuery.includes(keyword) || keyword.includes(normalizedQuery)
+    )
+  );
 }
 
 export function getProhibitedByCategory(category: 'prohibited' | 'restricted'): ProhibitedItem[] {

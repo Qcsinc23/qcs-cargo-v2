@@ -2,6 +2,7 @@ export interface Destination {
   id: string;
   name: string;
   code: string;
+  capital: string;
   airport: string;
   transitDays: { min: number; max: number };
   baseRate: number;
@@ -21,6 +22,7 @@ export const DESTINATIONS: Destination[] = [
     id: 'guyana',
     name: 'Guyana',
     code: 'GY',
+    capital: 'Georgetown',
     airport: 'GEO',
     transitDays: { min: 3, max: 5 },
     baseRate: 3.50,
@@ -38,6 +40,7 @@ export const DESTINATIONS: Destination[] = [
     id: 'jamaica',
     name: 'Jamaica',
     code: 'JM',
+    capital: 'Kingston',
     airport: 'KIN',
     transitDays: { min: 3, max: 5 },
     baseRate: 3.75,
@@ -55,6 +58,7 @@ export const DESTINATIONS: Destination[] = [
     id: 'trinidad',
     name: 'Trinidad & Tobago',
     code: 'TT',
+    capital: 'Port of Spain',
     airport: 'POS',
     transitDays: { min: 3, max: 5 },
     baseRate: 3.50,
@@ -72,6 +76,7 @@ export const DESTINATIONS: Destination[] = [
     id: 'barbados',
     name: 'Barbados',
     code: 'BB',
+    capital: 'Bridgetown',
     airport: 'BGI',
     transitDays: { min: 4, max: 6 },
     baseRate: 4.00,
@@ -89,6 +94,7 @@ export const DESTINATIONS: Destination[] = [
     id: 'suriname',
     name: 'Suriname',
     code: 'SR',
+    capital: 'Paramaribo',
     airport: 'PBM',
     transitDays: { min: 4, max: 6 },
     baseRate: 4.25,

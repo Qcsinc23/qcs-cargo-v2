@@ -1,16 +1,7 @@
-interface RateLimitStore {
-  [key: string]: {
-    count: number;
-    resetTime: number;
-  };
-}
-
-// In-memory rate limit store (for production, use Redis or similar)
-const store: RateLimitStore = {};
-
 export class RateLimiter {
   private windowMs: number;
   private maxRequests: number;
+  private store = new Map<string, { count: number; resetTime: number }>();
 
   constructor(windowMs: number, maxRequests: number) {
     this.windowMs = windowMs;
@@ -19,10 +10,8 @@ export class RateLimiter {
     // Clean up expired entries periodically
     setInterval(() => {
       const now = Date.now();
-      for (const key in store) {
-        if (store[key].resetTime < now) {
-          delete store[key];
-        }
+      for (const [key, value] of this.store.entries()) {
+        if (value.resetTime < now) this.store.delete(key);
       }
     }, this.windowMs * 2);
   }
@@ -31,26 +20,25 @@ export class RateLimiter {
     const now = Date.now();
     const key = identifier;
 
-    if (!store[key] || store[key].resetTime < now) {
+    const entry = this.store.get(key);
+    if (!entry || entry.resetTime < now) {
       // First request or window expired
-      store[key] = {
-        count: 1,
-        resetTime: now + this.windowMs
-      };
+      const next = { count: 1, resetTime: now + this.windowMs };
+      this.store.set(key, next);
       return {
         allowed: true,
         remaining: this.maxRequests - 1,
-        resetTime: store[key].resetTime
+        resetTime: next.resetTime
       };
     }
 
     // Increment counter
-    store[key].count++;
+    entry.count++;
 
     return {
-      allowed: store[key].count <= this.maxRequests,
-      remaining: Math.max(0, this.maxRequests - store[key].count),
-      resetTime: store[key].resetTime
+      allowed: entry.count <= this.maxRequests,
+      remaining: Math.max(0, this.maxRequests - entry.count),
+      resetTime: entry.resetTime
     };
   }
 
@@ -72,3 +60,4 @@ export class RateLimiter {
 export const paymentRateLimit = new RateLimiter(60 * 1000, 5); // 5 requests per minute
 export const webhookRateLimit = new RateLimiter(60 * 1000, 100); // 100 requests per minute
 export const bookingRateLimit = new RateLimiter(60 * 1000, 10); // 10 requests per minute
+export const contactRateLimit = new RateLimiter(60 * 1000, 5); // 5 contact submissions per minute

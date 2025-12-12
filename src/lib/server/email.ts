@@ -24,16 +24,17 @@ interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }
 
 export async function sendEmail(options: EmailOptions) {
-  const { to, subject, html, text } = options;
+  const { to, subject, html, text, replyTo } = options;
   
   try {
     const { data, error } = await resend.emails.send({
       from: `${PUBLIC_COMPANY_NAME} <${FROM_EMAIL}>`,
       to: Array.isArray(to) ? to : [to],
-      reply_to: REPLY_TO_EMAIL,
+      reply_to: replyTo || REPLY_TO_EMAIL,
       subject,
       html,
       text
@@ -49,6 +50,52 @@ export async function sendEmail(options: EmailOptions) {
     console.error('[Email Error]', error);
     throw error;
   }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+// Contact Form Email
+export async function sendContactFormEmail(data: {
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
+  correlationId?: string;
+  ip?: string;
+  userAgent?: string;
+}) {
+  const { name, email, phone, subject, message, correlationId, ip, userAgent } = data;
+
+  const safeSubject = subject?.trim() ? subject.trim() : 'Contact form message';
+
+  const html = wrapTemplate(`
+    <h1>New Contact Form Message</h1>
+    <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+    ${phone ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : ''}
+    <p><strong>Subject:</strong> ${escapeHtml(safeSubject)}</p>
+    ${correlationId ? `<p><strong>Correlation ID:</strong> ${escapeHtml(correlationId)}</p>` : ''}
+    ${ip ? `<p><strong>IP:</strong> ${escapeHtml(ip)}</p>` : ''}
+    ${userAgent ? `<p><strong>User Agent:</strong> ${escapeHtml(userAgent)}</p>` : ''}
+
+    <div class="info-box">
+      <p style="white-space: pre-wrap; margin: 0;">${escapeHtml(message)}</p>
+    </div>
+  `);
+
+  return sendEmail({
+    to: REPLY_TO_EMAIL,
+    subject: `[QCS Cargo] ${safeSubject}`,
+    html,
+    replyTo: email
+  });
 }
 
 // Email Templates

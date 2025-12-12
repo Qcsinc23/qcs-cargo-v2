@@ -19,6 +19,9 @@
     message: ''
   };
 
+  // Honeypot field (hidden). Bots often fill it; humans won't.
+  let website = '';
+
   let isSubmitting = false;
   let submitSuccess = false;
   let submitError: string | null = null;
@@ -36,6 +39,7 @@
 
   async function handleSubmit() {
     submitError = null;
+    submitSuccess = false;
 
     // Basic validation
     if (!formData.name || !formData.email || !formData.message) {
@@ -69,12 +73,27 @@
     isSubmitting = true;
 
     try {
-      // Simulate API call - will be replaced with actual endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...formData,
+          website
+        })
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || 'Failed to send message');
+      }
+
       submitSuccess = true;
       formData = { name: '', email: '', phone: '', subject: '', message: '' };
-    } catch {
-      submitError = 'Failed to send message. Please try again or call us directly.';
+      website = '';
+    } catch (err: unknown) {
+      submitError = err instanceof Error ? err.message : 'Failed to send message. Please try again or call us directly.';
     } finally {
       isSubmitting = false;
     }
@@ -220,6 +239,12 @@
               {/if}
 
               <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+                <!-- Honeypot: hidden field for bots -->
+                <div class="hidden" aria-hidden="true">
+                  <Label for="website">Website</Label>
+                  <Input id="website" bind:value={website} tabindex={-1} autocomplete="off" />
+                </div>
+
                 <div class="grid sm:grid-cols-2 gap-4">
                   <div class="space-y-2">
                     <Label for="name">Name <span class="text-red-500">*</span></Label>

@@ -15,21 +15,24 @@
     ChevronRight,
     Filter
   } from 'lucide-svelte';
-
   
   interface Invoice {
     id: string;
     invoice_number: string;
-    amount_usd: number;
-    status: 'paid' | 'pending' | 'overdue';
+    amount: number;
+    currency: string;
+    status: 'draft' | 'pending' | 'paid' | 'overdue' | 'canceled' | 'refunded';
     created: string;
-    due_date: string;
+    due_date?: string;
     paid_at?: string;
-    shipment_tracking?: string;
+    booking?: string;
+    line_items?: unknown;
+    notes?: string;
   }
 
-  // Placeholder invoices (will come from PocketBase)
-  let invoices: Invoice[] = [];
+  export let data: { invoices: Invoice[]; invoicesAvailable: boolean };
+
+  let invoices: Invoice[] = data.invoices || [];
   let searchQuery = '';
   let statusFilter = 'all';
   let currentPage = 1;
@@ -37,15 +40,21 @@
 
   const statusOptions = [
     { value: 'all', label: 'All Invoices' },
+    { value: 'draft', label: 'Draft' },
     { value: 'paid', label: 'Paid' },
     { value: 'pending', label: 'Pending' },
-    { value: 'overdue', label: 'Overdue' }
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'canceled', label: 'Canceled' },
+    { value: 'refunded', label: 'Refunded' }
   ];
 
   const statusStyles = {
     paid: 'bg-green-100 text-green-700',
     pending: 'bg-amber-100 text-amber-700',
-    overdue: 'bg-red-100 text-red-700'
+    overdue: 'bg-red-100 text-red-700',
+    draft: 'bg-gray-100 text-gray-700',
+    canceled: 'bg-gray-100 text-gray-700',
+    refunded: 'bg-purple-100 text-purple-700'
   };
 
   $: filteredInvoices = invoices
@@ -70,10 +79,10 @@
     });
   }
 
-  function formatCurrency(amount: number): string {
+  function formatCurrency(amount: number, currency: string = 'USD'): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency
     }).format(amount);
   }
 
@@ -96,6 +105,20 @@
     </div>
   </div>
 
+  {#if !data.invoicesAvailable}
+    <Card>
+      <CardContent class="p-6">
+        <h2 class="text-lg font-semibold text-gray-900">Invoices are not configured yet</h2>
+        <p class="text-gray-600 mt-1">
+          Your PocketBase instance doesn’t have an <code class="font-mono">invoices</code> collection, so there’s nothing to show here.
+        </p>
+        <p class="text-gray-600 mt-2">
+          Apply your PocketBase schema/migrations (see <code class="font-mono">pocketbase/schema.json</code> /
+          <code class="font-mono">pocketbase/pb_migrations</code>) and refresh.
+        </p>
+      </CardContent>
+    </Card>
+  {:else}
   <!-- Filters -->
   {#if invoices.length > 0}
     <Card>
@@ -168,25 +191,20 @@
                     <span class="font-mono font-medium text-gray-900">
                       {invoice.invoice_number}
                     </span>
-                    {#if invoice.shipment_tracking}
-                      <p class="text-xs text-gray-500 mt-1">
-                        Tracking: {invoice.shipment_tracking}
-                      </p>
-                    {/if}
                   </td>
                   <td class="p-4 font-semibold text-gray-900">
-                    {formatCurrency(invoice.amount_usd)}
+                    {formatCurrency(invoice.amount, invoice.currency)}
                   </td>
                   <td class="p-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {statusStyles[invoice.status]}">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {statusStyles[invoice.status] || 'bg-gray-100 text-gray-700'}">
                       {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                     </span>
                   </td>
                   <td class="p-4 text-gray-600">{formatDate(invoice.created)}</td>
-                  <td class="p-4 text-gray-600">{formatDate(invoice.due_date)}</td>
+                  <td class="p-4 text-gray-600">{invoice.due_date ? formatDate(invoice.due_date) : '—'}</td>
                   <td class="p-4">
                     <div class="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" href="/dashboard/invoices/{invoice.id}">
+                      <Button variant="ghost" size="sm" href={`/dashboard/invoices/${invoice.id}`}>
                         <Eye class="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="sm" on:click={() => downloadInvoice(invoice)}>
@@ -212,11 +230,11 @@
                 <span class="font-mono text-sm font-medium text-gray-900">
                   {invoice.invoice_number}
                 </span>
-                <span class="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium {statusStyles[invoice.status]}">
+                <span class="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium {statusStyles[invoice.status] || 'bg-gray-100 text-gray-700'}">
                   {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                 </span>
               </div>
-              <span class="font-bold text-gray-900">{formatCurrency(invoice.amount_usd)}</span>
+              <span class="font-bold text-gray-900">{formatCurrency(invoice.amount, invoice.currency)}</span>
             </div>
 
             <div class="space-y-2 text-sm text-gray-600">
@@ -226,12 +244,12 @@
               </div>
               <div class="flex items-center gap-2">
                 <DollarSign class="w-4 h-4" />
-                <span>Due: {formatDate(invoice.due_date)}</span>
+                <span>Due: {invoice.due_date ? formatDate(invoice.due_date) : '—'}</span>
               </div>
             </div>
 
             <div class="mt-4 pt-4 border-t flex gap-2">
-              <Button variant="outline" size="sm" href="/dashboard/invoices/{invoice.id}" class="flex-1">
+              <Button variant="outline" size="sm" href={`/dashboard/invoices/${invoice.id}`} class="flex-1">
                 <Eye class="w-4 h-4 mr-1" />
                 View
               </Button>
@@ -274,6 +292,7 @@
         </div>
       </div>
     {/if}
+  {/if}
   {/if}
 </div>
 

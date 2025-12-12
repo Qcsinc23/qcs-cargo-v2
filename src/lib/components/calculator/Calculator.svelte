@@ -54,8 +54,16 @@
     formErrors[field] = '';
     calculationError = null;
 
-    // Convert string values to numbers
     switch (field) {
+      case 'destination':
+        destination = value;
+        break;
+      case 'service':
+        selectedService = value;
+        break;
+      case 'includeInsurance':
+        includeInsurance = value === 'true';
+        break;
       case 'actualWeight':
         actualWeight = value ? parseFloat(value) : null;
         break;

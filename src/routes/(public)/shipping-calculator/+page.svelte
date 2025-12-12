@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Calculator from '$lib/components/landing/Calculator.svelte';
+  import Calculator from '$lib/components/calculator/Calculator.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Phone, Mail, MessageCircle } from 'lucide-svelte';

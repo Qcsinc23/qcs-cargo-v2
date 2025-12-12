@@ -39,7 +39,7 @@
         <a href="/" class="flex items-center space-x-2">
           <Logo class="h-10 w-auto" />
         </a>
-        <p class="text-sm text-muted-foreground max-w-xs">
+        <p class="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
           Trusted air freight to the Caribbean from our New Jersey warehouse.
         </p>
         <div class="flex space-x-6">
@@ -47,7 +47,7 @@
             href={COMPANY.social.facebook}
             target="_blank"
             rel="noopener noreferrer"
-            class="text-muted-foreground hover:text-foreground"
+            class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           >
             <Facebook class="h-6 w-6" />
             <span class="sr-only">Facebook</span>
@@ -56,16 +56,16 @@
             href={COMPANY.social.instagram}
             target="_blank"
             rel="noopener noreferrer"
-            class="text-muted-foreground hover:text-foreground"
+            class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           >
             <Instagram class="h-6 w-6" />
             <span class="sr-only">Instagram</span>
           </a>
-          <a href={`tel:${COMPANY.phone}`} class="text-muted-foreground hover:text-foreground">
+          <a href={`tel:${COMPANY.phone}`} class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
             <Phone class="h-6 w-6" />
             <span class="sr-only">Phone</span>
           </a>
-          <a href={`mailto:${COMPANY.email}`} class="text-muted-foreground hover:text-foreground">
+          <a href={`mailto:${COMPANY.email}`} class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
             <Mail class="h-6 w-6" />
             <span class="sr-only">Email</span>
           </a>
@@ -84,7 +84,7 @@
                 <li>
                   <a
                     href={link.href}
-                    class="text-base text-muted-foreground hover:text-foreground"
+                    class="text-base text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                   >
                     {link.label}
                   </a>
@@ -101,7 +101,7 @@
                 <li>
                   <a
                     href={link.href}
-                    class="text-base text-muted-foreground hover:text-foreground"
+                    class="text-base text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                   >
                     {link.label}
                   </a>
@@ -117,7 +117,7 @@
           <ul role="list" class="mt-4 space-y-4">
             {#each footerLinks[1].links as link}
               <li>
-                <a href={link.href} class="text-base text-muted-foreground hover:text-foreground">
+                <a href={link.href} class="text-base text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                   {link.label}
                 </a>
               </li>
@@ -129,7 +129,7 @@
 
     <!-- Bottom Bar -->
     <div class="mt-12 border-t pt-8">
-      <p class="text-base text-muted-foreground xl:text-center">
+      <p class="text-base text-gray-700 dark:text-gray-300 xl:text-center">
         &copy; {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
       </p>
     </div>

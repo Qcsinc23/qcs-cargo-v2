@@ -1,28 +1,18 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
-  import { 
-    Package, Weight, Ruler, DollarSign, Truck, AlertCircle, 
-    Shield, Zap, Info, Calculator as CalcIcon 
-  } from 'lucide-svelte';
+  import { Label } from '$lib/components/ui/label';
+  import { Input } from '$lib/components/ui/input';
+  import SkipLink from '$lib/components/ui/SkipLink.svelte';
+  import CalculatorForm from '$lib/components/calculator/CalculatorForm.svelte';
+  import DimensionInput from '$lib/components/calculator/DimensionInput.svelte';
+  import InsuranceOption from '$lib/components/calculator/InsuranceOption.svelte';
+  import CalculationResult from '$lib/components/calculator/CalculationResult.svelte';
+  import { Calculator as CalcIcon, Shield, Package, Truck, Weight, DollarSign, Ruler, AlertCircle, Info, Zap } from 'lucide-svelte';
   import { DESTINATIONS, SERVICES } from '$lib/config';
-
-  // ============================================
-  // PRICING CONSTANTS (The 6 Core Calculations)
-  // ============================================
-  const PRICING = {
-    DIM_DIVISOR: 166,           // Dimensional weight divisor
-    HEAVY_WEIGHT_THRESHOLD: 70, // lbs - triggers handling fee
-    HANDLING_FEE: 20,           // Heavy package handling fee
-    INSURANCE_MIN: 15,          // Minimum insurance charge
-    INSURANCE_RATE: 7.50,       // Per $100 of declared value
-    INSURANCE_DEDUCTIBLE: 100,  // First $100 not covered
-    EXPRESS_PERCENTAGE: 50,     // Express surcharge (50% over standard)
-    DOOR_TO_DOOR_FEE: 25,       // Door-to-door pickup fee
-  };
+  import { UNIFIED_PRICING, PricingCalculator } from '$lib/config/pricing-unified';
+  import type { CalculationBreakdown } from '$lib/types/calculator';
 
   // Form state
   let destination: string = '';
@@ -38,105 +28,101 @@
   let isCalculating = false;
   let calculationResult: CalculationBreakdown | null = null;
   let calculationError: string | null = null;
-
-  // Result type with full breakdown
-  interface CalculationBreakdown {
-    // Weight calculations
-    actualWeight: number;
-    dimensionalWeight: number | null;
-    billableWeight: number;
-    
-    // Cost breakdown
-    baseCost: number;
-    expressFee: number;
-    handlingFee: number;
-    insuranceFee: number;
-    doorToDoorFee: number;
-    
-    // Totals
-    subtotal: number;
-    total: number;
-    
-    // Rate info
-    ratePerLb: number;
-    destinationName: string;
-    serviceName: string;
-    estimatedDelivery: string;
-  }
+  let formErrors: Record<string, string> = {};
 
   // ============================================
-  // CALCULATION #1: Dimensional Weight
-  // Formula: (L × W × H) ÷ 166
+  // CALCULATION HELPERS - Using unified pricing
   // ============================================
   function calculateDimensionalWeight(): number | null {
     if (!length || !width || !height) return null;
-    return (length * width * height) / PRICING.DIM_DIVISOR;
+    return PricingCalculator.calculateDimensionalWeight({ length, width, height });
   }
 
-  // ============================================
-  // CALCULATION #2: Billable Weight
-  // Formula: Max(Actual, Dimensional)
-  // ============================================
   function getBillableWeight(): number {
-    const actual = actualWeight || 0;
-    const dimensional = calculateDimensionalWeight() || 0;
-    return Math.max(actual, dimensional);
+    if (!actualWeight) return 0;
+    const dimensions = length && width && height ? { length, width, height } : undefined;
+    return PricingCalculator.calculateBillableWeight(actualWeight, dimensions);
   }
 
-  // ============================================
-  // CALCULATION #3: Base Cost
-  // Formula: Billable × Rate
-  // ============================================
-  function calculateBaseCost(billableWeight: number, rate: number): number {
-    return billableWeight * rate;
-  }
-
-  // ============================================
-  // CALCULATION #4: Express Fee
-  // Formula: Base × (% ÷ 100)
-  // ============================================
-  function calculateExpressFee(baseCost: number, isExpress: boolean): number {
-    if (!isExpress) return 0;
-    return baseCost * (PRICING.EXPRESS_PERCENTAGE / 100);
-  }
-
-  // ============================================
-  // CALCULATION #5: Handling Fee
-  // Formula: If weight > 70: $20
-  // ============================================
-  function calculateHandlingFee(billableWeight: number): number {
-    return billableWeight > PRICING.HEAVY_WEIGHT_THRESHOLD ? PRICING.HANDLING_FEE : 0;
-  }
-
-  // ============================================
-  // CALCULATION #6: Insurance Fee
-  // Formula: Max($15, (Value-100)÷100 × $7.50)
-  // ============================================
   function calculateInsuranceFee(value: number | null, include: boolean): number {
-    if (!include || !value || value <= 0) return 0;
-    
-    // Calculate: (Value ÷ 100) × $7.50
-    const calculatedInsurance = (value / 100) * PRICING.INSURANCE_RATE;
-    
-    // Return Max($15, calculated)
-    return Math.max(PRICING.INSURANCE_MIN, calculatedInsurance);
+    return PricingCalculator.calculateInsuranceFee(value || 0, include);
   }
 
   // ============================================
   // MAIN CALCULATION FUNCTION
   // Total = Base + Express + Handling + Insurance + Door-to-Door
   // ============================================
+  // Event handlers
+  function handleFormInput({ field, value }: { field: string; value: string }) {
+    formErrors[field] = '';
+    calculationError = null;
+
+    // Convert string values to numbers
+    switch (field) {
+      case 'actualWeight':
+        actualWeight = value ? parseFloat(value) : null;
+        break;
+      case 'declaredValue':
+        declaredValue = value ? parseFloat(value) : null;
+        break;
+      case 'length':
+        length = value ? parseFloat(value) : null;
+        break;
+      case 'width':
+        width = value ? parseFloat(value) : null;
+        break;
+      case 'height':
+        height = value ? parseFloat(value) : null;
+        break;
+    }
+  }
+
+  function handleDimensionChange({ dimension, value }: { dimension: string; value: string }) {
+    formErrors[dimension] = '';
+    calculationError = null;
+
+    switch (dimension) {
+      case 'length':
+        length = value ? parseFloat(value) : null;
+        break;
+      case 'width':
+        width = value ? parseFloat(value) : null;
+        break;
+      case 'height':
+        height = value ? parseFloat(value) : null;
+        break;
+    }
+  }
+
   async function calculateShipping() {
+    // Reset errors
+    formErrors = {};
     calculationError = null;
     calculationResult = null;
 
     // Validation
     if (!destination) {
-      calculationError = 'Please select a destination';
+      formErrors.destination = 'Please select a destination';
       return;
     }
-    if (!actualWeight || actualWeight <= 0) {
-      calculationError = 'Please enter a valid weight';
+    if (!actualWeight || actualWeight <= 0 || actualWeight > 500) {
+      formErrors.actualWeight = 'Weight must be between 0.1 and 500 lbs';
+      return;
+    }
+    if (length && (length < 1 || length > 100)) {
+      formErrors.length = 'Length must be between 1 and 100 inches';
+      return;
+    }
+    if (width && (width < 1 || width > 100)) {
+      formErrors.width = 'Width must be between 1 and 100 inches';
+      return;
+    }
+    if (height && (height < 1 || height > 100)) {
+      formErrors.height = 'Height must be between 1 and 100 inches';
+      return;
+    }
+    if (declaredValue && declaredValue < 0) {
+      formErrors.declaredValue = 'Declared value cannot be negative';
       return;
     }
     if (!selectedService) {
@@ -150,60 +136,46 @@
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const service = SERVICES.find(s => s.id === selectedService);
-      const destinationData = DESTINATIONS.find(d => d.id === destination);
-
-      if (!service || !destinationData) {
-        throw new Error('Invalid service or destination');
+      if (!service) {
+        throw new Error('Invalid service level');
       }
 
-      // Step 1 & 2: Calculate weights
-      const dimWeight = calculateDimensionalWeight();
-      const billable = getBillableWeight();
+      // Use the unified pricing calculator
+      const dimensions = length && width && height ? { length, width, height } : undefined;
+      const serviceLevel = selectedService as 'standard' | 'express' | 'door_to_door';
 
-      // Step 3: Base Cost = Billable × Rate
-      const baseCost = calculateBaseCost(billable, destinationData.baseRate);
+      const result = PricingCalculator.calculateShipping({
+        destination,
+        weight: actualWeight,
+        dimensions,
+        serviceLevel,
+        declaredValue: declaredValue || undefined,
+        includeInsurance,
+        packageCount: 1
+      });
 
-      // Step 4: Express Fee (50% surcharge for express service)
-      const isExpress = selectedService === 'express';
-      const expressFee = calculateExpressFee(baseCost, isExpress);
-
-      // Step 5: Handling Fee (if > 70 lbs)
-      const handlingFee = calculateHandlingFee(billable);
-
-      // Step 6: Insurance Fee
-      const insuranceFee = calculateInsuranceFee(declaredValue, includeInsurance);
-
-      // Door-to-door fee
-      const isDoorToDoor = selectedService === 'door_to_door';
-      const doorToDoorFee = isDoorToDoor ? PRICING.DOOR_TO_DOOR_FEE : 0;
-
-      // Calculate Total
-      const subtotal = baseCost + expressFee + handlingFee + doorToDoorFee;
-      const total = subtotal + insuranceFee;
-
-      // Calculate estimated delivery
-      const daysToDeliver = service.delivery_days + destinationData.base_transit_days;
+      // Calculate estimated delivery date
       const deliveryDate = new Date();
-      deliveryDate.setDate(deliveryDate.getDate() + daysToDeliver);
+      deliveryDate.setDate(deliveryDate.getDate() + result.estimatedDeliveryDays);
 
       calculationResult = {
-        actualWeight: actualWeight,
-        dimensionalWeight: dimWeight,
-        billableWeight: billable,
-        baseCost: round(baseCost),
-        expressFee: round(expressFee),
-        handlingFee: round(handlingFee),
-        insuranceFee: round(insuranceFee),
-        doorToDoorFee: round(doorToDoorFee),
-        subtotal: round(subtotal),
-        total: round(total),
-        ratePerLb: destinationData.baseRate,
-        destinationName: destinationData.name,
+        actualWeight: result.actualWeight,
+        dimensionalWeight: result.dimensionalWeight,
+        billableWeight: result.billableWeight,
+        baseCost: result.baseCost,
+        expressFee: result.expressFee,
+        handlingFee: result.handlingFee,
+        insuranceFee: result.insuranceFee,
+        doorToDoorFee: result.doorToDoorFee,
+        subtotal: result.subtotal,
+        total: result.total,
+        ratePerLb: result.ratePerLb,
+        destinationName: result.destinationName,
         serviceName: service.name,
-        estimatedDelivery: deliveryDate.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric' 
+        estimatedDelivery: deliveryDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
         })
       };
     } catch (error) {
@@ -234,13 +206,17 @@
   $: dimensionalWeight = calculateDimensionalWeight();
   $: billableWeight = actualWeight ? getBillableWeight() : null;
   $: showDimWarning = dimensionalWeight && actualWeight && dimensionalWeight > actualWeight;
-  $: showHeavyWarning = billableWeight && billableWeight > PRICING.HEAVY_WEIGHT_THRESHOLD;
+  $: showHeavyWarning = billableWeight && billableWeight > UNIFIED_PRICING.fees.heavyWeight.threshold;
+  $: estimatedInsuranceFee = declaredValue ? calculateInsuranceFee(declaredValue, includeInsurance) : 0;
 </script>
+
+<!-- Skip link for keyboard users -->
+<SkipLink target="#calculator-form" label="Skip to calculator form" />
 
 <Card class="w-full max-w-4xl mx-auto">
   <CardHeader>
-    <CardTitle class="flex items-center gap-2">
-      <CalcIcon class="h-6 w-6" />
+    <CardTitle class="flex items-center gap-2" id="calculator-heading">
+      <CalcIcon class="h-6 w-6" aria-hidden="true" />
       Shipping Calculator
     </CardTitle>
     <CardDescription>
@@ -249,11 +225,26 @@
   </CardHeader>
   
   <CardContent class="space-y-6">
+  <form id="calculator-form" on:submit|preventDefault={calculateShipping} aria-labelledby="calculator-heading">
+    <!-- Error Announcement -->
+    <div aria-live="polite" aria-atomic="true" class="sr-only">
+      {#if calculationError}
+        Error: {calculationError}
+      {/if}
+    </div>
+
+    <!-- Success Announcement -->
+    <div aria-live="assertive" aria-atomic="true" class="sr-only">
+      {#if calculationResult}
+        Shipping quote calculated successfully. Total cost: {'$'}{calculationResult.total.toFixed(2)}
+      {/if}
+    </div>
+
     <!-- Destination Selection -->
     <div class="space-y-2">
       <Label for="destination" class="flex items-center gap-2">
-        <Truck class="h-4 w-4" />
-        Destination <span class="text-destructive">*</span>
+        <Truck class="h-4 w-4" aria-hidden="true" />
+        Destination <span class="text-destructive" aria-label="required field">*</span>
       </Label>
       <select
         id="destination"
@@ -274,8 +265,8 @@
     <div class="grid gap-4 sm:grid-cols-2">
       <div class="space-y-2">
         <Label for="weight" class="flex items-center gap-2">
-          <Weight class="h-4 w-4" />
-          Actual Weight (lbs) <span class="text-destructive">*</span>
+          <Weight class="h-4 w-4" aria-hidden="true" />
+          Actual Weight (lbs) <span class="text-destructive" aria-label="required field">*</span>
         </Label>
         <Input
           id="weight"
@@ -313,7 +304,7 @@
         Package Dimensions (inches)
       </Label>
       <p class="text-xs text-muted-foreground">
-        Dimensional Weight = (L × W × H) ÷ {PRICING.DIM_DIVISOR}
+        Dimensional Weight = (L × W × H) ÷ {UNIFIED_PRICING.dimensionalWeight.divisor}
       </p>
       <div class="grid gap-2 sm:grid-cols-3">
         <Input
@@ -377,7 +368,7 @@
         <Alert class="bg-blue-50 border-blue-200">
           <Info class="h-4 w-4 text-blue-600" />
           <AlertDescription class="text-blue-700">
-            Heavy package (&gt;{PRICING.HEAVY_WEIGHT_THRESHOLD} lbs): {'$'}{PRICING.HANDLING_FEE} handling fee applies.
+            Heavy package (&gt;{UNIFIED_PRICING.fees.heavyWeight.threshold} lbs): {'$'}{UNIFIED_PRICING.fees.heavyWeight.fee} handling fee applies.
           </AlertDescription>
         </Alert>
       {/if}
@@ -395,8 +386,8 @@
         {#each SERVICES as service}
           <option value={service.id}>
             {service.name} — {service.delivery_days}-{service.delivery_days + 2} days
-            {#if service.id === 'express'}(+{PRICING.EXPRESS_PERCENTAGE}%){/if}
-            {#if service.id === 'door_to_door'}(+{'$'}{PRICING.DOOR_TO_DOOR_FEE} pickup){/if}
+            {#if service.id === 'express'}(+{UNIFIED_PRICING.service.express.surcharge}%){/if}
+            {#if service.id === 'door_to_door'}(+{'$'}{UNIFIED_PRICING.fees.doorToDoor.fee} pickup){/if}
           </option>
         {/each}
       </select>
@@ -416,8 +407,8 @@
           Add Shipping Insurance
         </Label>
         <p class="text-xs text-muted-foreground mt-1">
-          Coverage: {'$'}{PRICING.INSURANCE_RATE.toFixed(2)} per $100 value 
-          (min. {'$'}{PRICING.INSURANCE_MIN})
+          Coverage: {'$'}{UNIFIED_PRICING.insurance.rate.toFixed(2)} per $100 value
+          (min. {'$'}{UNIFIED_PRICING.insurance.minimum})
           {#if declaredValue && includeInsurance}
             — Est. {'$'}{calculateInsuranceFee(declaredValue, true).toFixed(2)}
           {/if}
@@ -482,7 +473,7 @@
               <div class="flex justify-between text-amber-700">
                 <span class="flex items-center gap-1">
                   <Zap class="h-3 w-3" />
-                  Express Surcharge (+{PRICING.EXPRESS_PERCENTAGE}%)
+                  Express Surcharge (+{UNIFIED_PRICING.service.express.surcharge}%)
                 </span>
                 <span class="font-medium">{'$'}{calculationResult.expressFee.toFixed(2)}</span>
               </div>
@@ -502,7 +493,7 @@
               <div class="flex justify-between text-orange-700">
                 <span class="flex items-center gap-1">
                   <Package class="h-3 w-3" />
-                  Heavy Package Handling (&gt;{PRICING.HEAVY_WEIGHT_THRESHOLD} lbs)
+                  Heavy Package Handling (&gt;{UNIFIED_PRICING.fees.heavyWeight.threshold} lbs)
                 </span>
                 <span class="font-medium">{'$'}{calculationResult.handlingFee.toFixed(2)}</span>
               </div>
@@ -517,7 +508,7 @@
               <div class="flex justify-between text-green-700">
                 <span class="flex items-center gap-1">
                   <Shield class="h-3 w-3" />
-                  Insurance ({'$'}{declaredValue} value)
+                  Insurance (${'$'}{declaredValue} value)
                 </span>
                 <span class="font-medium">{'$'}{calculationResult.insuranceFee.toFixed(2)}</span>
               </div>
@@ -528,7 +519,7 @@
           <div class="flex justify-between items-center border-t-2 border-primary-300 pt-4">
             <span class="text-xl font-bold text-slate-800">Total</span>
             <span class="text-3xl font-bold text-primary-600">
-              {'$'}{calculationResult.total.toFixed(2)}
+              ${calculationResult.total.toFixed(2)}
             </span>
           </div>
           
@@ -541,33 +532,51 @@
 
     <!-- Actions -->
     <div class="flex flex-col sm:flex-row gap-3">
-      <Button 
-        on:click={calculateShipping} 
+      <Button
+        type="submit"
         disabled={isCalculating}
         class="flex-1"
+        aria-describedby="calc-status"
       >
-        {isCalculating ? 'Calculating...' : 'Calculate Shipping'}
+        {#if isCalculating}
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Calculating...
+        {:else}
+          Calculate Shipping
+        {/if}
       </Button>
       {#if calculationResult}
-        <Button variant="outline" on:click={resetCalculator}>
+        <Button
+          variant="outline"
+          on:click={resetCalculator}
+          type="button"
+        >
           Reset
         </Button>
-        <Button variant="default" class="sm:flex-1" href="/auth/register">
+        <Button
+          variant="default"
+          class="sm:flex-1"
+          href="/auth/register"
+        >
           Book Shipment
         </Button>
       {/if}
     </div>
+  </form>
 
     <!-- Formula Reference -->
     <details class="text-xs text-slate-500">
       <summary class="cursor-pointer hover:text-slate-700">View calculation formulas</summary>
       <div class="mt-2 p-3 bg-slate-50 rounded-lg space-y-1 font-mono">
-        <p>1. Dimensional Weight = (L × W × H) ÷ {PRICING.DIM_DIVISOR}</p>
+        <p>1. Dimensional Weight = (L × W × H) ÷ {UNIFIED_PRICING.dimensionalWeight.divisor}</p>
         <p>2. Billable Weight = Max(Actual, Dimensional)</p>
         <p>3. Base Cost = Billable × Rate</p>
-        <p>4. Express Fee = Base × {PRICING.EXPRESS_PERCENTAGE}%</p>
-        <p>5. Handling Fee = {'$'}{PRICING.HANDLING_FEE} if weight &gt; {PRICING.HEAVY_WEIGHT_THRESHOLD} lbs</p>
-        <p>6. Insurance = Max({'$'}{PRICING.INSURANCE_MIN}, Value÷100 × {'$'}{PRICING.INSURANCE_RATE})</p>
+        <p>4. Express Fee = Base × {UNIFIED_PRICING.service.express.surcharge}%</p>
+        <p>5. Handling Fee = {'$'}{UNIFIED_PRICING.fees.heavyWeight.fee} if weight &gt; {UNIFIED_PRICING.fees.heavyWeight.threshold} lbs</p>
+        <p>6. Insurance = Max({'$'}{UNIFIED_PRICING.insurance.minimum}, (Value-{UNIFIED_PRICING.insurance.deductible})÷100 × {'$'}{UNIFIED_PRICING.insurance.rate})</p>
         <p class="font-bold pt-1 border-t">Total = Base + Express + Handling + Insurance + Door-to-Door</p>
       </div>
     </details>

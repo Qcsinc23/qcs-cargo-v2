@@ -28,9 +28,9 @@
       {#each navLinks as link}
         <a
           href={link.href}
-          class="transition-colors hover:text-foreground/80 {activePath === link.href
-            ? 'text-foreground'
-            : 'text-foreground/60'}"
+          class="transition-colors hover:text-gray-900 dark:hover:text-white {activePath === link.href
+            ? 'text-gray-900 dark:text-white'
+            : 'text-gray-700 dark:text-gray-200'}"
         >
           {link.label}
         </a>
@@ -69,9 +69,9 @@
         {#each navLinks as link}
           <a
             href={link.href}
-            class="text-lg font-medium transition-colors hover:text-foreground {activePath === link.href
-              ? 'text-foreground'
-              : 'text-muted-foreground'}"
+            class="text-lg font-medium transition-colors hover:text-gray-900 dark:hover:text-white {activePath === link.href
+              ? 'text-gray-900 dark:text-white'
+              : 'text-gray-700 dark:text-gray-200'}"
             on:click={() => (mobileMenuOpen = false)}
           >
             {link.label}

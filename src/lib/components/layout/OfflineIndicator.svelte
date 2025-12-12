@@ -7,6 +7,7 @@
 
   const isOnline = writable(true);
   let showReconnected = false;
+  let reconnectedTimeout: number;
 
   onMount(() => {
     if (!browser) return;
@@ -16,11 +17,19 @@
     const handleOnline = () => {
       isOnline.set(true);
       showReconnected = true;
-      setTimeout(() => (showReconnected = false), 3000);
+      // Clear any existing timeout
+      if (reconnectedTimeout) {
+        clearTimeout(reconnectedTimeout);
+      }
+      reconnectedTimeout = window.setTimeout(() => (showReconnected = false), 3000);
     };
 
     const handleOffline = () => {
       isOnline.set(false);
+      // Clear timeout when going offline
+      if (reconnectedTimeout) {
+        clearTimeout(reconnectedTimeout);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -29,6 +38,10 @@
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      // Clear timeout on cleanup
+      if (reconnectedTimeout) {
+        clearTimeout(reconnectedTimeout);
+      }
     };
   });
 </script>

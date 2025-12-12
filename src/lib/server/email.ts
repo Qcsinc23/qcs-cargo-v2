@@ -2,6 +2,21 @@ import { Resend } from 'resend';
 import { RESEND_API_KEY, FROM_EMAIL, REPLY_TO_EMAIL } from '$env/static/private';
 import { PUBLIC_COMPANY_NAME, PUBLIC_SITE_URL } from '$env/static/public';
 
+// Validate required environment variables
+const requiredEnvVars = {
+  RESEND_API_KEY,
+  FROM_EMAIL,
+  REPLY_TO_EMAIL,
+  PUBLIC_COMPANY_NAME,
+  PUBLIC_SITE_URL
+};
+
+for (const [key, value] of Object.entries(requiredEnvVars)) {
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
+
 const resend = new Resend(RESEND_API_KEY);
 
 interface EmailOptions {

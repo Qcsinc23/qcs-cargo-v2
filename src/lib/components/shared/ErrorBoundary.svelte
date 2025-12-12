@@ -2,12 +2,20 @@
   import { cn } from '$lib/utils';
   import { AlertTriangle, RefreshCw } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
+  import { getPerformanceTracker } from '$lib/performance';
 
   export let error: Error | null = null;
   export let title: string = 'Something went wrong';
   export let className: string = '';
+  export let context: string = 'ErrorBoundary';
 
   function handleRetry() {
+    // Track the error in performance system before retry
+    if (error) {
+      const tracker = getPerformanceTracker();
+      tracker.trackError(error, context);
+    }
+
     window.location.reload();
   }
 </script>

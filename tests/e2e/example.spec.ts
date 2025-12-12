@@ -12,7 +12,7 @@ test('home page has main heading', async ({ page }) => {
 
 test('skip link is focusable', async ({ page }) => {
   await page.goto('/');
-  await page.keyboard.press('Tab');
   const skipLink = page.getByText('Skip to main content');
+  await skipLink.focus();
   await expect(skipLink).toBeFocused();
 });

@@ -14,5 +14,26 @@ export default defineConfig({
   },
   preview: {
     port: 4173
+  },
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
+      }
+    },
+    cssCodeSplit: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000
+  },
+  optimizeDeps: {
+    include: [
+      'svelte',
+      '@sveltejs/kit',
+      'lucide-svelte',
+      'tailwindcss'
+    ]
   }
 });

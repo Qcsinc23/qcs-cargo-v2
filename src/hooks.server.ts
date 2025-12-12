@@ -2,6 +2,7 @@ import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { dev } from '$app/environment';
 
 // Authentication hook
 const authHook: Handle = async ({ event, resolve }) => {
@@ -18,7 +19,11 @@ const authHook: Handle = async ({ event, resolve }) => {
       await event.locals.pb.collection('users').authRefresh();
       event.locals.user = event.locals.pb.authStore.model;
     }
-  } catch (_) {
+  } catch (error) {
+    // Log error in development for debugging
+    if (dev) {
+      console.error('[Auth Hook Error]', error);
+    }
     // Clear invalid auth
     event.locals.pb.authStore.clear();
     event.locals.user = null;

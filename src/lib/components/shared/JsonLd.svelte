@@ -4,7 +4,6 @@
   export let type: 'Organization' | 'LocalBusiness' | 'FAQPage' | 'Service' = 'Organization';
   export let data: Record<string, unknown> = {};
 
-  // Base organization schema
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
@@ -50,10 +49,7 @@
       { '@type': 'Country', name: 'Barbados' },
       { '@type': 'Country', name: 'Suriname' }
     ],
-    sameAs: [
-      COMPANY.social.facebook,
-      COMPANY.social.instagram
-    ]
+    sameAs: [COMPANY.social.facebook, COMPANY.social.instagram]
   };
 
   function getSchema() {
@@ -65,7 +61,8 @@
         return {
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
-          mainEntity: data.faqs || []
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mainEntity: (data as any).faqs || []
         };
       case 'Service':
         return {
@@ -86,6 +83,5 @@
 </script>
 
 <svelte:head>
-  {@html `<script type="application/ld+json">${JSON.stringify(schema)}</script>`}
+  <script type="application/ld+json">{JSON.stringify(schema)}</script>
 </svelte:head>
-

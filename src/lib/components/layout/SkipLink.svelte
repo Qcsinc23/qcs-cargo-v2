@@ -4,8 +4,8 @@
 </script>
 
 <a
-  href="#{targetId}"
-  class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary-600 focus:px-4 focus:py-2 focus:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2"
+  href={`#${targetId}`}
+  class="absolute -left-[9999px] top-4 z-50 rounded-lg bg-primary-600 px-4 py-2 text-white transition-all focus:left-4 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2"
 >
   {label}
 </a>

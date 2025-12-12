@@ -10,7 +10,7 @@
   />
 </svelte:head>
 
-<main id="main-content" class="flex min-h-screen flex-col items-center justify-center p-4">
+<section class="flex min-h-screen flex-col items-center justify-center p-4">
   <div class="text-center">
     <h1 class="text-4xl font-bold text-primary-800">QCS Cargo 2.0</h1>
     <p class="mt-4 text-lg text-gray-600">
@@ -31,4 +31,4 @@
       </a>
     </div>
   </div>
-</main>
+</section>

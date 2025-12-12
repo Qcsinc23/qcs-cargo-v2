@@ -7,10 +7,11 @@
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Separator } from '$lib/components/ui/separator';
-  import { auth } from '$lib/stores/auth';
+  import { auth, isAuthenticated } from '$lib/stores/auth';
   import { toast } from '$lib/stores/toast';
   import { loginSchema, validateForm } from '$lib/utils/validation';
   import { Mail, Lock, Loader2, AlertCircle } from 'lucide-svelte';
+  import { onMount } from 'svelte';
 
   let email = '';
   let password = '';
@@ -22,6 +23,13 @@
   // Get redirect URL from query params
   $: redirectTo = $page.url.searchParams.get('redirect') || '/dashboard';
   $: message = $page.url.searchParams.get('message');
+
+  // Redirect if already authenticated
+  onMount(() => {
+    if ($isAuthenticated) {
+      goto(redirectTo, { replaceState: true });
+    }
+  });
 
   async function handleSubmit() {
     serverError = '';
@@ -39,10 +47,11 @@
     try {
       await auth.login(email, password);
       toast.success('Welcome back!', { description: 'You have been logged in successfully.' });
+      // Wait a tick for auth state to update before navigating
+      await new Promise(resolve => setTimeout(resolve, 0));
       goto(redirectTo);
     } catch (err: unknown) {
-      const error = err as Error;
-      serverError = error.message || 'Login failed. Please check your credentials.';
+      serverError = getErrorMessage(err, 'Login failed. Please check your credentials.');
     } finally {
       loading = false;
     }
@@ -53,13 +62,25 @@
     try {
       await auth.loginWithGoogle();
       toast.success('Welcome!', { description: 'You have been logged in with Google.' });
+      // Wait a tick for auth state to update before navigating
+      await new Promise(resolve => setTimeout(resolve, 0));
       goto(redirectTo);
     } catch (err: unknown) {
-      const error = err as Error;
-      serverError = error.message || 'Google login failed. Please try again.';
+      serverError = getErrorMessage(err, 'Google login failed. Please try again.');
     } finally {
       loading = false;
     }
+  }
+
+  // Helper function for error messages
+  function getErrorMessage(error: unknown, defaultMessage: string): string {
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String(error.message);
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    return defaultMessage;
   }
 </script>
 

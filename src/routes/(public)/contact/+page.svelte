@@ -23,12 +23,46 @@
   let submitSuccess = false;
   let submitError: string | null = null;
 
+  function validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  function validatePhone(phone: string): boolean {
+    if (!phone) return true; // Phone is optional
+    const phoneRegex = /^[\d\s()+-]+$/;
+    return phoneRegex.test(phone);
+  }
+
   async function handleSubmit() {
     submitError = null;
-    
+
     // Basic validation
     if (!formData.name || !formData.email || !formData.message) {
       submitError = 'Please fill in all required fields';
+      return;
+    }
+
+    // Email format validation
+    if (!validateEmail(formData.email)) {
+      submitError = 'Please enter a valid email address';
+      return;
+    }
+
+    // Phone format validation (if provided)
+    if (!validatePhone(formData.phone)) {
+      submitError = 'Please enter a valid phone number';
+      return;
+    }
+
+    // Message length validation
+    if (formData.message.length < 10) {
+      submitError = 'Message must be at least 10 characters long';
+      return;
+    }
+
+    if (formData.message.length > 1000) {
+      submitError = 'Message must be less than 1000 characters';
       return;
     }
 

@@ -4,6 +4,20 @@ import { goto, invalidateAll } from '$app/navigation';
 import { pb } from '$lib/pocketbase';
 import type { AuthModel } from 'pocketbase';
 
+// Helper function to safely extract error message
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String(error.message);
+  }
+  if (error && typeof error === 'object' && 'data' in error && typeof error.data === 'object' && error.data && 'message' in error.data) {
+    return String(error.data.message);
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return defaultMessage;
+}
+
 // User type
 export interface User {
   id: string;
@@ -116,23 +130,22 @@ function createAuthStore() {
     // Login with email/password
     async login(email: string, password: string) {
       update(state => ({ ...state, isLoading: true }));
-      
+
       try {
         const authData = await pb.collection('users').authWithPassword(email, password);
         const user = transformUser(authData.record);
-        
+
         update(state => ({
           ...state,
           user,
           isAuthenticated: true,
           isLoading: false
         }));
-        
+
         return { success: true, user };
       } catch (error: unknown) {
         update(state => ({ ...state, isLoading: false }));
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Login failed');
+        throw new Error(getErrorMessage(error, 'Login failed'));
       }
     },
 
@@ -145,7 +158,7 @@ function createAuthStore() {
       phone?: string;
     }) {
       update(state => ({ ...state, isLoading: true }));
-      
+
       try {
         // Create user
         await pb.collection('users').create({
@@ -153,26 +166,25 @@ function createAuthStore() {
           role: 'customer',
           emailVisibility: true
         });
-        
+
         // Send verification email
         await pb.collection('users').requestVerification(data.email);
-        
+
         // Auto-login after registration
         const authData = await pb.collection('users').authWithPassword(data.email, data.password);
         const user = transformUser(authData.record);
-        
+
         update(state => ({
           ...state,
           user,
           isAuthenticated: true,
           isLoading: false
         }));
-        
+
         return { success: true, user };
       } catch (error: unknown) {
         update(state => ({ ...state, isLoading: false }));
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Registration failed');
+        throw new Error(getErrorMessage(error, 'Registration failed'));
       }
     },
 
@@ -196,8 +208,7 @@ function createAuthStore() {
         await pb.collection('users').requestPasswordReset(email);
         return { success: true };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Failed to send reset email');
+        throw new Error(getErrorMessage(error, 'Failed to send reset email'));
       }
     },
 
@@ -207,8 +218,7 @@ function createAuthStore() {
         await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm);
         return { success: true };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Failed to reset password');
+        throw new Error(getErrorMessage(error, 'Failed to reset password'));
       }
     },
 
@@ -218,72 +228,71 @@ function createAuthStore() {
         await pb.collection('users').requestVerification(email);
         return { success: true };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Failed to send verification email');
+        throw new Error(getErrorMessage(error, 'Failed to send verification email'));
       }
     },
 
     // Update profile
     async updateProfile(data: Partial<User>) {
-      const currentUser = get({ subscribe }).user;
+      const state = get({ subscribe });
+      const currentUser = state.user;
       if (!currentUser) throw new Error('Not authenticated');
-      
+
       try {
         const updated = await pb.collection('users').update(currentUser.id, data);
         const user = transformUser(updated);
-        
-        update(state => ({
-          ...state,
+
+        update(currentState => ({
+          ...currentState,
           user
         }));
-        
+
         return { success: true, user };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Failed to update profile');
+        throw new Error(getErrorMessage(error, 'Failed to update profile'));
       }
     },
 
     // Update avatar
     async updateAvatar(file: File) {
-      const currentUser = get({ subscribe }).user;
+      const state = get({ subscribe });
+      const currentUser = state.user;
       if (!currentUser) throw new Error('Not authenticated');
-      
+
       try {
         const formData = new FormData();
         formData.append('avatar', file);
-        
+
         const updated = await pb.collection('users').update(currentUser.id, formData);
         const user = transformUser(updated);
-        
-        update(state => ({
-          ...state,
+
+        update(currentState => ({
+          ...currentState,
           user
         }));
-        
+
         return { success: true, user };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Failed to update avatar');
+        throw new Error(getErrorMessage(error, 'Failed to update avatar'));
       }
     },
 
     // Change password
     async changePassword(currentPassword: string, newPassword: string, confirmPassword: string) {
-      const currentUser = get({ subscribe }).user;
+      const state = get({ subscribe });
+      const currentUser = state.user;
       if (!currentUser) throw new Error('Not authenticated');
-      
+
       try {
         await pb.collection('users').update(currentUser.id, {
           oldPassword: currentPassword,
           password: newPassword,
           passwordConfirm: confirmPassword
         });
-        
+
         return { success: true };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Failed to change password');
+        throw new Error(getErrorMessage(error, 'Failed to change password'));
       }
     },
 
@@ -292,18 +301,17 @@ function createAuthStore() {
       try {
         const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
         const user = transformUser(authData.record);
-        
+
         update(state => ({
           ...state,
           user,
           isAuthenticated: true,
           isLoading: false
         }));
-        
+
         return { success: true, user };
       } catch (error: unknown) {
-        const err = error as { message?: string };
-        throw new Error(err.message || 'Google login failed');
+        throw new Error(getErrorMessage(error, 'Google login failed'));
       }
     }
   };

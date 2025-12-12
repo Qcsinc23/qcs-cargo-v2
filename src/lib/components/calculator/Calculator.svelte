@@ -308,7 +308,7 @@
         <p>2. Billable Weight = Max(Actual, Dimensional)</p>
         <p>3. Base Cost = Billable × Rate</p>
         <p>4. Express Fee = Base × {UNIFIED_PRICING.service.express.surcharge}%</p>
-        <p>5. Handling Fee = ${UNIFIED_PRICING.fees.heavyWeight.fee} if weight &gt; {UNIFIED_PRICING.fees.heavyWeight.threshold} lbs</p>
+        <p>5. Handling Fee = Max(${UNIFIED_PRICING.fees.handling.minimum}, (${UNIFIED_PRICING.fees.handling.perPackage} × packages) + (weight &gt; {UNIFIED_PRICING.fees.heavyWeight.threshold} ? ${UNIFIED_PRICING.fees.heavyWeight.fee} : $0))</p>
         <p>6. Insurance = Max(${UNIFIED_PRICING.insurance.minimum}, (Value-{UNIFIED_PRICING.insurance.deductible})÷100 × ${UNIFIED_PRICING.insurance.rate})</p>
         <p class="font-bold pt-1 border-t">Total = Base + Express + Handling + Insurance + Door-to-Door</p>
       </div>

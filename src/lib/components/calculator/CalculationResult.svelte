@@ -2,10 +2,14 @@
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Package, Zap, Truck, Shield, AlertCircle } from 'lucide-svelte';
+  import { UNIFIED_PRICING } from '$lib/config/pricing-unified';
   import type { CalculationBreakdown } from '$lib/types/calculator';
 
   export let result: CalculationBreakdown;
   export let onReset: () => void;
+
+  const heavyThreshold = UNIFIED_PRICING.fees.heavyWeight.threshold;
+  const handlingMinimum = UNIFIED_PRICING.fees.handling.minimum;
 </script>
 
 <Card class="bg-gradient-to-br from-primary-50 to-blue-50 border-primary-200">
@@ -75,7 +79,13 @@
         <div class="flex justify-between text-orange-700">
           <span class="flex items-center gap-1">
             <Package class="h-3 w-3" />
-            Heavy Package Handling (&gt;70 lbs)
+            {#if result.billableWeight > heavyThreshold}
+              Heavy Package Handling (&gt;{heavyThreshold} lbs)
+            {:else if result.handlingFee === handlingMinimum}
+              Handling Fee (min ${handlingMinimum})
+            {:else}
+              Handling Fee
+            {/if}
           </span>
           <span class="font-medium">${result.handlingFee.toFixed(2)}</span>
         </div>

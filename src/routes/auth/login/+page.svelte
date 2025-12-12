@@ -52,14 +52,12 @@
 
     try {
       await auth.login(email, password);
-      
-      // Export the auth cookie so server can recognize the user
-      if (browser) {
-        document.cookie = pb.authStore.exportToCookie({ httpOnly: false, secure: false, sameSite: 'Lax' });
-      }
-      
+
+      // The server hook will automatically set the cookie in the response
+      // No need to manually set it on the client side
+
       toast.success('Welcome back!', { description: 'You have been logged in successfully.' });
-      
+
       // Use hard navigation to ensure server picks up the new auth cookie
       // This forces a full page reload which allows the server hook to read the updated cookie
       hasNavigated = true;
@@ -75,14 +73,12 @@
     loading = true;
     try {
       await auth.loginWithGoogle();
-      
-      // Export the auth cookie so server can recognize the user
-      if (browser) {
-        document.cookie = pb.authStore.exportToCookie({ httpOnly: false, secure: false, sameSite: 'Lax' });
-      }
-      
+
+      // The server hook will automatically set the cookie in the response
+      // No need to manually set it on the client side
+
       toast.success('Welcome!', { description: 'You have been logged in with Google.' });
-      
+
       // Use hard navigation to ensure server picks up the new auth cookie
       hasNavigated = true;
       window.location.href = redirectTo;

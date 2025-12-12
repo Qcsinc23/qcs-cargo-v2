@@ -17,7 +17,8 @@
 
   function handleDragLeave(event: DragEvent) {
     // Only leave if we're actually leaving the element
-    if (!event.currentTarget || !event.currentTarget.contains(event.relatedTarget as Node)) {
+    const currentTarget = event.currentTarget as HTMLElement | null;
+    if (!currentTarget || !currentTarget.contains(event.relatedTarget as Node)) {
       dragOver = false;
     }
   }

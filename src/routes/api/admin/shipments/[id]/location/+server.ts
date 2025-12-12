@@ -126,7 +126,14 @@ export const GET: RequestHandler = async ({ params, locals }) => {
     });
 
     // Extract location updates from status history
-    const locationHistory = [];
+    interface LocationEntry {
+      timestamp: string;
+      location: string;
+      status: string;
+      notes: string | null;
+      updatedBy: string | null;
+    }
+    const locationHistory: LocationEntry[] = [];
 
     if (shipment.status_history && Array.isArray(shipment.status_history)) {
       shipment.status_history.forEach((event: any) => {

@@ -20,7 +20,56 @@
   import { cn } from '$lib/utils';
   import { STATUS_COLORS, STATUS_LABELS } from '$lib/config/constants';
 
-  let dashboardData = {
+  interface PendingAction {
+    id: string;
+    type: 'booking' | 'payment' | 'shipment' | 'user';
+    message: string;
+    time: string;
+    urgent: boolean;
+    bookingId?: string;
+  }
+
+  interface TodayBooking {
+    id: string;
+    customer: string;
+    destination: string;
+    packages: number;
+    time: string;
+    status: string;
+  }
+
+  interface RecentShipment {
+    id: string;
+    trackingNumber: string;
+    destination: string;
+    status: string;
+    customer: string;
+    weight: number;
+  }
+
+  interface ScheduleItem {
+    id: string;
+    time: string;
+    event: string;
+    type: string;
+    customer: string;
+    packages: number;
+  }
+
+  interface DashboardData {
+    kpis: {
+      activeShipments: number;
+      pendingBookings: number;
+      activeCustomers: number;
+      revenueMTD: number;
+    };
+    todayBookings: TodayBooking[];
+    pendingActions: PendingAction[];
+    recentShipments: RecentShipment[];
+    todaySchedule: ScheduleItem[];
+  }
+
+  let dashboardData: DashboardData = {
     kpis: {
       activeShipments: 0,
       pendingBookings: 0,
@@ -63,30 +112,41 @@
   // KPI configuration
   const kpiConfig = [
     {
-      id: 'active-shipments',
+      id: 'activeShipments',
       label: 'Active Shipments',
       icon: Package,
       color: 'bg-blue-500'
     },
     {
-      id: 'pending-bookings',
+      id: 'pendingBookings',
       label: 'Pending Bookings',
       icon: CalendarDays,
       color: 'bg-amber-500'
     },
     {
-      id: 'active-customers',
+      id: 'activeCustomers',
       label: 'Active Customers',
       icon: Users,
       color: 'bg-emerald-500'
     },
     {
-      id: 'revenue-mtd',
+      id: 'revenueMTD',
       label: 'Revenue (MTD)',
       icon: DollarSign,
       color: 'bg-purple-500'
     }
-  ];
+  ] as const;
+
+  function getKpiValue(kpiId: string): number | string {
+    const kpis = dashboardData.kpis;
+    switch (kpiId) {
+      case 'activeShipments': return kpis.activeShipments;
+      case 'pendingBookings': return kpis.pendingBookings;
+      case 'activeCustomers': return kpis.activeCustomers;
+      case 'revenueMTD': return `$${kpis.revenueMTD.toFixed(2)}`;
+      default: return 0;
+    }
+  }
 </script>
 
 <svelte:head>
@@ -120,7 +180,7 @@
     <!-- KPI Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {#each kpiConfig as kpi (kpi.id)}
-        {@const value = kpi.id === 'revenue-mtd' ? `$${dashboardData.kpis.revenueMTD.toFixed(2)}` : dashboardData.kpis[kpi.id] || 0}
+        {@const value = getKpiValue(kpi.id)}
         <Card class="p-5">
           <div class="flex items-start justify-between">
             <div>

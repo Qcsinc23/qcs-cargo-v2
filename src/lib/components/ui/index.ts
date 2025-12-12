@@ -66,3 +66,28 @@ export { Separator } from './separator';
 
 // Skeleton
 export { Skeleton } from './skeleton';
+
+// Breadcrumbs
+export { Breadcrumbs, type BreadcrumbPath, type BreadcrumbSeparator } from './breadcrumbs';
+
+// Dropdown Menu
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSubContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioItem,
+  DropdownMenuGroup
+} from './dropdown-menu';
+
+// Switch
+export { Switch } from './switch';
+
+// Form Field
+export { FormInput } from './form-field';

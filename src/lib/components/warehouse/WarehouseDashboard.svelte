@@ -21,31 +21,31 @@
     }
   });
 
-  const statCards = [
+  $: statCards = [
     {
       title: 'Received Today',
-      value: stats?.today.received || 0,
+      value: stats?.today?.received ?? 0,
       icon: '📦',
       color: 'blue',
-      change: stats?.week.received ? ((stats.today.received / stats.week.received) * 100).toFixed(0) : 0
+      change: stats?.week?.received ? ((stats.today?.received ?? 0) / stats.week.received * 100).toFixed(0) : '0'
     },
     {
       title: 'Pending Verification',
-      value: stats?.pending.toVerify || 0,
+      value: stats?.pending?.toVerify ?? 0,
       icon: '✅',
       color: 'yellow',
       change: null
     },
     {
       title: 'Ready to Ship',
-      value: stats?.pending.toShip || 0,
+      value: stats?.pending?.toShip ?? 0,
       icon: '🚚',
       color: 'green',
       change: null
     },
     {
       title: 'Exceptions',
-      value: stats?.pending.exceptions || 0,
+      value: stats?.pending?.exceptions ?? 0,
       icon: '⚠️',
       color: 'red',
       change: null

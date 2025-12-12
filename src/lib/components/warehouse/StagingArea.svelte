@@ -82,6 +82,7 @@
     dragOverBay = null;
 
     if (!draggedPackage) return;
+    const pkg = draggedPackage;
 
     try {
       const response = await fetch('/api/warehouse/bays', {
@@ -90,22 +91,22 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          packageIds: [draggedPackage.id],
+          packageIds: [pkg.id],
           targetBayId: targetBay.id
         })
       });
 
       if (response.ok) {
         // Update local state
-        draggedPackage.location = {
+        pkg.location = {
           bay: targetBay.code,
           zone: targetBay.zone,
           shelf: ''
         };
-        draggedPackage.status = 'staged';
+        pkg.status = 'staged';
 
         // Update bay counts
-        const oldBay = bays.find(b => b.code === draggedPackage.location?.bay);
+        const oldBay = bays.find(b => b.code === pkg.location?.bay);
         if (oldBay) oldBay.currentCount--;
         targetBay.currentCount++;
 

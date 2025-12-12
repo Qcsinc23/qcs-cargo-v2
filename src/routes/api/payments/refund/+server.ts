@@ -73,20 +73,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       );
     }
 
-    // Check if there's already a refund for this payment intent
-    if (paymentIntent.charges?.data?.[0]?.refunds?.data?.length > 0) {
-      const existingRefund = paymentIntent.charges.data[0].refunds.data[0];
-      if (existingRefund.status === 'succeeded') {
-        return json(
-          {
-            status: 'error',
-            error_code: 'ALREADY_REFUNDED',
-            message: 'This payment has already been refunded',
-            data: { refundId: existingRefund.id }
-          },
-          { status: 400 }
-        );
-      }
+    // Check if there's already a refund for this payment intent using latest_charge
+    const latestCharge = paymentIntent.latest_charge;
+    // Note: In the new Stripe API, we need to expand charges separately or check latest_charge
+    // For now, we'll check using the payment intent ID pattern - refunds use the same ID format
+    const existingRefunds = await locals.pb.collection('refunds').getFullList({
+      filter: `payment_intent_id = "${paymentIntentId}" && status = "succeeded"`,
+      limit: 1
+    });
+    if (existingRefunds.length > 0) {
+      const existingRefund = existingRefunds[0];
+      return json(
+        {
+          status: 'error',
+          error_code: 'ALREADY_REFUNDED',
+          message: 'This payment has already been refunded',
+          data: { refundId: existingRefund.refund_id }
+        },
+        { status: 400 }
+      );
     }
 
     // Create the refund

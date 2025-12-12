@@ -47,10 +47,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         message: e.message
       }));
 
-      throw error(400, {
-        message: 'Validation error',
-        errors
-      });
+      throw error(400, { message: `Validation error: ${errors.map(e => `${e.field}: ${e.message}`).join(', ')}` });
     }
 
     const eventData = validationResult.data;
@@ -222,7 +219,18 @@ export const GET: RequestHandler = async ({ params, locals }) => {
     const shipment = await locals.pb.collection('shipments').getOne(id);
 
     // Extract and format events from status history
-    const events = [];
+    interface TrackingEvent {
+      eventId: string | null;
+      eventType: string;
+      status: string | null;
+      location: string;
+      description: string | null;
+      notes: string | null;
+      timestamp: string;
+      createdBy: string | null;
+      metadata: Record<string, unknown>;
+    }
+    const events: TrackingEvent[] = [];
 
     if (shipment.status_history && Array.isArray(shipment.status_history)) {
       shipment.status_history.forEach((event: any) => {

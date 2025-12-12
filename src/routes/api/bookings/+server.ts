@@ -74,11 +74,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       });
     }
 
+    // Transform service type to match database schema
+    const dbServiceType = serviceType === 'door-to-door' ? 'door_to_door' : serviceType;
+
     // Create booking record
     const booking = await locals.pb.collection('bookings').create({
       user: locals.user.id,
       recipient: finalRecipientId || null,
-      service_type: serviceType,
+      service_type: dbServiceType,
       destination,
       scheduled_date: scheduledDate,
       time_slot: timeSlot,
@@ -155,6 +158,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
 };
 
+// Whitelist of valid booking statuses (prevents filter injection)
+const VALID_BOOKING_STATUSES = [
+  'pending_payment',
+  'confirmed',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
+  'payment_failed',
+  'under_review'
+] as const;
+
 export const GET: RequestHandler = async ({ url, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
@@ -165,8 +180,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   const status = url.searchParams.get('status');
 
   try {
+    // BUG FIX: Prevent filter injection by validating status against whitelist
     let filter = `user = "${locals.user.id}"`;
-    if (status && status !== 'all') {
+    if (status && status !== 'all' && VALID_BOOKING_STATUSES.includes(status as any)) {
       filter += ` && status = "${status}"`;
     }
 
@@ -191,8 +207,3 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     throw error(500, { message: 'Failed to fetch bookings' });
   }
 };
-
-
-
-
-

@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
     // Find shipment by tracking number
     let shipment;
     try {
-      shipment = await locals.pb.collection('shipments').getFirstItem(`tracking_number = "${trackingNumber}"`, {
+      shipment = await locals.pb.collection('shipments').getFirstListItem(`tracking_number = "${trackingNumber}"`, {
         expand: 'user, booking, package'
       });
     } catch (fetchErr: any) {
@@ -105,7 +105,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
       correlationId,
       trackingNumber,
       status: shipment.status,
-      ip: locals.clientIP || 'unknown'
+      ip: 'unknown' // clientIP not available in Locals
     });
 
     return json({

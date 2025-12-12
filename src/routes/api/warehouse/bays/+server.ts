@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         return {
           ...bay,
           currentCount: count
-        } as WarehouseBay;
+        } as unknown as WarehouseBay;
       })
     );
 

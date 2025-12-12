@@ -10,17 +10,39 @@
   export let variant: $$Props['variant'] = 'default';
   export let size: $$Props['size'] = 'default';
   export let builders: $$Props['builders'] = [];
+  export let type: 'button' | 'submit' | 'reset' = 'button';
+  export let href: string | undefined = undefined;
   export { className as class };
 </script>
 
-<ButtonPrimitive.Root
-  {builders}
-  class={cn(buttonVariants({ variant, size, className }))}
-  type="button"
-  {...$$restProps}
-  on:click
-  on:keydown
->
-  <slot />
-</ButtonPrimitive.Root>
+{#if href}
+  <a
+    {href}
+    class={cn(buttonVariants({ variant, size, className }))}
+    {...$$restProps}
+  >
+    <slot />
+  </a>
+{:else if type === 'submit' || type === 'reset'}
+  <button
+    {type}
+    class={cn(buttonVariants({ variant, size, className }))}
+    {...$$restProps}
+    on:click
+    on:keydown
+  >
+    <slot />
+  </button>
+{:else}
+  <ButtonPrimitive.Root
+    {builders}
+    class={cn(buttonVariants({ variant, size, className }))}
+    type="button"
+    {...$$restProps}
+    on:click
+    on:keydown
+  >
+    <slot />
+  </ButtonPrimitive.Root>
+{/if}
 

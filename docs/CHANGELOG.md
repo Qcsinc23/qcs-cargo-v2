@@ -8,19 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial project scaffolding
-- SvelteKit 2.x setup with TypeScript
-- Tailwind CSS configuration with shadcn-svelte theme
-- PocketBase integration
-- Docker and docker-compose configuration
-- GitHub Actions workflows
-- Health check API endpoint
-- Accessibility components (SkipLink, OfflineIndicator)
-- ESLint and Prettier configuration
-- Playwright test configuration
+- Phase 1 Core Operations Implementation
+- Real-time tracking system with public API and admin management
+- Admin operations dashboard with live data integration
+- Warehouse management system with QR/barcode scanning
+- SMS notification system with Twilio integration
+- Breadcrumbs navigation component for better UX
+- Fixed logout functionality across all headers
+- Fixed booking service selection flow
 
-## [2.0.0] - YYYY-MM-DD
+### Dependencies
+- Added twilio: ^5.10.7 for SMS notifications
+- Added qrcode: ^1.5.3 for package tracking
+
+## [2.0.0] - 2024-12-12
 
 ### Added
 - Complete rewrite of QCS Cargo application
 - New tech stack: SvelteKit + PocketBase + Stripe + Resend
+- Authentication system with email, OAuth, and password reset
+- Booking system with Stripe payments
+- Customer dashboard
+- Public pages (landing, services, pricing, destinations, FAQ)
+- Basic admin panel structure

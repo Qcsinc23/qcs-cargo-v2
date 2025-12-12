@@ -1,23 +1,33 @@
 <script lang="ts">
   import { Logo } from '$lib/components/shared';
   import { Button } from '$lib/components/ui/button';
-  import { Menu, X, User } from 'lucide-svelte';
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '$lib/components/ui/dialog';
+  import { auth } from '$lib/stores/auth';
+  import { Menu, X, User, LogOut } from 'lucide-svelte';
   import { page } from '$app/stores';
   import type { AuthModel } from 'pocketbase';
 
   export let user: AuthModel | null = null;
 
   let mobileMenuOpen = false;
+  let logoutDialogOpen = false;
 
   const navLinks = [
     { href: '/services', label: 'Services' },
-    { href: '/shipping-calculator', label: 'Calculator' },
+    { href: '/destinations', label: 'Destinations' },
+    { href: '/pricing', label: 'Pricing' },
     { href: '/track', label: 'Track' },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' }
   ];
 
   $: activePath = $page.url.pathname;
+
+  async function handleLogout() {
+    logoutDialogOpen = false;
+    mobileMenuOpen = false;
+    await auth.logout();
+  }
 </script>
 
 <header class="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm">
@@ -39,9 +49,14 @@
     </nav>
     <div class="hidden items-center gap-4 md:flex">
       {#if user}
+        <span class="text-sm text-gray-600">Welcome, {user.name || user.email}</span>
         <Button variant="ghost" href="/dashboard">
           <User class="mr-2 h-4 w-4" />
           Dashboard
+        </Button>
+        <Button variant="outline" on:click={() => (logoutDialogOpen = true)}>
+          <LogOut class="mr-2 h-4 w-4" />
+          Logout
         </Button>
       {:else}
         <Button variant="ghost" href="/auth/login">Login</Button>
@@ -80,8 +95,15 @@
         {/each}
         <div class="flex flex-col gap-4 pt-4">
           {#if user}
+            <div class="px-3 py-2 text-sm text-gray-600">
+              Welcome, {user.name || user.email}
+            </div>
             <Button variant="outline" href="/dashboard" on:click={() => (mobileMenuOpen = false)}>
               Dashboard
+            </Button>
+            <Button variant="outline" on:click={() => (logoutDialogOpen = true)}>
+              <LogOut class="mr-2 h-4 w-4" />
+              Logout
             </Button>
           {:else}
             <Button variant="outline" href="/auth/login" on:click={() => (mobileMenuOpen = false)}>
@@ -96,3 +118,24 @@
     </div>
   {/if}
 </header>
+
+<!-- Logout Confirmation Dialog -->
+<Dialog bind:open={logoutDialogOpen}>
+  <DialogContent class="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Confirm Logout</DialogTitle>
+      <DialogDescription>
+        Are you sure you want to logout? You'll need to sign in again to access your dashboard.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button variant="outline" on:click={() => (logoutDialogOpen = false)}>
+        Cancel
+      </Button>
+      <Button variant="destructive" on:click={handleLogout}>
+        <LogOut class="h-4 w-4 mr-2" />
+        Logout
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>

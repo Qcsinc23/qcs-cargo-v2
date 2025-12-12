@@ -15,6 +15,8 @@
   } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '$lib/components/ui/dialog';
+  import { auth } from '$lib/stores/auth';
 
   export let data;
 
@@ -25,6 +27,7 @@
   let mobileMenuOpen = false;
   let searchOpen = false;
   let searchQuery = '';
+  let logoutDialogOpen = false;
 
   function handleSearch(e: KeyboardEvent) {
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -45,7 +48,8 @@
   }
 
   async function handleLogout() {
-    goto('/auth/login');
+    logoutDialogOpen = false;
+    await auth.logout();
   }
 </script>
 
@@ -137,7 +141,7 @@
               <a href="/dashboard" class="flex items-center w-full">Switch to Customer View</a>
             </DropdownMenu.Item>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item class="text-red-600" on:click={handleLogout}>
+            <DropdownMenu.Item class="text-red-600" on:click={() => logoutDialogOpen = true}>
               <LogOut class="mr-2 h-4 w-4" />
               Log out
             </DropdownMenu.Item>
@@ -274,4 +278,25 @@
     </div>
   {/if}
 </div>
+
+<!-- Logout Confirmation Dialog -->
+<Dialog bind:open={logoutDialogOpen}>
+  <DialogContent class="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Confirm Logout</DialogTitle>
+      <DialogDescription>
+        Are you sure you want to logout? You'll need to sign in again to access the admin panel.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button variant="outline" on:click={() => (logoutDialogOpen = false)}>
+        Cancel
+      </Button>
+      <Button variant="destructive" on:click={handleLogout}>
+        <LogOut class="h-4 w-4 mr-2" />
+        Logout
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 

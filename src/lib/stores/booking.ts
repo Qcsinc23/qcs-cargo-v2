@@ -51,7 +51,7 @@ export interface BookingState {
   step: 1 | 2 | 3 | 4 | 5;
   
   // Step 1: Service & Destination
-  serviceType: 'standard' | 'express' | 'door_to_door' | 'consolidated' | null;
+  serviceType: 'standard' | 'express' | 'door-to-door' | 'consolidated' | null;
   destination: string | null;
   
   // Step 2: Packages (multi-package support)
@@ -271,15 +271,22 @@ function createBookingStore() {
     // Templates
     loadTemplate(template: {
       id: string;
-      service_type: BookingState['serviceType'];
+      serviceType?: BookingState['serviceType'];
+      /** snake_case variant from DB */
+      service_type?: 'standard' | 'express' | 'door_to_door' | 'consolidated' | null;
       destination?: string;
       recipient?: BookingRecipient;
       default_packages?: BookingPackage[];
     }) {
+      // Transform service type from database format (snake_case) to frontend format (kebab-case)
+      const rawServiceType = template.service_type ?? template.serviceType ?? null;
+      const frontendServiceType: BookingState['serviceType'] =
+        rawServiceType === 'door_to_door' ? 'door-to-door' : (rawServiceType as BookingState['serviceType']);
+
       update((state) => ({
         ...state,
         templateId: template.id,
-        serviceType: template.service_type,
+        serviceType: frontendServiceType,
         destination: template.destination || state.destination,
         recipient: template.recipient || null,
         packages: template.default_packages || [createEmptyPackage()]
@@ -357,4 +364,3 @@ export const totalWeight = derived(booking, $b => {
 export const hasUnknownWeight = derived(booking, $b => {
   return $b.packages.some(pkg => pkg.weightUnknown);
 });
-

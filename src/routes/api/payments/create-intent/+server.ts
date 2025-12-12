@@ -101,7 +101,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     // Generate idempotency key for payment intent creation
     // This prevents duplicate charges if network issues occur
-    const idempotencyKey = `payment_intent_${bookingId}_${amountCents}_${Date.now()}`;
+    // BUG FIX: Removed Date.now() - idempotency key must be stable across retries
+    // so that the same bookingId+amount always produces the same key
+    const idempotencyKey = `payment_intent_${locals.user.id}_${bookingId}_${amountCents}`;
 
     
     // Get or create Stripe customer
@@ -178,8 +180,3 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     );
   }
 };
-
-
-
-
-

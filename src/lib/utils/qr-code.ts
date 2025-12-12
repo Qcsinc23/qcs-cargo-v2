@@ -158,8 +158,8 @@ export class QRCodeGenerator {
   async generateBatchQR(
     trackingNumbers: string[],
     options: QRCodeOptions = {}
-  ): Promise<Array<{ trackingNumber: string; qrCode: string }>> {
-    const results = [];
+  ): Promise<Array<{ trackingNumber: string; qrCode: string | null }>> {
+    const results: Array<{ trackingNumber: string; qrCode: string | null }> = [];
 
     for (const trackingNumber of trackingNumbers) {
       try {

@@ -1,5 +1,10 @@
-import type { ClientRequestError } from 'twilio';
 import { createHash } from 'crypto';
+
+/** Twilio error shape (code/message) */
+interface TwilioError {
+  code?: number;
+  message?: string;
+}
 
 // Check if SMS is configured (lazy evaluation)
 function isSMSConfigured() {
@@ -54,7 +59,7 @@ interface SMSSendOptions {
   metadata?: Record<string, any>;
 }
 
-interface SMSResult {
+export interface SMSResult {
   success: boolean;
   sid?: string;
   error?: string;
@@ -205,7 +210,7 @@ export async function sendSMS(options: SMSSendOptions): Promise<SMSResult> {
 
     // Handle specific Twilio errors
     if (error && typeof error === 'object' && 'code' in error) {
-      const twilioError = error as ClientRequestError;
+      const twilioError = error as TwilioError;
 
       switch (twilioError.code) {
         case 21211:

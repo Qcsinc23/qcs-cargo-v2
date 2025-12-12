@@ -155,7 +155,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // Find shipment by tracking number
     let shipment;
     try {
-      shipment = await locals.pb.collection('shipments').getFirstItem(
+      shipment = await locals.pb.collection('shipments').getFirstListItem(
         `tracking_number = "${webhookData.tracking_number}"`
       );
     } catch (findErr) {

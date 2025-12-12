@@ -124,7 +124,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         packageCount: packages.length,
         totalWeight,
         status: 'generated'
-      } as ShippingManifest
+      }
     });
   } catch (err) {
     console.error('[warehouse_create_manifest] Error', { correlationId, error: err });

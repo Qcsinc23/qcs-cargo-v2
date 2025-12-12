@@ -22,7 +22,7 @@
   let showPreviewModal = false;
 
   // Print options
-  let printOptions = {
+  let printOptions: Record<string, boolean> = {
     packingSlips: true,
     labels: true,
     customsForms: false,
@@ -642,7 +642,7 @@
               Close
             </button>
             <button
-              on:click={() => printManifest(selectedManifest.id)}
+              on:click={() => selectedManifest && printManifest(selectedManifest.id)}
               class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               Print Documents

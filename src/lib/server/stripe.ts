@@ -6,7 +6,8 @@ if (!STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20.acacia',
+  // Use apiVersion compatible with the installed stripe@14.7.0 type declarations
+  apiVersion: '2023-10-16',
   typescript: true,
   telemetry: false // Disable telemetry for production
 });
@@ -199,8 +200,3 @@ export async function createRefund(params: {
 
   return stripe.refunds.create(refundParams);
 }
-
-
-
-
-

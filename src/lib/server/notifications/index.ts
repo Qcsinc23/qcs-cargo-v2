@@ -73,7 +73,7 @@ async function getUserNotificationPreferences(userId: string) {
       phone: user.phone,
       phoneVerified: user.phone_verified,
       smsEnabled: user.sms_enabled,
-      email: user.email,
+      userEmail: user.email,
       emailVerified: user.email_verified
     };
   } catch (error) {
@@ -84,7 +84,7 @@ async function getUserNotificationPreferences(userId: string) {
       phone: null,
       phoneVerified: false,
       smsEnabled: false,
-      email: null,
+      userEmail: null,
       emailVerified: false
     };
   }
@@ -170,24 +170,22 @@ export async function sendNotification(
     userPreferences = await getUserNotificationPreferences(userId);
   }
 
-  // Determine recipients
-  const emailRecipient = email || (userPreferences?.email || null);
+  // Determine recipients (userEmail from preferences is the actual email address)
+  const emailRecipient = email || (userPreferences?.userEmail || null);
   const smsRecipient = phone || (userPreferences?.phone || null);
 
   // Check if notification should be sent via email
   const shouldSendEmail =
-    type === 'email' ||
-    type === 'both' ||
-    (type === 'both' && userPreferences?.email?.[category]);
+    (type === 'email' || type === 'both') &&
+    (skipPreferences || userPreferences?.email?.[category] !== false);
 
   // Check if notification should be sent via SMS
   const shouldSendSMS =
-    type === 'sms' ||
-    type === 'both' ||
-    (type === 'both' &&
-     userPreferences?.smsEnabled &&
-     userPreferences?.phoneVerified &&
-     userPreferences?.sms?.[category]);
+    (type === 'sms' || type === 'both') &&
+    (skipPreferences ||
+     (userPreferences?.smsEnabled &&
+      userPreferences?.phoneVerified &&
+      userPreferences?.sms?.[category] !== false));
 
   // Send email notification
   if (shouldSendEmail && emailRecipient && emailHtml) {

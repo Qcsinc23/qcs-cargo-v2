@@ -22,7 +22,7 @@
   const dispatch = createEventDispatcher();
   let internalError: string | undefined = undefined;
   let touched: boolean = false;
-  let inputElement: HTMLInputElement;
+  let inputElement: any; // Component reference, not HTMLInputElement
 
   // Display error if provided externally or from internal validation
   $: displayError = error || internalError;

@@ -123,7 +123,7 @@
 
   // Step 1: Service & Destination
   function selectService(serviceId: string) {
-    booking.setService(serviceId as 'standard' | 'express' | 'door_to_door' | 'consolidated');
+    booking.setService(serviceId as 'standard' | 'express' | 'door-to-door' | 'consolidated');
   }
 
   function selectDestination(destId: string) {

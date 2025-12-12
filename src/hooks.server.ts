@@ -49,8 +49,19 @@ const authHook: Handle = async ({ event, resolve }) => {
 
   try {
     // Verify and refresh auth if valid
-    if (event.locals.pb.authStore.isValid) {
-      await event.locals.pb.collection('users').authRefresh();
+    if (event.locals.pb.authStore.isValid && event.locals.pb.authStore.model) {
+      // Only refresh if we have a valid token
+      if (event.locals.pb.authStore.token) {
+        try {
+          await event.locals.pb.collection('users').authRefresh();
+        } catch (refreshError) {
+          // If refresh fails, continue with existing valid auth
+          // This can happen if the token is still valid but refresh endpoint fails
+          if (dev) {
+            console.log('[Auth Hook] Refresh failed, using existing auth:', refreshError);
+          }
+        }
+      }
       event.locals.user = event.locals.pb.authStore.model;
     }
   } catch (error) {
@@ -67,10 +78,11 @@ const authHook: Handle = async ({ event, resolve }) => {
 
   // Set auth cookie with appropriate settings for the environment
   // In development, secure must be false for localhost to work
+  // BUG FIX: httpOnly should be true to prevent XSS attacks from reading the cookie
   response.headers.append(
     'set-cookie',
     event.locals.pb.authStore.exportToCookie({ 
-      httpOnly: false, 
+      httpOnly: true, 
       secure: !dev, 
       sameSite: 'Lax',
       path: '/'
@@ -84,14 +96,18 @@ const authHook: Handle = async ({ event, resolve }) => {
 const securityHook: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
 
+  // Get PocketBase URL for CSP connect-src
+  // In production, replace with actual PocketBase domain
+  const pocketbaseUrl = process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
+
   // Content Security Policy for payment security
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
-    "connect-src 'self' https://api.stripe.com",
+    `connect-src 'self' https://api.stripe.com ${pocketbaseUrl}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",

@@ -9,7 +9,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
   const page = parseInt(url.searchParams.get('page') || '1', 10);
   const perPage = parseInt(url.searchParams.get('perPage') || '20', 10);
-  const status = url.searchParams.get('status') as WarehousePackageStatus | null;
+  const status = url.searchParams.get('status') as WarehousePackageStatus | 'all' | null;
   const zone = url.searchParams.get('zone');
   const bay = url.searchParams.get('bay');
   const serviceType = url.searchParams.get('serviceType');

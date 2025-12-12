@@ -109,7 +109,7 @@
         scanResult = result.data;
         trackingNumber = trackingNum;
 
-        if (!scanResult.exists) {
+        if (!scanResult || !scanResult.exists) {
           scannerError = 'Package not found in system';
           isScanning = false;
           return;
@@ -153,7 +153,7 @@
         receivedBy: 'user-123',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      } as WarehousePackage;
+      } as unknown as WarehousePackage;
 
       // Pre-fill weight if available
       if (currentPackage?.weight?.actual) {

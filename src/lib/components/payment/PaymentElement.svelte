@@ -28,7 +28,7 @@
       script.src = 'https://js.stripe.com/v3/';
       script.async = true;
       script.onload = async () => {
-        stripe = loadStripe(window.env.PUBLIC_STRIPE_KEY);
+        stripe = loadStripe(import.meta.env.PUBLIC_STRIPE_KEY);
         elements = stripe.elements({ clientSecret });
 
         const paymentElement = elements.create('payment', {

@@ -14,7 +14,8 @@
       isTablet = width >= 640 && width < 1024;
 
       // Redirect to mobile view on small screens
-      if (isMobile && $page.url.pathname !== '/warehouse/mobile') {
+      const currentPath = $page.url.pathname as string;
+      if (isMobile && !currentPath.startsWith('/warehouse/mobile')) {
         goto('/warehouse/mobile', { replaceState: true });
       }
     }
@@ -34,7 +35,7 @@
   ];
 </script>
 
-{#if $page.url.pathname === '/warehouse/mobile'}
+{#if $page.url.pathname.includes('/warehouse/mobile')}
   <MobileWarehouseView />
 {:else}
   <div class="min-h-screen bg-gray-50">

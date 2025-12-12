@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import { createEventDispatcher } from 'svelte';
+  import { browser } from '$app/environment';
   import { AlertCircle, RefreshCw } from 'lucide-svelte';
 
   export let fallback: 'default' | 'minimal' = 'default';
@@ -12,7 +13,7 @@
 
   const dispatch = createEventDispatcher();
 
-  // Error handling
+  // Error handling for client-side only
   const handleError = (event: ErrorEvent) => {
     hasError = true;
     error = event.error || new Error(event.message);
@@ -29,11 +30,6 @@
     dispatch('error', { error, errorInfo });
   };
 
-  onMount(() => {
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handlePromiseRejection);
-  });
-
   function handleReset() {
     hasError = false;
     error = null;
@@ -41,9 +37,17 @@
     reset();
   }
 
-  onDestroy(() => {
-    window.removeEventListener('error', handleError);
-    window.removeEventListener('unhandledrejection', handlePromiseRejection);
+  // Add global error handlers only on client-side and after mount
+  onMount(() => {
+    if (browser) {
+      window.addEventListener('error', handleError);
+      window.addEventListener('unhandledrejection', handlePromiseRejection);
+
+      return () => {
+        window.removeEventListener('error', handleError);
+        window.removeEventListener('unhandledrejection', handlePromiseRejection);
+      };
+    }
   });
 </script>
 
@@ -75,7 +79,7 @@
           <RefreshCw class="w-4 h-4" />
           Try again
         </button>
-        {#if import.meta.env.DEV && error}
+        {#if browser && import.meta.env.DEV && error}
           <details class="mt-4 text-left">
             <summary class="cursor-pointer text-xs text-gray-500">Error details</summary>
             <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">{error.message}</pre>

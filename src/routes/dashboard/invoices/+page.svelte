@@ -16,8 +16,7 @@
     Filter
   } from 'lucide-svelte';
 
-  export let data;
-
+  
   interface Invoice {
     id: string;
     invoice_number: string;

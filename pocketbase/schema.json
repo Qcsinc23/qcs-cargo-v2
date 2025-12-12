@@ -1,0 +1,229 @@
+[
+  {
+    "name": "users",
+    "type": "auth",
+    "schema": [
+      { "name": "name", "type": "text", "required": false },
+      { "name": "phone", "type": "text", "required": false },
+      { "name": "phone_verified", "type": "bool", "required": false },
+      { "name": "phone_verification_code", "type": "text", "required": false },
+      { "name": "phone_verification_expires", "type": "date", "required": false },
+      { "name": "sms_enabled", "type": "bool", "required": false },
+      { "name": "sms_notifications", "type": "json", "required": false },
+      { "name": "role", "type": "select", "options": { "values": ["customer", "staff", "admin"] }, "required": true },
+      { "name": "mailbox_number", "type": "text", "required": false },
+      { "name": "stripe_customer_id", "type": "text", "required": false },
+      { "name": "email_verified", "type": "bool", "required": false },
+      { "name": "deletion_scheduled_at", "type": "date", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_users_role ON users(role)",
+      "CREATE UNIQUE INDEX idx_users_mailbox ON users(mailbox_number) WHERE mailbox_number IS NOT NULL"
+    ]
+  },
+  {
+    "name": "recipients",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users", "cascadeDelete": true }, "required": true },
+      { "name": "name", "type": "text", "required": true },
+      { "name": "phone", "type": "text", "required": true },
+      { "name": "address_line1", "type": "text", "required": true },
+      { "name": "address_line2", "type": "text", "required": false },
+      { "name": "city", "type": "text", "required": true },
+      { "name": "destination", "type": "text", "required": true },
+      { "name": "delivery_instructions", "type": "text", "required": false },
+      { "name": "is_default", "type": "bool", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_recipients_user ON recipients(user)"
+    ]
+  },
+  {
+    "name": "bookings",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users" }, "required": true },
+      { "name": "recipient", "type": "relation", "options": { "collectionId": "recipients" }, "required": false },
+      { "name": "service_type", "type": "select", "options": { "values": ["standard", "express", "door_to_door", "consolidated"] }, "required": true },
+      { "name": "destination", "type": "text", "required": true },
+      { "name": "scheduled_date", "type": "date", "required": true },
+      { "name": "time_slot", "type": "text", "required": true },
+      { "name": "package_count", "type": "number", "required": true },
+      { "name": "total_weight", "type": "number", "required": false },
+      { "name": "subtotal", "type": "number", "required": true },
+      { "name": "discount", "type": "number", "required": false },
+      { "name": "insurance_cost", "type": "number", "required": false },
+      { "name": "total_cost", "type": "number", "required": true },
+      { "name": "status", "type": "select", "options": { "values": ["draft", "pending_payment", "confirmed", "payment_failed", "in_progress", "completed", "canceled"] }, "required": true },
+      { "name": "payment_status", "type": "select", "options": { "values": ["pending", "processing", "paid", "failed", "refunded", "canceled"] }, "required": false },
+      { "name": "payment_intent_id", "type": "text", "required": false },
+      { "name": "paid_at", "type": "date", "required": false },
+      { "name": "special_instructions", "type": "text", "required": false },
+      { "name": "customs_documents", "type": "file", "options": { "maxSelect": 5, "maxSize": 10485760 }, "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_bookings_user ON bookings(user)",
+      "CREATE INDEX idx_bookings_status ON bookings(status)",
+      "CREATE INDEX idx_bookings_scheduled ON bookings(scheduled_date)"
+    ]
+  },
+  {
+    "name": "packages",
+    "type": "base",
+    "schema": [
+      { "name": "booking", "type": "relation", "options": { "collectionId": "bookings", "cascadeDelete": true }, "required": true },
+      { "name": "tracking_number", "type": "text", "required": true },
+      { "name": "qr_code", "type": "text", "required": false },
+      { "name": "weight", "type": "number", "required": false },
+      { "name": "weight_unknown", "type": "bool", "required": false },
+      { "name": "length", "type": "number", "required": false },
+      { "name": "width", "type": "number", "required": false },
+      { "name": "height", "type": "number", "required": false },
+      { "name": "dimensions_unknown", "type": "bool", "required": false },
+      { "name": "dim_weight", "type": "number", "required": false },
+      { "name": "billable_weight", "type": "number", "required": false },
+      { "name": "declared_value", "type": "number", "required": false },
+      { "name": "contents_description", "type": "text", "required": false },
+      { "name": "special_instructions", "type": "text", "required": false },
+      { "name": "cost", "type": "number", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_packages_booking ON packages(booking)",
+      "CREATE UNIQUE INDEX idx_packages_tracking ON packages(tracking_number)"
+    ]
+  },
+  {
+    "name": "shipments",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users" }, "required": true },
+      { "name": "booking", "type": "relation", "options": { "collectionId": "bookings" }, "required": false },
+      { "name": "package", "type": "relation", "options": { "collectionId": "packages" }, "required": false },
+      { "name": "tracking_number", "type": "text", "required": true },
+      { "name": "destination", "type": "text", "required": true },
+      { "name": "recipient_name", "type": "text", "required": true },
+      { "name": "recipient_phone", "type": "text", "required": false },
+      { "name": "recipient_address", "type": "text", "required": false },
+      { "name": "weight", "type": "number", "required": false },
+      { "name": "actual_weight", "type": "number", "required": false },
+      { "name": "status", "type": "select", "options": { "values": ["received", "processing", "in_transit", "customs", "out_for_delivery", "delivered", "exception", "returned"] }, "required": true },
+      { "name": "status_history", "type": "json", "required": false },
+      { "name": "current_location", "type": "text", "required": false },
+      { "name": "estimated_delivery", "type": "date", "required": false },
+      { "name": "delivered_at", "type": "date", "required": false },
+      { "name": "photos", "type": "file", "options": { "maxSelect": 10, "maxSize": 5242880 }, "required": false },
+      { "name": "exception_reason", "type": "text", "required": false },
+      { "name": "notes", "type": "text", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_shipments_user ON shipments(user)",
+      "CREATE INDEX idx_shipments_status ON shipments(status)",
+      "CREATE UNIQUE INDEX idx_shipments_tracking ON shipments(tracking_number)"
+    ]
+  },
+  {
+    "name": "invoices",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users" }, "required": true },
+      { "name": "booking", "type": "relation", "options": { "collectionId": "bookings" }, "required": false },
+      { "name": "invoice_number", "type": "text", "required": true },
+      { "name": "amount", "type": "number", "required": true },
+      { "name": "currency", "type": "text", "required": true },
+      { "name": "status", "type": "select", "options": { "values": ["draft", "pending", "paid", "overdue", "canceled", "refunded"] }, "required": true },
+      { "name": "payment_intent_id", "type": "text", "required": false },
+      { "name": "paid_at", "type": "date", "required": false },
+      { "name": "due_date", "type": "date", "required": false },
+      { "name": "line_items", "type": "json", "required": false },
+      { "name": "notes", "type": "text", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_invoices_user ON invoices(user)",
+      "CREATE INDEX idx_invoices_status ON invoices(status)",
+      "CREATE UNIQUE INDEX idx_invoices_number ON invoices(invoice_number)"
+    ]
+  },
+  {
+    "name": "activity_logs",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users" }, "required": false },
+      { "name": "action", "type": "text", "required": true },
+      { "name": "resource_type", "type": "text", "required": true },
+      { "name": "resource_id", "type": "text", "required": false },
+      { "name": "metadata", "type": "json", "required": false },
+      { "name": "ip_address", "type": "text", "required": false },
+      { "name": "user_agent", "type": "text", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_activity_user ON activity_logs(user)",
+      "CREATE INDEX idx_activity_action ON activity_logs(action)",
+      "CREATE INDEX idx_activity_resource ON activity_logs(resource_type, resource_id)"
+    ]
+  },
+  {
+    "name": "communications",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users" }, "required": true },
+      { "name": "sent_by", "type": "relation", "options": { "collectionId": "users" }, "required": false },
+      { "name": "type", "type": "select", "options": { "values": ["email", "sms", "phone", "note"] }, "required": true },
+      { "name": "subject", "type": "text", "required": false },
+      { "name": "content", "type": "text", "required": true },
+      { "name": "direction", "type": "select", "options": { "values": ["inbound", "outbound", "internal"] }, "required": true },
+      { "name": "sent_at", "type": "date", "required": false },
+      { "name": "opened_at", "type": "date", "required": false },
+      { "name": "metadata", "type": "json", "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_comms_user ON communications(user)",
+      "CREATE INDEX idx_comms_type ON communications(type)"
+    ]
+  },
+  {
+    "name": "notification_logs",
+    "type": "base",
+    "schema": [
+      { "name": "user", "type": "relation", "options": { "collectionId": "users" }, "required": false },
+      { "name": "type", "type": "select", "options": { "values": ["email", "sms", "push"] }, "required": true },
+      { "name": "category", "type": "select", "options": { "values": ["booking", "shipment", "payment", "marketing", "verification", "system"] }, "required": true },
+      { "name": "recipient", "type": "text", "required": true },
+      { "name": "subject", "type": "text", "required": false },
+      { "name": "content", "type": "text", "required": true },
+      { "name": "status", "type": "select", "options": { "values": ["pending", "sent", "delivered", "failed", "bounced"] }, "required": true },
+      { "name": "provider_id", "type": "text", "required": false },
+      { "name": "provider", "type": "text", "required": false },
+      { "name": "error_message", "type": "text", "required": false },
+      { "name": "sent_at", "type": "date", "required": false },
+      { "name": "delivered_at", "type": "date", "required": false },
+      { "name": "metadata", "type": "json", "required": false },
+      { "name": "booking", "type": "relation", "options": { "collectionId": "bookings" }, "required": false },
+      { "name": "shipment", "type": "relation", "options": { "collectionId": "shipments" }, "required": false }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_notification_logs_user ON notification_logs(user)",
+      "CREATE INDEX idx_notification_logs_type ON notification_logs(type)",
+      "CREATE INDEX idx_notification_logs_status ON notification_logs(status)",
+      "CREATE INDEX idx_notification_logs_created ON notification_logs(created)",
+      "CREATE INDEX idx_notification_logs_category ON notification_logs(category)"
+    ]
+  },
+  {
+    "name": "settings",
+    "type": "base",
+    "schema": [
+      { "name": "key", "type": "text", "required": true },
+      { "name": "value", "type": "json", "required": true },
+      { "name": "description", "type": "text", "required": false }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_settings_key ON settings(key)"
+    ]
+  }
+]
+
+
+
+
+

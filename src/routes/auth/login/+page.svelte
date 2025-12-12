@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
@@ -10,8 +10,10 @@
   import { auth, isAuthenticated } from '$lib/stores/auth';
   import { toast } from '$lib/stores/toast';
   import { loginSchema, validateForm } from '$lib/utils/validation';
-  import { Mail, Lock, Loader2, AlertCircle } from 'lucide-svelte';
+  import { Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import { pb } from '$lib/pocketbase';
+  import { browser } from '$app/environment';
 
   let email = '';
   let password = '';
@@ -24,9 +26,13 @@
   $: redirectTo = $page.url.searchParams.get('redirect') || '/dashboard';
   $: message = $page.url.searchParams.get('message');
 
-  // Redirect if already authenticated
+  let hasNavigated = false;
+
+  // Redirect if already authenticated (on initial load)
   onMount(() => {
-    if ($isAuthenticated) {
+    // Check if already authenticated on mount
+    if (pb.authStore.isValid && !hasNavigated) {
+      hasNavigated = true;
       goto(redirectTo, { replaceState: true });
     }
   });
@@ -46,10 +52,18 @@
 
     try {
       await auth.login(email, password);
+      
+      // Export the auth cookie so server can recognize the user
+      if (browser) {
+        document.cookie = pb.authStore.exportToCookie({ httpOnly: false, secure: false, sameSite: 'Lax' });
+      }
+      
       toast.success('Welcome back!', { description: 'You have been logged in successfully.' });
-      // Wait a tick for auth state to update before navigating
-      await new Promise(resolve => setTimeout(resolve, 0));
-      goto(redirectTo);
+      
+      // Use hard navigation to ensure server picks up the new auth cookie
+      // This forces a full page reload which allows the server hook to read the updated cookie
+      hasNavigated = true;
+      window.location.href = redirectTo;
     } catch (err: unknown) {
       serverError = getErrorMessage(err, 'Login failed. Please check your credentials.');
     } finally {
@@ -61,10 +75,17 @@
     loading = true;
     try {
       await auth.loginWithGoogle();
+      
+      // Export the auth cookie so server can recognize the user
+      if (browser) {
+        document.cookie = pb.authStore.exportToCookie({ httpOnly: false, secure: false, sameSite: 'Lax' });
+      }
+      
       toast.success('Welcome!', { description: 'You have been logged in with Google.' });
-      // Wait a tick for auth state to update before navigating
-      await new Promise(resolve => setTimeout(resolve, 0));
-      goto(redirectTo);
+      
+      // Use hard navigation to ensure server picks up the new auth cookie
+      hasNavigated = true;
+      window.location.href = redirectTo;
     } catch (err: unknown) {
       serverError = getErrorMessage(err, 'Google login failed. Please try again.');
     } finally {
@@ -119,14 +140,20 @@
             type="email"
             placeholder="you@example.com"
             bind:value={email}
-            class="pl-10"
+            class="pl-10 transition-colors {errors.email ? 'border-red-500' : ''} {email && !errors.email ? 'border-green-500' : ''}"
             disabled={loading}
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? 'email-error' : undefined}
           />
+          {#if email && !errors.email}
+            <CheckCircle class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500 animate-check-appear" />
+          {/if}
         </div>
         {#if errors.email}
-          <p id="email-error" class="text-sm text-destructive">{errors.email}</p>
+          <div class="flex items-center gap-2 mt-2 text-red-600 text-sm animate-fade-in">
+            <AlertCircle class="h-4 w-4" />
+            {errors.email}
+          </div>
         {/if}
       </div>
 
@@ -144,14 +171,17 @@
             type="password"
             placeholder="••••••••"
             bind:value={password}
-            class="pl-10"
+            class="pl-10 transition-colors {errors.password ? 'border-red-500' : ''} {password && !errors.password ? 'border-green-500' : ''}"
             disabled={loading}
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? 'password-error' : undefined}
           />
         </div>
         {#if errors.password}
-          <p id="password-error" class="text-sm text-destructive">{errors.password}</p>
+          <div class="flex items-center gap-2 mt-2 text-red-600 text-sm animate-fade-in">
+            <AlertCircle class="h-4 w-4" />
+            {errors.password}
+          </div>
         {/if}
       </div>
 
@@ -220,4 +250,3 @@
     </p>
   </CardFooter>
 </Card>
-

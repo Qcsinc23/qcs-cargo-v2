@@ -1,0 +1,538 @@
+{
+  "collections": [
+    {
+      "name": "warehouse_packages",
+      "type": "base",
+      "schema": [
+        {
+          "name": "tracking_number",
+          "type": "text",
+          "required": true,
+          "unique": true,
+          "options": {
+            "min": 5,
+            "max": 50
+          }
+        },
+        {
+          "name": "qr_code",
+          "type": "url",
+          "required": false
+        },
+        {
+          "name": "booking",
+          "type": "relation",
+          "required": false,
+          "collectionId": "bookings",
+          "maxSelect": 1
+        },
+        {
+          "name": "recipient",
+          "type": "relation",
+          "required": false,
+          "collectionId": "recipients",
+          "maxSelect": 1
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "incoming",
+              "received",
+              "verified",
+              "staged",
+              "picked",
+              "manifested",
+              "shipped",
+              "exception"
+            ]
+          },
+          "default": "incoming"
+        },
+        {
+          "name": "location_bay",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "location_shelf",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "location_zone",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": [
+              "receiving",
+              "staging",
+              "outbound",
+              "exception",
+              "hold"
+            ]
+          }
+        },
+        {
+          "name": "weight_actual",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "weight_verified",
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "weight_unit",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": ["kg", "lb"]
+          },
+          "default": "kg"
+        },
+        {
+          "name": "length",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "dimensions_verified",
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "dimensions_unit",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": ["cm", "in"]
+          },
+          "default": "cm"
+        },
+        {
+          "name": "condition",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "excellent",
+              "good",
+              "fair",
+              "damaged",
+              "wet",
+              "open",
+              "repacked"
+            ]
+          },
+          "default": "excellent"
+        },
+        {
+          "name": "photos",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "exceptions",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "service_type",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "express",
+              "standard",
+              "economy",
+              "freight"
+            ]
+          }
+        },
+        {
+          "name": "destination",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": ["JM", "US", "CA", "UK"]
+          }
+        },
+        {
+          "name": "received_at",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "received_by",
+          "type": "relation",
+          "required": false,
+          "collectionId": "_users",
+          "maxSelect": 1
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_warehouse_tracking ON warehouse_packages (tracking_number)",
+        "CREATE INDEX idx_warehouse_status ON warehouse_packages (status)",
+        "CREATE INDEX idx_warehouse_location ON warehouse_packages (location_zone, location_bay)"
+      ]
+    },
+    {
+      "name": "warehouse_bays",
+      "type": "base",
+      "schema": [
+        {
+          "name": "code",
+          "type": "text",
+          "required": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "receiving",
+              "staging",
+              "outbound",
+              "exception",
+              "hold"
+            ]
+          }
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "receiving",
+              "staging",
+              "outbound",
+              "exception",
+              "hold"
+            ]
+          }
+        },
+        {
+          "name": "capacity",
+          "type": "number",
+          "required": true,
+          "default": 50
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "depth",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "dimensions_unit",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": ["cm", "in"]
+          },
+          "default": "cm"
+        },
+        {
+          "name": "max_weight",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "service_types",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "destinations",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "active",
+              "inactive",
+              "maintenance"
+            ]
+          },
+          "default": "active"
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_bays_zone ON warehouse_bays (zone, type)",
+        "CREATE UNIQUE INDEX idx_bays_code ON warehouse_bays (code)"
+      ]
+    },
+    {
+      "name": "shipping_manifests",
+      "type": "base",
+      "schema": [
+        {
+          "name": "manifest_number",
+          "type": "text",
+          "required": true,
+          "unique": true
+        },
+        {
+          "name": "carrier",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "dhl",
+              "fedex",
+              "ups",
+              "tnt",
+              "local"
+            ]
+          }
+        },
+        {
+          "name": "service_type",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": [
+              "express",
+              "standard",
+              "economy",
+              "freight"
+            ]
+          }
+        },
+        {
+          "name": "destination",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": ["JM", "US", "CA", "UK"]
+          }
+        },
+        {
+          "name": "packages",
+          "type": "json",
+          "required": true
+        },
+        {
+          "name": "total_weight",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "total_packages",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "draft",
+              "generated",
+              "printed",
+              "picked",
+              "shipped"
+            ]
+          },
+          "default": "draft"
+        },
+        {
+          "name": "documents",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": true,
+          "collectionId": "_users",
+          "maxSelect": 1
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_manifests_carrier ON shipping_manifests (carrier, status)",
+        "CREATE INDEX idx_manifests_destination ON shipping_manifests (destination)",
+        "CREATE UNIQUE INDEX idx_manifests_number ON shipping_manifests (manifest_number)"
+      ]
+    },
+    {
+      "name": "warehouse_exceptions",
+      "type": "base",
+      "schema": [
+        {
+          "name": "package",
+          "type": "relation",
+          "required": true,
+          "collectionId": "warehouse_packages",
+          "maxSelect": 1
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "damage",
+              "weight_mismatch",
+              "dimension_mismatch",
+              "prohibited",
+              "missing_docs",
+              "other"
+            ]
+          }
+        },
+        {
+          "name": "severity",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          }
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "photo",
+          "type": "file",
+          "required": false,
+          "maxSelect": 5
+        },
+        {
+          "name": "resolved",
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "resolved_by",
+          "type": "relation",
+          "required": false,
+          "collectionId": "_users",
+          "maxSelect": 1
+        },
+        {
+          "name": "resolved_at",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "resolution",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_exceptions_type ON warehouse_exceptions (type, resolved)",
+        "CREATE INDEX idx_exceptions_package ON warehouse_exceptions (package)"
+      ]
+    },
+    {
+      "name": "scan_sessions",
+      "type": "base",
+      "schema": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "collectionId": "_users",
+          "maxSelect": 1
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "receiving",
+              "picking",
+              "inventory"
+            ]
+          }
+        },
+        {
+          "name": "start_time",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "name": "end_time",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "packages_scanned",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "exceptions",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "active",
+              "completed",
+              "paused"
+            ]
+          },
+          "default": "active"
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_scan_sessions_user ON scan_sessions (user, status)",
+        "CREATE INDEX idx_scan_sessions_type ON scan_sessions (type)"
+      ]
+    }
+  ]
+}

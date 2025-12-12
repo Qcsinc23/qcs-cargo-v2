@@ -8,7 +8,17 @@ import {
   HelpCircle,
   BarChart3,
   Users,
-  MapPin
+  MapPin,
+  CalendarDays,
+  Receipt,
+  Mailbox,
+  Truck,
+  Search,
+  Activity,
+  Cog,
+  Warehouse,
+  Scan,
+  LayoutGrid
 } from 'lucide-svelte';
 
 export interface NavItem {
@@ -41,23 +51,28 @@ export const navigationConfig: {
       icon: Package
     },
     {
-      id: 'book',
-      label: 'Book',
-      href: '/dashboard/book',
-      icon: FileText,
-      mobileOnly: true
+      id: 'bookings',
+      label: 'Bookings',
+      href: '/dashboard/bookings',
+      icon: CalendarDays
     },
     {
-      id: 'tracking',
-      label: 'Tracking',
-      href: '/dashboard/tracking',
-      icon: MapPin
+      id: 'recipients',
+      label: 'Recipients',
+      href: '/dashboard/recipients',
+      icon: Users
     },
     {
-      id: 'billing',
-      label: 'Billing',
-      href: '/dashboard/billing',
-      icon: CreditCard
+      id: 'mailbox',
+      label: 'Mailbox',
+      href: '/dashboard/mailbox',
+      icon: Mailbox
+    },
+    {
+      id: 'invoices',
+      label: 'Invoices',
+      href: '/dashboard/invoices',
+      icon: Receipt
     },
     {
       id: 'settings',
@@ -70,32 +85,37 @@ export const navigationConfig: {
     {
       id: 'dashboard',
       label: 'Dashboard',
-      href: '/dashboard',
+      href: '/admin',
       icon: BarChart3
     },
     {
       id: 'shipments',
       label: 'Shipments',
-      href: '/dashboard/shipments',
+      href: '/admin/shipments',
       icon: Package
     },
     {
-      id: 'customers',
-      label: 'Customers',
-      href: '/dashboard/customers',
-      icon: Users,
-      roles: ['staff', 'admin']
+      id: 'bookings',
+      label: 'Bookings',
+      href: '/admin/bookings',
+      icon: CalendarDays
     },
     {
-      id: 'tracking',
-      label: 'Tracking',
-      href: '/dashboard/tracking',
-      icon: MapPin
+      id: 'warehouse',
+      label: 'Warehouse',
+      href: '/warehouse',
+      icon: Warehouse
+    },
+    {
+      id: 'receiving',
+      label: 'Receiving',
+      href: '/admin/receiving',
+      icon: Truck
     },
     {
       id: 'settings',
       label: 'Settings',
-      href: '/dashboard/settings',
+      href: '/admin/settings',
       icon: Settings
     }
   ],
@@ -103,33 +123,51 @@ export const navigationConfig: {
     {
       id: 'dashboard',
       label: 'Dashboard',
-      href: '/dashboard',
+      href: '/admin',
       icon: BarChart3
     },
     {
       id: 'shipments',
       label: 'Shipments',
-      href: '/dashboard/shipments',
+      href: '/admin/shipments',
       icon: Package
     },
     {
-      id: 'customers',
+      id: 'bookings',
+      label: 'Bookings',
+      href: '/admin/bookings',
+      icon: CalendarDays
+    },
+    {
+      id: 'users',
       label: 'Customers',
-      href: '/dashboard/customers',
+      href: '/admin/users',
       icon: Users
     },
     {
-      id: 'analytics',
-      label: 'Analytics',
-      href: '/dashboard/analytics',
-      icon: BarChart3,
+      id: 'invoices',
+      label: 'Invoices',
+      href: '/admin/invoices',
+      icon: Receipt
+    },
+    {
+      id: 'receiving',
+      label: 'Receiving',
+      href: '/admin/receiving',
+      icon: Truck
+    },
+    {
+      id: 'activity',
+      label: 'Activity Log',
+      href: '/admin/activity',
+      icon: Activity,
       desktopOnly: true
     },
     {
       id: 'settings',
       label: 'Settings',
-      href: '/dashboard/settings',
-      icon: Settings
+      href: '/admin/settings',
+      icon: Cog
     }
   ]
 };

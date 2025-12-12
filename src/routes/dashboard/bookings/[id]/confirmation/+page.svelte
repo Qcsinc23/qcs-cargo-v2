@@ -1,10 +1,11 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { onMount } from 'svelte';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { getDestinationLabel } from '$lib/config/destinations';
-  import { COMPANY } from '$lib/config/constants';
+  import { COMPANY, SERVICES_INFO } from '$lib/config/constants';
   import {
     CheckCircle,
     Package,
@@ -18,7 +19,9 @@
     Mail,
     ArrowRight,
     Copy,
-    Check
+    Check,
+    Loader2,
+    QrCode
   } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
 
@@ -26,40 +29,121 @@
 
   $: bookingId = $page.params.id || '';
 
-  // Placeholder booking confirmation data
-  let booking = {
-    id: bookingId,
-    confirmationNumber: 'QCS-' + (bookingId || '').toUpperCase().slice(0, 8),
-    status: 'confirmed',
-    serviceType: 'standard',
-    destination: 'guyana',
-    packages: [
-      { id: '1', trackingNumber: 'QCS2024001', weight: 15, contents: 'Clothing' },
-      { id: '2', trackingNumber: 'QCS2024002', weight: 8, contents: 'Electronics' }
-    ],
+  interface PackageData {
+    id: string;
+    tracking_number: string;
+    qr_code: string;
+    weight: number | null;
+    contents_description: string;
+    billable_weight: number | null;
+    cost: number;
+  }
+
+  interface BookingData {
+    id: string;
+    confirmationNumber: string;
+    status: string;
+    serviceType: string;
+    destination: string;
+    packages: PackageData[];
     recipient: {
-      name: 'John Doe',
-      phone: '+592 123 4567',
-      address: '123 Main St, Georgetown',
-      city: 'Georgetown'
-    },
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+    } | null;
     schedule: {
-      date: '2024-12-15',
-      time: '10:00-11:00'
-    },
+      date: string;
+      time: string;
+    };
     cost: {
-      subtotal: 80.50,
-      discount: 4.03,
-      insurance: 5.00,
-      total: 81.47
-    },
-    estimatedDelivery: '3-5 business days',
-    createdAt: new Date().toISOString()
-  };
+      subtotal: number;
+      discount: number;
+      insurance: number;
+      total: number;
+    };
+    estimatedDelivery: string;
+    createdAt: string;
+  }
+
+  let booking: BookingData | null = null;
+  let loading = true;
+  let error: string | null = null;
+
+  onMount(async () => {
+    await fetchBookingData();
+  });
+
+  async function fetchBookingData() {
+    if (!bookingId) {
+      error = 'Booking ID not found';
+      loading = false;
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`);
+      const result = await response.json();
+
+      if (result.status !== 'success') {
+        throw new Error(result.message || 'Failed to load booking');
+      }
+
+      const { booking: bookingData, packages } = result.data;
+      const recipient = bookingData.expand?.recipient;
+
+      // Determine estimated delivery based on service type
+      const service = SERVICES_INFO.find(s => s.id === bookingData.service_type);
+      const transitDays = service?.transitTime || '5-7 business days';
+
+      booking = {
+        id: bookingData.id,
+        confirmationNumber: 'QCS-' + bookingData.id.toUpperCase().slice(0, 8),
+        status: bookingData.status,
+        serviceType: bookingData.service_type,
+        destination: bookingData.destination,
+        packages: packages.map((pkg: PackageData) => ({
+          id: pkg.id,
+          tracking_number: pkg.tracking_number,
+          qr_code: pkg.qr_code,
+          weight: pkg.billable_weight || pkg.weight,
+          contents_description: pkg.contents_description || 'Package',
+          cost: pkg.cost
+        })),
+        recipient: recipient ? {
+          name: recipient.name,
+          phone: recipient.phone,
+          address: `${recipient.address_line1}${recipient.address_line2 ? ', ' + recipient.address_line2 : ''}`,
+          city: recipient.city
+        } : null,
+        schedule: {
+          date: bookingData.scheduled_date,
+          time: bookingData.time_slot
+        },
+        cost: {
+          subtotal: bookingData.subtotal || 0,
+          discount: bookingData.discount || 0,
+          insurance: bookingData.insurance_cost || 0,
+          total: bookingData.total_cost || 0
+        },
+        estimatedDelivery: transitDays,
+        createdAt: bookingData.created
+      };
+    } catch (err) {
+      console.error('Failed to fetch booking:', err);
+      error = err instanceof Error ? err.message : 'Failed to load booking';
+    } finally {
+      loading = false;
+    }
+  }
 
   let copied = false;
 
   async function copyConfirmationNumber() {
+    if (!booking?.confirmationNumber) {
+      toast.error('Confirmation number not available');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(booking.confirmationNumber);
       copied = true;
@@ -95,6 +179,20 @@
   <title>Booking Confirmed | QCS Cargo</title>
 </svelte:head>
 
+{#if loading}
+  <div class="flex items-center justify-center py-16">
+    <Loader2 class="w-8 h-8 animate-spin text-primary-600" />
+  </div>
+{:else if error}
+  <div class="max-w-md mx-auto text-center py-16">
+    <div class="text-red-500 mb-4">
+      <Package class="w-12 h-12 mx-auto" />
+    </div>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">Failed to Load Booking</h2>
+    <p class="text-gray-600 mb-4">{error}</p>
+    <Button href="/dashboard/bookings">Return to Bookings</Button>
+  </div>
+{:else if booking}
 <div class="max-w-3xl mx-auto">
   <!-- Success Banner -->
   <div class="text-center mb-8">
@@ -164,19 +262,26 @@
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div class="space-y-2">
-          <p class="font-medium text-gray-900">{booking.recipient.name}</p>
-          <p class="text-gray-600">{booking.recipient.address}</p>
-          <p class="text-gray-600">{booking.recipient.phone}</p>
+        {#if booking.recipient}
+          <div class="space-y-2">
+            <p class="font-medium text-gray-900">{booking.recipient.name}</p>
+            <p class="text-gray-600">{booking.recipient.address}</p>
+            <p class="text-gray-600">{booking.recipient.phone}</p>
+            <p class="text-sm text-primary-600 mt-2">
+              → {getDestinationLabel(booking.destination)}
+            </p>
+          </div>
+        {:else}
+          <p class="text-gray-500 text-sm">Recipient details will be confirmed</p>
           <p class="text-sm text-primary-600 mt-2">
             → {getDestinationLabel(booking.destination)}
           </p>
-        </div>
+        {/if}
       </CardContent>
     </Card>
   </div>
 
-  <!-- Packages -->
+  <!-- Packages with QR Codes -->
   <Card class="mb-6">
     <CardHeader>
       <CardTitle class="flex items-center gap-2 text-lg">
@@ -187,16 +292,33 @@
     <CardContent>
       <div class="divide-y">
         {#each booking.packages as pkg, index}
-          <div class="py-3 flex items-center justify-between {index === 0 ? '' : ''}">
+          <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-sm font-medium text-primary-700">
                 {index + 1}
               </div>
               <div>
-                <p class="font-mono text-sm text-primary-600">{pkg.trackingNumber}</p>
-                <p class="text-sm text-gray-600">{pkg.weight} lbs • {pkg.contents}</p>
+                <p class="font-mono text-sm text-primary-600">{pkg.tracking_number}</p>
+                <p class="text-sm text-gray-600">
+                  {pkg.weight ? `${pkg.weight} lbs` : 'Weight TBD'} • {pkg.contents_description}
+                </p>
               </div>
             </div>
+            <!-- QR Code -->
+            {#if pkg.qr_code}
+              <div class="flex-shrink-0 text-center">
+                <img 
+                  src={pkg.qr_code} 
+                  alt="QR code for {pkg.tracking_number}" 
+                  class="w-20 h-20 border rounded"
+                />
+                <p class="text-xs text-gray-500 mt-1">Scan for tracking</p>
+              </div>
+            {:else}
+              <div class="flex-shrink-0 w-20 h-20 border rounded bg-gray-50 flex items-center justify-center">
+                <QrCode class="w-8 h-8 text-gray-300" />
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -282,6 +404,7 @@
     </CardContent>
   </Card>
 </div>
+{/if}
 
 <style>
   @media print {
@@ -294,4 +417,5 @@
     }
   }
 </style>
+
 

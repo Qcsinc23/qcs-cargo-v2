@@ -66,7 +66,7 @@
             <Calculator class="w-5 h-5 mr-2" />
             Get a Quote
           </Button>
-          <Button href="/contact" variant="outline" size="lg" class="border-white/30 text-white hover:bg-white/10">
+          <Button href="/contact" variant="outline" size="lg" class="bg-transparent border-white/30 text-white hover:bg-white/10">
             <Phone class="w-5 h-5 mr-2" />
             Contact Us
           </Button>
@@ -205,7 +205,7 @@
           <Calculator class="w-5 h-5 mr-2" />
           Calculate Shipping Cost
         </Button>
-        <Button href="tel:{COMPANY.phone}" variant="outline" size="lg" class="border-white/30 text-white hover:bg-white/10">
+        <Button href="tel:{COMPANY.phone}" variant="outline" size="lg" class="bg-transparent border-white/30 text-white hover:bg-white/10">
           <Phone class="w-5 h-5 mr-2" />
           Call {COMPANY.phone}
         </Button>
@@ -213,4 +213,3 @@
     </div>
   </section>
 </main>
-

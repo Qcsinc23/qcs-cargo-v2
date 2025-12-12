@@ -82,6 +82,7 @@
 
   // Form errors
   let errors: Record<string, string> = {};
+  let submitting = false;
 
   // Step validation
   function canProceed(): boolean {
@@ -303,10 +304,82 @@
 
   // Submit Booking
   async function submitBooking() {
-    // TODO: Integrate with Stripe and backend
-    toast.success('Booking submitted! (Demo mode)');
-    booking.reset();
-    goto('/dashboard/bookings');
+    if (submitting) return;
+
+    if (!bookingState.quote) {
+      toast.error('No quote generated');
+      return;
+    }
+
+    const totalCost = bookingState.quote.totalCost;
+    if (typeof totalCost !== 'number' || !Number.isFinite(totalCost) || totalCost <= 0) {
+      toast.error('Invalid quote total');
+      return;
+    }
+
+    submitting = true;
+    try {
+      // Merge computed quote fields (cost/billable weights) into packages for backend persistence.
+      const quoteById = new Map(bookingState.quote.packages.map((p) => [p.id, p]));
+      const packagesForApi = bookingState.packages.map((pkg) => ({ ...pkg, ...quoteById.get(pkg.id) }));
+
+      const recipientId = bookingState.recipient?.id || null;
+      const newRecipient = recipientId ? null : bookingState.recipient;
+
+      // 1) Create booking (backend sets status to pending_payment).
+      const bookingResponse = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceType: bookingState.serviceType,
+          destination: bookingState.destination,
+          scheduledDate: bookingState.scheduledDate,
+          timeSlot: bookingState.timeSlot,
+          packages: packagesForApi,
+          recipientId,
+          recipient: newRecipient,
+          quote: bookingState.quote
+        })
+      });
+
+      const bookingJson = await bookingResponse.json().catch(() => null);
+      if (!bookingResponse.ok || bookingJson?.status !== 'success') {
+        const msg = bookingJson?.message || 'Failed to create booking';
+        throw new Error(msg);
+      }
+
+      const bookingId = bookingJson.data?.bookingId;
+      if (!bookingId) throw new Error('Booking created but missing bookingId');
+
+      // 2) Create payment intent (send dollars as string to avoid float rounding).
+      const paymentResponse = await fetch('/api/payments/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: totalCost.toFixed(2),
+          bookingId,
+          description: `QCS Cargo Booking ${bookingId}`
+        })
+      });
+
+      const paymentJson = await paymentResponse.json().catch(() => null);
+      if (!paymentResponse.ok || paymentJson?.status !== 'success') {
+        const msg = paymentJson?.message || 'Failed to create payment intent';
+        throw new Error(msg);
+      }
+
+      const paymentIntentId = paymentJson.data?.paymentIntentId;
+      if (paymentIntentId) booking.setPaymentIntent(paymentIntentId);
+
+      toast.success('Booking created. Payment pending.');
+      booking.reset();
+      goto(`/dashboard/bookings/${bookingId}`);
+    } catch (err) {
+      console.error('Booking submission error:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to submit booking');
+    } finally {
+      submitting = false;
+    }
   }
 
   function formatCurrency(amount: number): string {
@@ -987,9 +1060,14 @@
           {/if}
 
           <!-- Payment Button -->
-          <Button class="w-full h-12 text-lg" on:click={submitBooking}>
-            <CreditCard class="w-5 h-5 mr-2" />
-            Complete Booking
+          <Button class="w-full h-12 text-lg" on:click={submitBooking} disabled={submitting}>
+            {#if submitting}
+              <div class="w-5 h-5 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+              Processing...
+            {:else}
+              <CreditCard class="w-5 h-5 mr-2" />
+              Complete Booking
+            {/if}
           </Button>
 
           <p class="text-xs text-gray-500 text-center">

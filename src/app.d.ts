@@ -6,6 +6,7 @@ declare global {
     interface Locals {
       pb: PocketBase;
       user: AuthModel | null;
+      correlationId?: string;
     }
     interface Error {
       message: string;

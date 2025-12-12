@@ -20,8 +20,7 @@
     AlertTriangle
   } from 'lucide-svelte';
 
-  export let data;
-
+  
   interface Booking {
     id: string;
     status: 'draft' | 'pending' | 'confirmed' | 'cancelled';

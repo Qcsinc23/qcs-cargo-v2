@@ -59,7 +59,24 @@ function createAuthStore() {
 
   // Sync with PocketBase auth store
   if (browser) {
+    // Load auth from cookie first
+    pb.authStore.loadFromCookie(document.cookie);
+
+    // Initialize auth state immediately if user is already authenticated
+    if (pb.authStore.isValid && pb.authStore.model) {
+      const user = transformUser(pb.authStore.model);
+      if (user) {
+        set({
+          user,
+          isAuthenticated: true,
+          isLoading: false
+        });
+      }
+    }
+
+    // Then listen to changes
     pb.authStore.onChange((token, model) => {
+      console.log('[Auth Store] PocketBase auth changed:', { token: !!token, model });
       const user = transformUser(model);
       if (user) {
         update(state => ({
@@ -77,6 +94,9 @@ function createAuthStore() {
         }));
       }
     }, true);
+    
+    // Set loading to false after initial setup
+    update(state => ({ ...state, isLoading: false }));
   }
 
   function transformUser(model: AuthModel | null): User | null {
@@ -463,4 +483,3 @@ export const userRole = derived(auth, $auth => $auth.user?.role || null);
 export const isAdmin = derived(auth, $auth => $auth.user?.role === 'admin');
 export const isStaff = derived(auth, $auth => $auth.user?.role === 'staff' || $auth.user?.role === 'admin');
 export const isCustomer = derived(auth, $auth => $auth.user?.role === 'customer');
-

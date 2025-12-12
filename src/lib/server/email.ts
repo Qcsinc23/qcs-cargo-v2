@@ -295,7 +295,7 @@ export async function sendAccountDeletionEmail(to: string, name: string) {
     <h1>Account Scheduled for Deletion</h1>
     <p>Hi ${name},</p>
     <p>Your ${PUBLIC_COMPANY_NAME} account has been scheduled for deletion.</p>
-    
+
     <div class="info-box" style="background: #fef3c7; border: 1px solid #f59e0b;">
       <h3 style="color: #b45309; margin-top: 0;">⚠️ Important Information</h3>
       <ul style="margin-bottom: 0;">
@@ -305,13 +305,13 @@ export async function sendAccountDeletionEmail(to: string, name: string) {
         <li>Shipment history will be anonymized for business records</li>
       </ul>
     </div>
-    
+
     <p>If you didn't request this deletion or want to recover your account, simply log in within the next 30 days:</p>
-    
+
     <p style="text-align: center; margin: 30px 0;">
       <a href="${PUBLIC_SITE_URL}/auth/login" class="button">Recover Account</a>
     </p>
-    
+
     <p>If you have any questions, please contact our support team.</p>
   `);
 
@@ -322,3 +322,95 @@ export async function sendAccountDeletionEmail(to: string, name: string) {
   });
 }
 
+// Location Update Email
+export async function sendLocationUpdateEmail(
+  to: string,
+  name: string,
+  shipment: {
+    trackingNumber: string;
+    status: string;
+    location: string;
+    notes?: string | null;
+  }
+) {
+  const html = wrapTemplate(`
+    <h1>📍 Package Location Updated</h1>
+    <p>Hi ${name},</p>
+    <p>Your package has been tracked at a new location:</p>
+
+    <div class="info-box">
+      <p><strong>Tracking Number:</strong> ${shipment.trackingNumber}</p>
+      <p><strong>Status:</strong> ${shipment.status}</p>
+      <p><strong>Current Location:</strong> ${shipment.location}</p>
+      ${shipment.notes ? `<p><strong>Notes:</strong> ${shipment.notes}</p>` : ''}
+    </div>
+
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${PUBLIC_SITE_URL}/track/${shipment.trackingNumber}" class="button">Track Package</a>
+    </p>
+
+    <p>Stay updated with your package's journey through the Caribbean!</p>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `📍 Package Location Update - ${shipment.trackingNumber}`,
+    html
+  });
+}
+
+// Tracking Event Email
+export async function sendTrackingEventEmail(
+  to: string,
+  name: string,
+  shipment: {
+    trackingNumber: string;
+    eventType: string;
+    eventDescription: string;
+    location: string;
+    notes?: string | null;
+    estimatedDelivery?: string;
+  }
+) {
+  const eventEmoji: Record<string, string> = {
+    pickup: '📦',
+    in_transit: '✈️',
+    customs_clearance: '🛃',
+    out_for_delivery: '🚚',
+    delivery_attempt: '📬',
+    delivered: '✅',
+    exception: '⚠️',
+    returned: '↩️',
+    delayed: '⏰',
+    facility_arrival: '🏢',
+    facility_departure: '🚀'
+  };
+
+  const emoji = eventEmoji[shipment.eventType] || '📦';
+
+  const html = wrapTemplate(`
+    <h1>${emoji} Tracking Update</h1>
+    <p>Hi ${name},</p>
+    <p>There's an update on your shipment:</p>
+
+    <div class="info-box">
+      <p><strong>Tracking Number:</strong> ${shipment.trackingNumber}</p>
+      <p><strong>Event:</strong> ${shipment.eventDescription}</p>
+      <p><strong>Location:</strong> ${shipment.location}</p>
+      ${shipment.notes ? `<p><strong>Details:</strong> ${shipment.notes}</p>` : ''}
+      ${shipment.estimatedDelivery ? `<p><strong>Estimated Delivery:</strong> ${new Date(shipment.estimatedDelivery).toLocaleDateString()}</p>` : ''}
+    </div>
+
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${PUBLIC_SITE_URL}/track/${shipment.trackingNumber}" class="button">View Full Timeline</a>
+    </p>
+
+    <p>Thank you for shipping with ${PUBLIC_COMPANY_NAME}!</p>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `${emoji} ${shipment.eventDescription} - ${shipment.trackingNumber}`,
+    html
+  });
+}

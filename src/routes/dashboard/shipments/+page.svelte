@@ -19,8 +19,7 @@
     Plus
   } from 'lucide-svelte';
 
-  export let data;
-
+  
   // Shipments from server (placeholder - will come from PocketBase)
   let shipments: Array<{
     id: string;

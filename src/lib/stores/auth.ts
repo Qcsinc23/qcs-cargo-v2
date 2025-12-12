@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 import { goto, invalidateAll } from '$app/navigation';
 import { pb } from '$lib/pocketbase';
@@ -57,47 +57,10 @@ function createAuthStore() {
     isAuthenticated: false
   });
 
-  // Sync with PocketBase auth store
-  if (browser) {
-    // Load auth from cookie first
-    pb.authStore.loadFromCookie(document.cookie);
-
-    // Initialize auth state immediately if user is already authenticated
-    if (pb.authStore.isValid && pb.authStore.model) {
-      const user = transformUser(pb.authStore.model);
-      if (user) {
-        set({
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        });
-      }
-    }
-
-    // Then listen to changes
-    pb.authStore.onChange((token, model) => {
-      console.log('[Auth Store] PocketBase auth changed:', { token: !!token, model });
-      const user = transformUser(model);
-      if (user) {
-        update(state => ({
-          ...state,
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        }));
-      } else {
-        update(state => ({
-          ...state,
-          user: null,
-          isAuthenticated: false,
-          isLoading: false
-        }));
-      }
-    }, true);
-    
-    // Set loading to false after initial setup
-    update(state => ({ ...state, isLoading: false }));
-  }
+  // NOTE:
+  // We use httpOnly cookies for auth (set/cleared server-side in `hooks.server.ts`).
+  // Client JS cannot read the auth cookie, so we initialize this store from server-rendered
+  // `data.user` via `auth.initialize(...)` in `src/routes/+layout.svelte`.
 
   function transformUser(model: AuthModel | null): User | null {
     if (!model) return null;
@@ -126,6 +89,32 @@ function createAuthStore() {
     };
   }
 
+  async function readErrorMessage(response: Response): Promise<string> {
+    const contentType = response.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      const data = (await response.json().catch(() => null)) as any;
+      return String(data?.error || data?.message || response.statusText || 'Request failed');
+    }
+    const text = await response.text().catch(() => '');
+    return text || response.statusText || 'Request failed';
+  }
+
+  async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init.headers || {})
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+
+    return (await response.json()) as T;
+  }
+
   return {
     subscribe,
     
@@ -152,8 +141,12 @@ function createAuthStore() {
       update(state => ({ ...state, isLoading: true }));
 
       try {
-        const authData = await pb.collection('users').authWithPassword(email, password);
-        const user = transformUser(authData.record);
+        const data = await requestJson<{ success: true; user: AuthModel }>('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+
+        const user = transformUser(data.user);
 
         update(state => ({
           ...state,
@@ -180,19 +173,12 @@ function createAuthStore() {
       update(state => ({ ...state, isLoading: true }));
 
       try {
-        // Create user
-        await pb.collection('users').create({
-          ...data,
-          role: 'customer',
-          emailVisibility: true
+        const response = await requestJson<{ success: true; user: AuthModel }>('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(data)
         });
 
-        // Send verification email
-        await pb.collection('users').requestVerification(data.email);
-
-        // Auto-login after registration
-        const authData = await pb.collection('users').authWithPassword(data.email, data.password);
-        const user = transformUser(authData.record);
+        const user = transformUser(response.user);
 
         update(state => ({
           ...state,
@@ -210,13 +196,21 @@ function createAuthStore() {
 
     // Logout
     async logout() {
-      pb.authStore.clear();
+      update(state => ({ ...state, isLoading: true }));
+
+      try {
+        await requestJson<{ success: true }>('/api/auth/logout', { method: 'POST' });
+      } catch (error: unknown) {
+        update(state => ({ ...state, isLoading: false }));
+        throw new Error(getErrorMessage(error, 'Logout failed'));
+      }
+
       set({
         user: null,
         isAuthenticated: false,
         isLoading: false
       });
-      
+
       // Invalidate all server data and redirect
       await invalidateAll();
       goto('/');
@@ -254,13 +248,29 @@ function createAuthStore() {
 
     // Update profile
     async updateProfile(data: Partial<User>) {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
-        const updated = await pb.collection('users').update(currentUser.id, data);
-        const user = transformUser(updated);
+        const payload = {
+          name: data.name,
+          phone: data.phone,
+          address_line1: data.address_line1,
+          address_line2: data.address_line2,
+          city: data.city,
+          state: data.state,
+          zip: data.zip,
+          country: data.country,
+          notification_email: data.notification_email,
+          notification_sms: data.notification_sms,
+          notify_received: data.notify_received,
+          notify_transit: data.notify_transit,
+          notify_delivered: data.notify_delivered
+        };
+
+        const response = await requestJson<{ success: true; user: AuthModel }>('/api/auth/profile', {
+          method: 'PATCH',
+          body: JSON.stringify(payload)
+        });
+
+        const user = transformUser(response.user);
 
         update(currentState => ({
           ...currentState,
@@ -275,16 +285,17 @@ function createAuthStore() {
 
     // Update avatar
     async updateAvatar(file: File) {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
         const formData = new FormData();
         formData.append('avatar', file);
 
-        const updated = await pb.collection('users').update(currentUser.id, formData);
-        const user = transformUser(updated);
+        const response = await fetch('/api/auth/avatar', { method: 'POST', body: formData });
+        if (!response.ok) {
+          throw new Error(await readErrorMessage(response));
+        }
+
+        const data = (await response.json()) as { success: true; user: AuthModel };
+        const user = transformUser(data.user);
 
         update(currentState => ({
           ...currentState,
@@ -299,15 +310,10 @@ function createAuthStore() {
 
     // Change password
     async changePassword(currentPassword: string, newPassword: string, confirmPassword: string) {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
-        await pb.collection('users').update(currentUser.id, {
-          oldPassword: currentPassword,
-          password: newPassword,
-          passwordConfirm: confirmPassword
+        await requestJson<{ success: true }>('/api/auth/password', {
+          method: 'POST',
+          body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
         });
 
         return { success: true };
@@ -319,8 +325,28 @@ function createAuthStore() {
     // OAuth login (Google)
     async loginWithGoogle() {
       try {
+        if (!browser) {
+          throw new Error('Google login is only available in the browser');
+        }
+
         const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
-        const user = transformUser(authData.record);
+
+        const token = pb.authStore.token;
+        const model = pb.authStore.model;
+
+        if (!token) {
+          throw new Error('Google login failed to return a session token');
+        }
+
+        const sync = await requestJson<{ success: true; user: AuthModel }>('/api/auth/oauth-sync', {
+          method: 'POST',
+          body: JSON.stringify({ token, model })
+        });
+
+        // Remove token from JS-accessible storage; rely on httpOnly cookie going forward.
+        pb.authStore.clear();
+
+        const user = transformUser(sync.user);
 
         update(state => ({
           ...state,
@@ -359,29 +385,15 @@ function createAuthStore() {
 
     // Delete account (GDPR compliance)
     async deleteAccount(password: string) {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
-        // Verify password first by attempting to re-authenticate
-        await pb.collection('users').authWithPassword(currentUser.email, password);
-        
-        // Mark account for deletion (soft delete)
-        // PocketBase will handle the actual deletion after the grace period
-        await pb.collection('users').update(currentUser.id, {
-          deleted_at: new Date().toISOString(),
-          email: `deleted_${currentUser.id}@deleted.local`, // Anonymize email
-          name: 'Deleted User'
+        await requestJson<{ success: true }>('/api/auth/delete-account', {
+          method: 'POST',
+          body: JSON.stringify({ password })
         });
 
-        // Clear auth and redirect
-        pb.authStore.clear();
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false
-        });
+        // Clear local state; server cookie is cleared by the endpoint.
+        set({ user: null, isAuthenticated: false, isLoading: false });
+        await invalidateAll();
 
         return { success: true };
       } catch (error: unknown) {
@@ -391,29 +403,20 @@ function createAuthStore() {
 
     // Get active sessions
     async getSessions() {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
-        // PocketBase doesn't have built-in session management
-        // We'll track sessions in a separate collection
-        const sessions = await pb.collection('sessions').getFullList({
-          filter: `user = "${currentUser.id}"`,
-          sort: '-last_active'
+        const response = await requestJson<{ success: true; sessions: any[] }>('/api/auth/sessions', {
+          method: 'GET'
         });
-        return sessions;
+        return response.sessions;
       } catch (error: unknown) {
-        // If sessions collection doesn't exist, return empty
-        console.warn('Sessions collection not available');
-        return [];
+        throw new Error(getErrorMessage(error, 'Failed to load sessions'));
       }
     },
 
     // Revoke a specific session
     async revokeSession(sessionId: string) {
       try {
-        await pb.collection('sessions').delete(sessionId);
+        await requestJson<{ success: true }>(`/api/auth/sessions/${sessionId}`, { method: 'DELETE' });
         return { success: true };
       } catch (error: unknown) {
         throw new Error(getErrorMessage(error, 'Failed to revoke session'));
@@ -422,20 +425,8 @@ function createAuthStore() {
 
     // Revoke all other sessions
     async revokeAllOtherSessions() {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
-        const sessions = await pb.collection('sessions').getFullList({
-          filter: `user = "${currentUser.id}"`
-        });
-        
-        // Delete all sessions (current one will be recreated on next auth)
-        for (const session of sessions) {
-          await pb.collection('sessions').delete(session.id);
-        }
-        
+        await requestJson<{ success: true }>('/api/auth/sessions/revoke-all', { method: 'POST' });
         return { success: true };
       } catch (error: unknown) {
         throw new Error(getErrorMessage(error, 'Failed to revoke sessions'));
@@ -450,13 +441,13 @@ function createAuthStore() {
       notify_transit?: boolean;
       notify_delivered?: boolean;
     }) {
-      const state = get({ subscribe });
-      const currentUser = state.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
       try {
-        const updated = await pb.collection('users').update(currentUser.id, preferences);
-        const user = transformUser(updated);
+        const response = await requestJson<{ success: true; user: AuthModel }>('/api/auth/profile', {
+          method: 'PATCH',
+          body: JSON.stringify(preferences)
+        });
+
+        const user = transformUser(response.user);
 
         update(currentState => ({
           ...currentState,

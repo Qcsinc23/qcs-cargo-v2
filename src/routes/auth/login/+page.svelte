@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
@@ -7,13 +6,10 @@
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Separator } from '$lib/components/ui/separator';
-  import { auth, isAuthenticated } from '$lib/stores/auth';
+  import { auth } from '$lib/stores/auth';
   import { toast } from '$lib/stores/toast';
   import { loginSchema, validateForm } from '$lib/utils/validation';
   import { Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-svelte';
-  import { onMount } from 'svelte';
-  import { pb } from '$lib/pocketbase';
-  import { browser } from '$app/environment';
 
   let email = '';
   let password = '';
@@ -25,17 +21,6 @@
   // Get redirect URL from query params
   $: redirectTo = $page.url.searchParams.get('redirect') || '/dashboard';
   $: message = $page.url.searchParams.get('message');
-
-  let hasNavigated = false;
-
-  // Redirect if already authenticated (on initial load)
-  onMount(() => {
-    // Check if already authenticated on mount
-    if (pb.authStore.isValid && !hasNavigated) {
-      hasNavigated = true;
-      goto(redirectTo, { replaceState: true });
-    }
-  });
 
   async function handleSubmit() {
     serverError = '';
@@ -60,7 +45,6 @@
 
       // Use hard navigation to ensure server picks up the new auth cookie
       // This forces a full page reload which allows the server hook to read the updated cookie
-      hasNavigated = true;
       window.location.href = redirectTo;
     } catch (err: unknown) {
       serverError = getErrorMessage(err, 'Login failed. Please check your credentials.');
@@ -80,7 +64,6 @@
       toast.success('Welcome!', { description: 'You have been logged in with Google.' });
 
       // Use hard navigation to ensure server picks up the new auth cookie
-      hasNavigated = true;
       window.location.href = redirectTo;
     } catch (err: unknown) {
       serverError = getErrorMessage(err, 'Google login failed. Please try again.');
@@ -191,14 +174,18 @@
         <Label for="remember" class="text-sm font-normal">Remember me for 30 days</Label>
       </div>
 
-      <Button type="submit" class="w-full" disabled={loading}>
+      <button 
+        type="submit" 
+        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full"
+        disabled={loading}
+      >
         {#if loading}
           <Loader2 class="h-4 w-4 mr-2 animate-spin" />
           Signing in...
         {:else}
           Sign in
         {/if}
-      </Button>
+      </button>
     </form>
 
     <div class="relative my-6">

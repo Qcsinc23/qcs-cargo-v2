@@ -354,7 +354,7 @@
           "@type": "ListItem",
           "position": index + 1,
           "name": path.label,
-          ...(path.href && !path.disabled ? { "item": new URL(path.href, location.origin).href } : {})
+          ...(path.href && !path.disabled ? { "item": new URL(path.href, $page.url.origin).href } : {})
         }))
       })}
     </script>

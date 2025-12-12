@@ -24,7 +24,8 @@
       title: 'Legal',
       links: [
         { label: 'Privacy Policy', href: '/legal/privacy' },
-        { label: 'Terms of Service', href: '/legal/terms' }
+        { label: 'Terms of Service', href: '/legal/terms' },
+        { label: 'Shipping Policy', href: '/legal/shipping-policy' }
       ]
     }
   ];

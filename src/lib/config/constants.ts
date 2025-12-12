@@ -42,41 +42,75 @@ export const SERVICES_INFO = [
   {
     id: 'standard',
     name: 'Standard Air Freight',
-    description: 'Fixed weekly departures with real-time tracking',
-    features: ['Competitive bulk rates', 'Professional handling', 'Insurance options'],
+    tagline: 'Our most popular service',
+    description: 'Fixed weekly departures with real-time tracking. Perfect for regular shipments with competitive rates.',
+    features: ['Competitive bulk rates', 'Professional handling', 'Insurance options', 'Real-time tracking', 'Weekly departures'],
     startingPrice: 3.50,
+    priceUnit: '/lb',
     transitTime: '3-5 business days',
-    icon: 'package'
+    icon: 'plane',
+    targetCustomer: 'Regular shippers, small businesses'
   },
   {
     id: 'express',
     name: 'Express Delivery',
-    description: 'Urgent shipments with priority processing',
-    features: ['Same-day processing', 'Priority customs clearance', 'Next-flight guarantee'],
+    tagline: 'When time is critical',
+    description: 'Urgent shipments with priority processing. Guaranteed next-flight service for time-sensitive cargo.',
+    features: ['Same-day processing', 'Priority customs clearance', 'Next-flight guarantee', 'Dedicated handling', 'Priority support'],
     startingPrice: null,
     priceNote: '+25% over standard',
     transitTime: '1-2 business days',
-    icon: 'zap'
+    icon: 'zap',
+    targetCustomer: 'Time-sensitive commercial shipments, medical supplies'
   },
   {
     id: 'door-to-door',
     name: 'Door-to-Door Service',
-    description: 'Complete logistics from pickup to final delivery',
-    features: ['Free pickup in NJ area', 'Last-mile delivery', 'Signature confirmation'],
+    tagline: 'Complete convenience',
+    description: 'Complete logistics from pickup to final delivery. We handle everything so you don\'t have to lift a finger.',
+    features: ['Free pickup in NJ area', 'Last-mile delivery', 'End-to-end tracking', 'Signature confirmation', 'White-glove service'],
     startingPrice: 25,
-    priceNote: 'pickup fee + shipping',
+    priceUnit: ' pickup fee',
+    priceNote: '+ standard shipping',
     transitTime: '3-5 business days',
-    icon: 'truck'
+    icon: 'truck',
+    targetCustomer: 'Customers without transportation, convenience seekers'
   },
   {
     id: 'consolidated',
     name: 'Consolidated Cargo',
-    description: 'Cost-effective option for multiple packages',
-    features: ['Volume discounts', 'Secure consolidation', 'Weekly consolidation windows'],
+    tagline: 'Ship more, save more',
+    description: 'Cost-effective option for multiple packages. Combine shipments for maximum savings.',
+    features: ['Volume discounts up to 30%', 'Secure consolidation', 'Weekly consolidation windows', 'Bulk handling', 'Shared container space'],
     startingPrice: null,
     priceNote: 'Save up to 30%',
     transitTime: '3-5 business days',
-    icon: 'layers'
+    icon: 'layers',
+    targetCustomer: 'Frequent shippers, businesses with regular shipments'
+  },
+  {
+    id: 'customs',
+    name: 'Customs Clearance',
+    tagline: 'Expert brokerage services',
+    description: 'Professional customs brokerage to ensure smooth clearance. We handle all documentation and compliance.',
+    features: ['Complete documentation', 'Duty calculation assistance', 'Compliance verification', 'Broker representation', 'Regulatory guidance'],
+    startingPrice: 35,
+    priceUnit: '/shipment',
+    transitTime: 'N/A',
+    icon: 'file-check',
+    targetCustomer: 'Commercial importers, regulated goods shippers'
+  },
+  {
+    id: 'special',
+    name: 'Special Handling',
+    tagline: 'Care for delicate cargo',
+    description: 'Specialized care for fragile, oversized, or high-value items. Custom solutions for unique shipping needs.',
+    features: ['Custom crating', 'Temperature control', 'High-value insurance', 'White-glove service', 'Oversized cargo handling'],
+    startingPrice: null,
+    priceNote: 'Custom quote',
+    transitTime: 'Varies',
+    icon: 'shield',
+    targetCustomer: 'Medical suppliers, fragile goods, high-value shipments'
   }
 ];
 

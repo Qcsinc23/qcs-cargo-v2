@@ -10,9 +10,10 @@
   let mobileMenuOpen = false;
 
   const navLinks = [
-    { href: '/shipping-calculator', label: 'Calculator' },
-    { href: '/tracking', label: 'Track' },
     { href: '/services', label: 'Services' },
+    { href: '/shipping-calculator', label: 'Calculator' },
+    { href: '/track', label: 'Track' },
+    { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' }
   ];
 

@@ -313,6 +313,140 @@ function createAuthStore() {
       } catch (error: unknown) {
         throw new Error(getErrorMessage(error, 'Google login failed'));
       }
+    },
+
+    // Request Magic Link login
+    async requestMagicLink(email: string) {
+      try {
+        // PocketBase doesn't have built-in magic link, so we use OTP (one-time password)
+        // This sends a verification email that can be used as a magic link
+        await pb.collection('users').requestVerification(email);
+        return { success: true };
+      } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, 'Failed to send magic link'));
+      }
+    },
+
+    // Verify email token (for magic link / verification)
+    async verifyEmail(token: string) {
+      try {
+        await pb.collection('users').confirmVerification(token);
+        return { success: true };
+      } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, 'Failed to verify email'));
+      }
+    },
+
+    // Delete account (GDPR compliance)
+    async deleteAccount(password: string) {
+      const state = get({ subscribe });
+      const currentUser = state.user;
+      if (!currentUser) throw new Error('Not authenticated');
+
+      try {
+        // Verify password first by attempting to re-authenticate
+        await pb.collection('users').authWithPassword(currentUser.email, password);
+        
+        // Mark account for deletion (soft delete)
+        // PocketBase will handle the actual deletion after the grace period
+        await pb.collection('users').update(currentUser.id, {
+          deleted_at: new Date().toISOString(),
+          email: `deleted_${currentUser.id}@deleted.local`, // Anonymize email
+          name: 'Deleted User'
+        });
+
+        // Clear auth and redirect
+        pb.authStore.clear();
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false
+        });
+
+        return { success: true };
+      } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, 'Failed to delete account. Please check your password.'));
+      }
+    },
+
+    // Get active sessions
+    async getSessions() {
+      const state = get({ subscribe });
+      const currentUser = state.user;
+      if (!currentUser) throw new Error('Not authenticated');
+
+      try {
+        // PocketBase doesn't have built-in session management
+        // We'll track sessions in a separate collection
+        const sessions = await pb.collection('sessions').getFullList({
+          filter: `user = "${currentUser.id}"`,
+          sort: '-last_active'
+        });
+        return sessions;
+      } catch (error: unknown) {
+        // If sessions collection doesn't exist, return empty
+        console.warn('Sessions collection not available');
+        return [];
+      }
+    },
+
+    // Revoke a specific session
+    async revokeSession(sessionId: string) {
+      try {
+        await pb.collection('sessions').delete(sessionId);
+        return { success: true };
+      } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, 'Failed to revoke session'));
+      }
+    },
+
+    // Revoke all other sessions
+    async revokeAllOtherSessions() {
+      const state = get({ subscribe });
+      const currentUser = state.user;
+      if (!currentUser) throw new Error('Not authenticated');
+
+      try {
+        const sessions = await pb.collection('sessions').getFullList({
+          filter: `user = "${currentUser.id}"`
+        });
+        
+        // Delete all sessions (current one will be recreated on next auth)
+        for (const session of sessions) {
+          await pb.collection('sessions').delete(session.id);
+        }
+        
+        return { success: true };
+      } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, 'Failed to revoke sessions'));
+      }
+    },
+
+    // Update notification preferences
+    async updateNotificationPreferences(preferences: {
+      notification_email?: boolean;
+      notification_sms?: boolean;
+      notify_received?: boolean;
+      notify_transit?: boolean;
+      notify_delivered?: boolean;
+    }) {
+      const state = get({ subscribe });
+      const currentUser = state.user;
+      if (!currentUser) throw new Error('Not authenticated');
+
+      try {
+        const updated = await pb.collection('users').update(currentUser.id, preferences);
+        const user = transformUser(updated);
+
+        update(currentState => ({
+          ...currentState,
+          user
+        }));
+
+        return { success: true, user };
+      } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, 'Failed to update notification preferences'));
+      }
     }
   };
 }

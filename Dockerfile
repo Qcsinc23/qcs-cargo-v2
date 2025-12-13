@@ -1,6 +1,10 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Build arguments for SvelteKit static env vars
+ARG PUBLIC_POCKETBASE_URL
+ARG PUBLIC_SITE_URL
+
 WORKDIR /app
 
 # Copy package files
@@ -11,6 +15,10 @@ RUN npm ci
 
 # Copy source
 COPY . .
+
+# Set environment variables for build time
+ENV PUBLIC_POCKETBASE_URL=$PUBLIC_POCKETBASE_URL
+ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
 
 # Build application
 RUN npm run build

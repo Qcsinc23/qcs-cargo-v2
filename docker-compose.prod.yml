@@ -1,0 +1,119 @@
+# QCS Cargo 2.0 - Production Configuration
+# Follows WukYard deployment pattern with Traefik integration
+
+networks:
+  # Dokploy external network for Traefik integration
+  dokploy-network:
+    external: true
+  # Internal network for service communication
+  qcs_network:
+    driver: bridge
+
+services:
+  qcs_pocketbase:
+    build:
+      context: ./pocketbase
+      dockerfile: Dockerfile
+    container_name: qcs_pocketbase
+    restart: unless-stopped
+    command: ["./pocketbase", "serve", "--http=0.0.0.0:8090", "--dir=/pb_data"]
+    environment:
+      - PB_DATA_DIR=/pb_data
+      - PB_ENCRYPTION_KEY=${PB_ENCRYPTION_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-QCS Cargo <noreply@qcscargo.com>}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+    volumes:
+      # Use ../files pattern for Dokploy persistence
+      - ../files/qcs_pb_data:/pb_data
+      - ./pocketbase/pb_migrations:/pb_migrations
+      - ./pocketbase/pb_hooks:/pb_hooks
+    networks:
+      - qcs_network
+      - dokploy-network
+    labels:
+      # Traefik configuration for PocketBase API
+      - "traefik.enable=true"
+      # HTTPS router
+      - "traefik.http.routers.qcs-pb.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.qcs-pb.entrypoints=websecure"
+      - "traefik.http.routers.qcs-pb.tls=true"
+      - "traefik.http.routers.qcs-pb.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qcs-pb.loadbalancer.server.port=8090"
+      # HTTP to HTTPS redirect router
+      - "traefik.http.routers.qcs-pb-http.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.qcs-pb-http.entrypoints=web"
+      - "traefik.http.routers.qcs-pb-http.middlewares=https-redirect"
+      # Rate limiting for API
+      - "traefik.http.middlewares.qcs-pb-ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.qcs-pb-ratelimit.ratelimit.burst=50"
+      - "traefik.http.routers.qcs-pb.middlewares=qcs-pb-ratelimit"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8090/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+
+  qcs_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_POCKETBASE_URL: ${PUBLIC_POCKETBASE_URL}
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+    container_name: qcs_web
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
+      - PUBLIC_SITE_URL=${PUBLIC_SITE_URL}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+    depends_on:
+      qcs_pocketbase:
+        condition: service_healthy
+    networks:
+      - qcs_network
+      - dokploy-network
+    labels:
+      # Traefik configuration for SvelteKit frontend
+      - "traefik.enable=true"
+      # HTTPS router (main domain)
+      - "traefik.http.routers.qcs-web.rule=Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)"
+      - "traefik.http.routers.qcs-web.entrypoints=websecure"
+      - "traefik.http.routers.qcs-web.tls=true"
+      - "traefik.http.routers.qcs-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qcs-web.loadbalancer.server.port=3000"
+      # HTTP to HTTPS redirect router
+      - "traefik.http.routers.qcs-web-http.rule=Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)"
+      - "traefik.http.routers.qcs-web-http.entrypoints=web"
+      - "traefik.http.routers.qcs-web-http.middlewares=https-redirect"
+      # WWW redirect middleware
+      - "traefik.http.middlewares.qcs-www-redirect.redirectregex.permanent=true"
+      - "traefik.http.middlewares.qcs-www-redirect.redirectregex.regex=^https://www\\.(.+)"
+      - "traefik.http.middlewares.qcs-www-redirect.redirectregex.replacement=https://$${1}"
+      # Security headers
+      - "traefik.http.middlewares.qcs-security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.qcs-security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.qcs-security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.qcs-security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.qcs-security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.routers.qcs-web.middlewares=qcs-www-redirect,qcs-security-headers"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+

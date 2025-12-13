@@ -40,45 +40,59 @@ export const navigationConfig: {
   customer: [
     {
       id: 'dashboard',
-      label: 'Dashboard',
+      label: 'Home',
       href: '/dashboard',
-      icon: Home
+      icon: Home,
+      mobileOnly: false
     },
     {
       id: 'shipments',
       label: 'Shipments',
       href: '/dashboard/shipments',
-      icon: Package
+      icon: Package,
+      mobileOnly: false
     },
     {
       id: 'bookings',
       label: 'Bookings',
       href: '/dashboard/bookings',
-      icon: CalendarDays
+      icon: CalendarDays,
+      mobileOnly: false
+    },
+    {
+      id: 'new-booking',
+      label: 'New',
+      href: '/dashboard/bookings/new',
+      icon: CalendarDays,
+      mobileOnly: true
     },
     {
       id: 'recipients',
       label: 'Recipients',
       href: '/dashboard/recipients',
-      icon: Users
+      icon: Users,
+      desktopOnly: true
     },
     {
       id: 'mailbox',
       label: 'Mailbox',
       href: '/dashboard/mailbox',
-      icon: Mailbox
+      icon: Mailbox,
+      desktopOnly: true
     },
     {
       id: 'invoices',
       label: 'Invoices',
       href: '/dashboard/invoices',
-      icon: Receipt
+      icon: Receipt,
+      desktopOnly: true
     },
     {
       id: 'settings',
       label: 'Settings',
       href: '/dashboard/settings',
-      icon: Settings
+      icon: Settings,
+      desktopOnly: true
     }
   ],
   staff: [

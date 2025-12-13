@@ -8,12 +8,14 @@
 
   $: navigationItems = user ? navigationConfig[user.role as keyof typeof navigationConfig] || [] : [];
   $: currentPath = $page.url.pathname;
+
+  // Filter items for mobile: prefer mobileOnly items, exclude desktopOnly items
+  $: mobileItems = navigationItems.filter(item => !item.desktopOnly);
 </script>
 
 <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40" aria-label="Main navigation">
   <ul class="flex justify-around items-center h-16 px-2">
-    {#each navigationItems as item (item.id)}
-      {#if !item.desktopOnly}
+    {#each mobileItems as item (item.id)}
         <li>
           <a
             href={item.href}

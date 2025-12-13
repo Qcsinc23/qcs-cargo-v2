@@ -6,7 +6,7 @@
   import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
-  import { DraftBookingDialog, DraftSaveIndicator } from '$lib/components/booking';
+  import { DraftBookingDialog, DraftSaveIndicator, DeliveryEstimate } from '$lib/components/booking';
   import { DESTINATIONS, getDestination, getDestinationLabel } from '$lib/config/destinations';
   import { SERVICES_INFO, TIME_SLOTS, SATURDAY_SLOTS } from '$lib/config/constants';
   import { booking, currentStep, packageCount, hasMultiplePackages, totalWeight, hasUnknownWeight, type BookingPackage, type BookingRecipient, createEmptyPackage } from '$lib/stores/booking';
@@ -918,16 +918,24 @@
                 <Calendar class="w-5 h-5 text-primary-600" />
                 <div>
                   <p class="font-medium text-gray-900">
-                    {new Date(bookingState.scheduledDate).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric' 
+                    {new Date(bookingState.scheduledDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric'
                     })}
                   </p>
                   <p class="text-sm text-gray-600">{bookingState.timeSlot}</p>
                 </div>
               </div>
             </Card>
+
+            <!-- Delivery Estimate Preview -->
+            <DeliveryEstimate
+              serviceType={bookingState.serviceType}
+              destinationId={bookingState.destination}
+              scheduledDate={bookingState.scheduledDate}
+              showInCard={false}
+            />
           {/if}
         </div>
 
@@ -995,6 +1003,15 @@
               </p>
             </Card>
           </div>
+
+          <!-- Delivery Estimate -->
+          {#if bookingState.serviceType && bookingState.destination && bookingState.scheduledDate}
+            <DeliveryEstimate
+              serviceType={bookingState.serviceType}
+              destinationId={bookingState.destination}
+              scheduledDate={bookingState.scheduledDate}
+            />
+          {/if}
 
           <!-- Cost Breakdown -->
           {#if bookingState.quote}

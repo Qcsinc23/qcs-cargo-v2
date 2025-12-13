@@ -227,19 +227,20 @@
             Print Labels
           </Button>
           <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-              <button
-                type="button"
-                {...builder}
-                use:builder.action
-                class="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                Update Status
-              </button>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <button
+                  {...props}
+                  type="button"
+                  class="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  Update Status
+                </button>
+              {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               {#each statuses as status}
-                <DropdownMenu.Item on:click={() => bulkUpdateStatus(status)}>
+                <DropdownMenu.Item onSelect={() => bulkUpdateStatus(status)}>
                   {STATUS_LABELS[status]}
                 </DropdownMenu.Item>
               {/each}
@@ -334,19 +335,20 @@
                 <td class="px-4 py-3 text-sm font-medium text-slate-900">${shipment.amount?.toFixed(2) || '0.00'}</td>
                 <td class="px-4 py-3 text-right">
                   <DropdownMenu.Root>
-                    <DropdownMenu.Trigger asChild let:builder>
-                      <button
-                        type="button"
-                        {...builder}
-                        use:builder.action
-                        class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-                        aria-label="Shipment actions"
-                      >
-                        <MoreHorizontal class="h-4 w-4" />
-                      </button>
+                    <DropdownMenu.Trigger>
+                      {#snippet child({ props })}
+                        <button
+                          {...props}
+                          type="button"
+                          class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                          aria-label="Shipment actions"
+                        >
+                          <MoreHorizontal class="h-4 w-4" />
+                        </button>
+                      {/snippet}
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end">
-                      <DropdownMenu.Item on:click={() => goto(`/admin/shipments/${shipment.shipmentId}`)}>
+                      <DropdownMenu.Item onSelect={() => goto(`/admin/shipments/${shipment.shipmentId}`)}>
                         <Eye class="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenu.Item>
@@ -365,12 +367,12 @@
                         </DropdownMenu.Item>
                       {/if}
                       <DropdownMenu.Separator />
-                      <DropdownMenu.Item on:click={() => updateShipmentStatus(shipment.shipmentId, 'delivered')}>
+                      <DropdownMenu.Item onSelect={() => updateShipmentStatus(shipment.shipmentId, 'delivered')}>
                         <CheckCircle2 class="mr-2 h-4 w-4" />
                         Mark Delivered
                       </DropdownMenu.Item>
                       {#if shipment.status !== 'delivered' && shipment.status !== 'returned'}
-                        <DropdownMenu.Item on:click={() => {
+                        <DropdownMenu.Item onSelect={() => {
                           const note = prompt('Add note for exception:');
                           if (note) updateShipmentStatus(shipment.shipmentId, 'exception', note);
                         }}>

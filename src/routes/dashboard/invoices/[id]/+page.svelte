@@ -2,11 +2,14 @@
   import { page } from '$app/stores';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { ArrowLeft, Download } from 'lucide-svelte';
+  import { ArrowLeft, Download, Loader2 } from 'lucide-svelte';
+  import { downloadInvoicePDF } from '$lib/utils/pdf-generator';
+  import { toast } from 'svelte-sonner';
 
   export let data;
 
   const invoice = data.invoice as Record<string, any>;
+  let isGeneratingPDF = false;
 
   const statusStyles: Record<string, string> = {
     paid: 'bg-green-100 text-green-700',
@@ -44,9 +47,28 @@
       }));
   }
 
-  function downloadPdf() {
-    const id = $page.params.id;
-    window.open(`/api/invoices/${id}/pdf`, '_blank');
+  async function downloadPdf() {
+    isGeneratingPDF = true;
+    try {
+      const id = $page.params.id;
+      const response = await fetch(`/api/invoices/${id}/pdf`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice data');
+      }
+
+      const invoiceData = await response.json();
+      
+      // Generate and download PDF
+      downloadInvoicePDF(invoiceData);
+      
+      toast.success('Invoice PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      isGeneratingPDF = false;
+    }
   }
 </script>
 
@@ -62,9 +84,14 @@
         <p class="text-gray-600">{invoice.invoice_number || invoice.id}</p>
       </div>
     </div>
-    <Button on:click={downloadPdf}>
-      <Download class="w-4 h-4 mr-2" />
-      Download PDF
+    <Button on:click={downloadPdf} disabled={isGeneratingPDF}>
+      {#if isGeneratingPDF}
+        <Loader2 class="w-4 h-4 mr-2 animate-spin" />
+        Generating...
+      {:else}
+        <Download class="w-4 h-4 mr-2" />
+        Download PDF
+      {/if}
     </Button>
   </div>
 

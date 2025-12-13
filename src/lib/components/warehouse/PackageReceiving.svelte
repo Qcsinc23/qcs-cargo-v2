@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import type { QRScanResult, PackageCondition, WarehousePackage } from '$lib/types/warehouse';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
 
   // Scanner state
   let isScanning = false;
@@ -15,11 +16,11 @@
   let currentPackage: WarehousePackage | null = null;
   let trackingNumber = '';
   let selectedCondition: PackageCondition = 'excellent';
-  let actualWeight = '';
+  let actualWeight: number | null = null;
   let actualDimensions = {
-    length: '',
-    width: '',
-    height: ''
+    length: null as number | null,
+    width: null as number | null,
+    height: null as number | null
   };
   let notes = '';
   let photos: File[] = [];
@@ -157,7 +158,7 @@
 
       // Pre-fill weight if available
       if (currentPackage?.weight?.actual) {
-        actualWeight = currentPackage.weight.actual.toString();
+        actualWeight = currentPackage.weight.actual;
       }
 
       // Generate bay location
@@ -202,11 +203,11 @@
       const packageData = {
         trackingNumber,
         condition: selectedCondition,
-        actualWeight: actualWeight ? parseFloat(actualWeight) : undefined,
+        actualWeight: actualWeight ?? undefined,
         actualDimensions: {
-          length: actualDimensions.length ? parseFloat(actualDimensions.length) : undefined,
-          width: actualDimensions.width ? parseFloat(actualDimensions.width) : undefined,
-          height: actualDimensions.height ? parseFloat(actualDimensions.height) : undefined
+          length: actualDimensions.length ?? undefined,
+          width: actualDimensions.width ?? undefined,
+          height: actualDimensions.height ?? undefined
         },
         notes,
         bayLocation
@@ -256,8 +257,8 @@
     currentPackage = null;
     trackingNumber = '';
     selectedCondition = 'excellent';
-    actualWeight = '';
-    actualDimensions = { length: '', width: '', height: '' };
+    actualWeight = null;
+    actualDimensions = { length: null, width: null, height: null };
     notes = '';
     photos = [];
     photoPreviewUrls = [];
@@ -396,10 +397,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Actual Weight (kg)
             </label>
-            <input
-              type="number"
-              step="0.1"
+            <NumericInput
               bind:value={actualWeight}
+              options={{ precision: 1, valueRange: { min: 0 } }}
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter actual weight"
             />
@@ -413,27 +413,27 @@
             <div class="grid grid-cols-3 gap-3">
               <div>
                 <label class="block text-xs text-gray-500 mb-1">Length</label>
-                <input
-                  type="number"
+                <NumericInput
                   bind:value={actualDimensions.length}
+                  options={{ precision: 1, valueRange: { min: 0 } }}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Length"
                 />
               </div>
               <div>
                 <label class="block text-xs text-gray-500 mb-1">Width</label>
-                <input
-                  type="number"
+                <NumericInput
                   bind:value={actualDimensions.width}
+                  options={{ precision: 1, valueRange: { min: 0 } }}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Width"
                 />
               </div>
               <div>
                 <label class="block text-xs text-gray-500 mb-1">Height</label>
-                <input
-                  type="number"
+                <NumericInput
                   bind:value={actualDimensions.height}
+                  options={{ precision: 1, valueRange: { min: 0 } }}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Height"
                 />

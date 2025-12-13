@@ -115,21 +115,22 @@
 
         <!-- User Menu -->
         <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button 
-              {...builder} 
-              use:builder.action
-              class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                {user.name?.charAt(0)?.toUpperCase() || 'A'}
-              </div>
-              <div class="hidden md:block text-left">
-                <p class="text-sm font-medium text-white">{user.name || 'Admin'}</p>
-                <p class="text-xs text-slate-400 capitalize">{user.role}</p>
-              </div>
-              <ChevronDown class="hidden md:block h-4 w-4 text-slate-400" />
-            </button>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                  {user.name?.charAt(0)?.toUpperCase() || 'A'}
+                </div>
+                <div class="hidden md:block text-left">
+                  <p class="text-sm font-medium text-white">{user.name || 'Admin'}</p>
+                  <p class="text-xs text-slate-400 capitalize">{user.role}</p>
+                </div>
+                <ChevronDown class="hidden md:block h-4 w-4 text-slate-400" />
+              </button>
+            {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="w-56" align="end">
             <DropdownMenu.Label>My Account</DropdownMenu.Label>
@@ -141,7 +142,7 @@
               <a href="/dashboard" class="flex items-center w-full">Switch to Customer View</a>
             </DropdownMenu.Item>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item class="text-red-600" on:click={() => logoutDialogOpen = true}>
+            <DropdownMenu.Item class="text-red-600" onSelect={() => logoutDialogOpen = true}>
               <LogOut class="mr-2 h-4 w-4" />
               Log out
             </DropdownMenu.Item>

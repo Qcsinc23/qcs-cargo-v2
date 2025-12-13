@@ -1,9 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { Input } from '$lib/components/ui/input';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Truck, Weight, DollarSign, AlertCircle, Package, ShieldCheck } from 'lucide-svelte';
   import { UNIFIED_PRICING } from '$lib/config/pricing-unified';
+  import type { NumberInputOptions } from 'intl-number-input';
 
   export let destination: string;
   export let actualWeight: number | null;
@@ -18,7 +19,26 @@
 
   const dispatch = createEventDispatcher();
 
-  function handleInput(field: string, value: string) {
+  const weightValueRange = { min: 0.1, max: 500 } as const;
+  const declaredValueRange = { min: 0, max: 50000 } as const;
+  const dimensionMin0Range = { min: 0 } as const;
+
+  const actualWeightOptions: Partial<NumberInputOptions> = {
+    precision: 1,
+    valueRange: weightValueRange
+  };
+
+  const declaredValueOptions: Partial<NumberInputOptions> = {
+    precision: 0,
+    valueRange: declaredValueRange
+  };
+
+  const dimensionOptions: Partial<NumberInputOptions> = {
+    precision: 1,
+    valueRange: dimensionMin0Range
+  };
+
+  function handleInput(field: string, value: string | number | boolean | null) {
     dispatch('input', { field, value });
   }
 </script>
@@ -61,14 +81,11 @@
         <Weight size={16} aria-hidden="true" />
         Actual Weight (lbs) <span class="text-destructive" aria-label="required field">*</span>
       </Label>
-      <Input
+      <NumericInput
         id="weight"
-        type="number"
-        min="0.1"
-        max="500"
-        step="0.1"
         bind:value={actualWeight}
-        on:input={() => handleInput('actualWeight', actualWeight?.toString() || '')}
+        options={actualWeightOptions}
+        onInput={(raw) => handleInput('actualWeight', raw)}
         placeholder="e.g., 72"
         required
         disabled={isCalculating}
@@ -88,14 +105,11 @@
         <DollarSign size={16} aria-hidden="true" />
         Declared Value (USD)
       </Label>
-      <Input
+      <NumericInput
         id="declaredValue"
-        type="number"
-        min="0"
-        max="50000"
-        step="1"
         bind:value={declaredValue}
-        on:input={() => handleInput('declaredValue', declaredValue?.toString() || '')}
+        options={declaredValueOptions}
+        onInput={(raw) => handleInput('declaredValue', raw)}
         placeholder="e.g., 550"
         disabled={isCalculating}
         class={errors.declaredValue ? 'border-red-500' : ''}
@@ -119,13 +133,11 @@
     <div class="grid gap-4 sm:grid-cols-3">
       <div class="space-y-2">
         <Label for="length">Length</Label>
-        <Input
+        <NumericInput
           id="length"
-          type="number"
-          min="0"
-          step="0.1"
           bind:value={length}
-          on:input={() => handleInput('length', length?.toString() || '')}
+          options={dimensionOptions}
+          onInput={(raw) => handleInput('length', raw)}
           placeholder="e.g., 20"
           disabled={isCalculating}
           class={errors.length ? 'border-red-500' : ''}
@@ -133,13 +145,11 @@
       </div>
       <div class="space-y-2">
         <Label for="width">Width</Label>
-        <Input
+        <NumericInput
           id="width"
-          type="number"
-          min="0"
-          step="0.1"
           bind:value={width}
-          on:input={() => handleInput('width', width?.toString() || '')}
+          options={dimensionOptions}
+          onInput={(raw) => handleInput('width', raw)}
           placeholder="e.g., 14"
           disabled={isCalculating}
           class={errors.width ? 'border-red-500' : ''}
@@ -147,13 +157,11 @@
       </div>
       <div class="space-y-2">
         <Label for="height">Height</Label>
-        <Input
+        <NumericInput
           id="height"
-          type="number"
-          min="0"
-          step="0.1"
           bind:value={height}
-          on:input={() => handleInput('height', height?.toString() || '')}
+          options={dimensionOptions}
+          onInput={(raw) => handleInput('height', raw)}
           placeholder="e.g., 12"
           disabled={isCalculating}
           class={errors.height ? 'border-red-500' : ''}
@@ -189,7 +197,7 @@
       <input
         type="checkbox"
         bind:checked={includeInsurance}
-        on:change={() => handleInput('includeInsurance', includeInsurance ? 'true' : 'false')}
+        on:change={() => handleInput('includeInsurance', includeInsurance)}
         disabled={isCalculating}
       />
       Include insurance (recommended)

@@ -16,6 +16,9 @@ export {
 // Input
 export { Input, type InputEvents, type FormInputEvent } from './input';
 
+// Numeric Input (formatted)
+export { NumericInput } from './numeric-input';
+
 // Label
 export { Label } from './label';
 
@@ -51,11 +54,9 @@ export {
   SelectTrigger,
   SelectContent,
   SelectItem,
-  SelectValue,
   SelectLabel,
   SelectSeparator,
-  SelectGroup,
-  SelectInput
+  SelectGroup
 } from './select';
 
 // Textarea

@@ -1,6 +1,6 @@
 import Breadcrumbs from './breadcrumbs.svelte';
 import type { ComponentType } from 'svelte';
-import type { BreadcrumbPath } from './breadcrumbs.svelte';
+import type { BreadcrumbPath } from './types';
 
 export { Breadcrumbs };
 export type { BreadcrumbPath };

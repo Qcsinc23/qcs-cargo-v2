@@ -1,10 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { Input } from '$lib/components/ui/input';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Ruler, AlertCircle, Info } from 'lucide-svelte';
   import { UNIFIED_PRICING } from '$lib/config/pricing-unified';
+  import type { NumberInputOptions } from 'intl-number-input';
 
   export let length: number | null;
   export let width: number | null;
@@ -16,7 +17,13 @@
 
   const dispatch = createEventDispatcher();
 
-  function handleDimensionChange(dimension: string, value: string) {
+  const dimensionValueRange = { min: 1, max: 100 } as const;
+  const dimensionOptions: Partial<NumberInputOptions> = {
+    precision: 1,
+    valueRange: dimensionValueRange
+  };
+
+  function handleDimensionChange(dimension: string, value: number | null) {
     dispatch('change', { dimension, value });
   }
 
@@ -33,30 +40,24 @@
     Dimensional Weight = (L × W × H) ÷ {UNIFIED_PRICING.dimensionalWeight.divisor}
   </p>
   <div class="grid gap-2 sm:grid-cols-3">
-    <Input
-      type="number"
-      min="1"
-      max="100"
+    <NumericInput
       bind:value={length}
-      on:input={() => handleDimensionChange('length', length?.toString() || '')}
+      options={dimensionOptions}
+      onInput={(raw) => handleDimensionChange('length', raw)}
       placeholder="Length"
       class={errors.length ? 'border-red-500' : ''}
     />
-    <Input
-      type="number"
-      min="1"
-      max="100"
+    <NumericInput
       bind:value={width}
-      on:input={() => handleDimensionChange('width', width?.toString() || '')}
+      options={dimensionOptions}
+      onInput={(raw) => handleDimensionChange('width', raw)}
       placeholder="Width"
       class={errors.width ? 'border-red-500' : ''}
     />
-    <Input
-      type="number"
-      min="1"
-      max="100"
+    <NumericInput
       bind:value={height}
-      on:input={() => handleDimensionChange('height', height?.toString() || '')}
+      options={dimensionOptions}
+      onInput={(raw) => handleDimensionChange('height', raw)}
       placeholder="Height"
       class={errors.height ? 'border-red-500' : ''}
     />

@@ -12,7 +12,7 @@
   export { className as class };
 </script>
 
-<div class={cn(badgeVariants({ variant, className }))} {...$$restProps}>
+<div class={cn(badgeVariants({ variant }), className)} {...$$restProps}>
   <slot />
 </div>
 

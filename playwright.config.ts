@@ -2,15 +2,17 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 
 const config: PlaywrightTestConfig = {
   webServer: {
-    command: 'npm run build && npm run preview',
-    port: 4173
+    command: 'npm run dev -- --port 5179',
+    port: 5179,
+    reuseExistingServer: true, // Use existing dev server
+    timeout: 120000
   },
   testDir: 'tests/e2e',
   testMatch: /(.+\.)?(test|spec)\.[jt]s/,
   timeout: 30000,
   retries: process.env.CI ? 2 : 0,
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'http://localhost:5179',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },

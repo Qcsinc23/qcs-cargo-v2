@@ -244,19 +244,20 @@
               </td>
               <td class="px-4 py-3 text-right">
                 <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild let:builder>
-                    <button
-                      type="button"
-                      {...builder}
-                      use:builder.action
-                      class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-                      aria-label="User actions"
-                    >
-                      <MoreHorizontal class="h-4 w-4" />
-                    </button>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <button
+                        {...props}
+                        type="button"
+                        class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                        aria-label="User actions"
+                      >
+                        <MoreHorizontal class="h-4 w-4" />
+                      </button>
+                    {/snippet}
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content align="end">
-                    <DropdownMenu.Item on:click={() => goto(`/admin/users/${user.id}`)}>
+                    <DropdownMenu.Item onSelect={() => goto(`/admin/users/${user.id}`)}>
                       <Eye class="mr-2 h-4 w-4" />
                       View Profile
                     </DropdownMenu.Item>

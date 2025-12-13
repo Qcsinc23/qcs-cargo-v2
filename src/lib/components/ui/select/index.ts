@@ -8,27 +8,21 @@ import Trigger from './select-trigger.svelte';
 
 const Root = SelectPrimitive.Root;
 const Group = SelectPrimitive.Group;
-const Input = SelectPrimitive.Input;
-const Value = SelectPrimitive.Value;
 
 export {
   Root,
   Content,
   Group,
-  Input,
   Item,
   Label,
   Separator,
   Trigger,
-  Value,
   Root as Select,
   Content as SelectContent,
   Group as SelectGroup,
-  Input as SelectInput,
   Item as SelectItem,
   Label as SelectLabel,
   Separator as SelectSeparator,
-  Trigger as SelectTrigger,
-  Value as SelectValue
+  Trigger as SelectTrigger
 };
 

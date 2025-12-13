@@ -43,6 +43,7 @@
     { value: 'all', label: 'All Bookings' },
     { value: 'draft', label: 'Drafts' },
     { value: 'pending', label: 'Pending' },
+    { value: 'pending_payment', label: 'Payment Required' },
     { value: 'confirmed', label: 'Confirmed' },
     { value: 'cancelled', label: 'Cancelled' }
   ];
@@ -50,6 +51,8 @@
   const statusStyles: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-700',
     pending: 'bg-amber-100 text-amber-700',
+    pending_payment: 'bg-red-100 text-red-700',
+    payment_failed: 'bg-red-100 text-red-700',
     confirmed: 'bg-green-100 text-green-700',
     cancelled: 'bg-red-100 text-red-700'
   };
@@ -69,6 +72,7 @@
 
   // Check for incomplete drafts
   $: draftCount = bookings.filter(b => b.status === 'draft').length;
+  $: failedPaymentCount = bookings.filter(b => b.status === 'pending_payment' || b.status === 'payment_failed').length;
 
   function formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -115,6 +119,22 @@
       </div>
       <Button variant="outline" size="sm" on:click={() => statusFilter = 'draft'}>
         View Drafts
+      </Button>
+    </div>
+  {/if}
+
+  <!-- Payment Failed Alert -->
+  {#if failedPaymentCount > 0}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+      <AlertTriangle class="w-5 h-5 text-red-600 flex-shrink-0" />
+      <div class="flex-1">
+        <p class="font-medium text-red-800">
+          {failedPaymentCount} booking{failedPaymentCount > 1 ? 's need' : ' needs'} payment
+        </p>
+        <p class="text-sm text-red-600">Complete payment to confirm your shipment{failedPaymentCount > 1 ? 's' : ''}</p>
+      </div>
+      <Button variant="destructive" size="sm" on:click={() => statusFilter = 'pending_payment'}>
+        View Pending
       </Button>
     </div>
   {/if}

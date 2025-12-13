@@ -21,7 +21,8 @@
     AlertTriangle,
     Copy,
     Check,
-    ExternalLink
+    ExternalLink,
+    Loader2
   } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
 
@@ -70,8 +71,10 @@
 
   $: currentBooking = booking as BookingDetail | null;
   $: statusStyle = currentBooking ? (STATUS_COLORS[currentBooking.status] || STATUS_COLORS.pending) : STATUS_COLORS.pending;
+  $: hasFailedPayment = currentBooking?.status === 'pending_payment' || (currentBooking?.status === 'payment_failed');
 
   let copied = false;
+  let isRetryingPayment = false;
 
   async function copyConfirmationNumber() {
     if (!currentBooking) return;
@@ -107,6 +110,20 @@
     }
     // API call would go here
     toast.success('Booking cancelled');
+  }
+
+  async function retryPayment() {
+    if (!currentBooking) return;
+    
+    isRetryingPayment = true;
+    try {
+      // Redirect to payment page with existing booking ID
+      window.location.href = `/dashboard/bookings/${currentBooking.id}/pay`;
+    } catch (error) {
+      console.error('Error retrying payment:', error);
+      toast.error('Failed to initiate payment. Please try again.');
+      isRetryingPayment = false;
+    }
   }
 </script>
 
@@ -165,7 +182,11 @@
             <Edit class="w-4 h-4 mr-2" />
             Continue Booking
           </Button>
-        {:else if currentBooking.status === 'pending' || currentBooking.status === 'confirmed'}
+        {:else if currentBooking.status === 'pending_payment' || currentBooking.status === 'confirmed'}
+          <Button variant="outline" href="/dashboard/bookings/{currentBooking.id}/modify">
+            <Edit class="w-4 h-4 mr-2" />
+            Modify Booking
+          </Button>
           <Button variant="outline" on:click={cancelBooking}>
             <XCircle class="w-4 h-4 mr-2" />
             Cancel Booking
@@ -180,6 +201,15 @@
         <AlertTriangle class="w-4 h-4 text-amber-600" />
         <AlertDescription class="text-amber-800">
           This booking is incomplete. <a href="/dashboard/bookings/{currentBooking.id}/edit" class="underline font-medium">Continue your booking</a> to confirm.
+        </AlertDescription>
+      </Alert>
+    {:else if hasFailedPayment}
+      <Alert class="bg-red-50 border-red-200">
+        <AlertTriangle class="w-4 h-4 text-red-600" />
+        <AlertDescription class="text-red-800">
+          Payment failed or pending. <button on:click={retryPayment} class="underline font-medium hover:no-underline" disabled={isRetryingPayment}>
+            {isRetryingPayment ? 'Redirecting...' : 'Retry payment'}
+          </button> to complete your booking.
         </AlertDescription>
       </Alert>
     {/if}
@@ -341,6 +371,27 @@
                 <p class="text-xs text-green-600 pt-2">
                   ✓ Paid on {formatDate(currentBooking.paidAt)}
                 </p>
+              {:else if hasFailedPayment}
+                <div class="pt-2">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    class="w-full"
+                    on:click={retryPayment}
+                    disabled={isRetryingPayment}
+                  >
+                    {#if isRetryingPayment}
+                      <Loader2 class="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    {:else}
+                      <DollarSign class="w-4 h-4 mr-2" />
+                      Retry Payment
+                    {/if}
+                  </Button>
+                  <p class="text-xs text-red-600 mt-2">
+                    Payment required to confirm booking
+                  </p>
+                </div>
               {:else if currentBooking.status !== 'cancelled'}
                 <p class="text-xs text-amber-600 pt-2">
                   Payment pending

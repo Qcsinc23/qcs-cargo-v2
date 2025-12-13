@@ -1,18 +1,9 @@
-<script lang="ts" context="module">
-  import type { ComponentType } from 'svelte';
-
-  export interface BreadcrumbPath {
-    label: string;
-    href?: string;
-    icon?: ComponentType;
-    disabled?: boolean;
-  }
-</script>
-
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { page } from '$app/stores';
   import { Home, ChevronRight, MoreHorizontal } from 'lucide-svelte';
+  import type { ComponentType } from 'svelte';
+  import type { BreadcrumbPath } from './types';
 
   export let customPath: BreadcrumbPath[] | undefined = undefined;
   export let showHome = true;
@@ -20,6 +11,12 @@
   export let maxItems = 3;
 
   const dispatch = createEventDispatcher();
+
+  // Explicit locals keep TypeScript happy even when the editor falls back to plain TS analysis.
+  let paths: BreadcrumbPath[] = [];
+  let displayPaths: BreadcrumbPath[] = [];
+  let shouldTruncate = false;
+  let visiblePaths: BreadcrumbPath[] = [];
 
   $: paths = customPath || generateBreadcrumbPaths($page.url.pathname);
 

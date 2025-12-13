@@ -18,13 +18,6 @@
     className
   )}
   {...$$restProps}
-  on:click
-  on:keydown
-  on:focusin
-  on:focusout
-  on:pointerdown
-  on:pointerleave
-  on:pointermove
 >
   <slot />
 </DropdownMenuPrimitive.Item>

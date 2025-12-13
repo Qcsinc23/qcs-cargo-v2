@@ -22,13 +22,15 @@
   )}
   {...$$restProps}
 >
-  <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-    <SelectPrimitive.ItemIndicator>
-      <Check class="h-4 w-4" />
-    </SelectPrimitive.ItemIndicator>
-  </span>
-  <slot>
-    {label || value}
-  </slot>
+  {#snippet children({ selected })}
+    <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      {#if selected}
+        <Check class="h-4 w-4" />
+      {/if}
+    </span>
+    <slot>
+      {label || value}
+    </slot>
+  {/snippet}
 </SelectPrimitive.Item>
 

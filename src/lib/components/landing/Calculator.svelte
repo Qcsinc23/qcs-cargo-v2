@@ -3,7 +3,7 @@
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { Label } from '$lib/components/ui/label';
-  import { Input } from '$lib/components/ui/input';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
   import SkipLink from '$lib/components/ui/SkipLink.svelte';
   import CalculatorForm from '$lib/components/calculator/CalculatorForm.svelte';
   import DimensionInput from '$lib/components/calculator/DimensionInput.svelte';
@@ -268,13 +268,10 @@
           <Weight class="h-4 w-4" aria-hidden="true" />
           Actual Weight (lbs) <span class="text-destructive" aria-label="required field">*</span>
         </Label>
-        <Input
+        <NumericInput
           id="weight"
-          type="number"
-          min="0.1"
-          max="500"
-          step="0.1"
           bind:value={actualWeight}
+          options={{ precision: 1, valueRange: { min: 0.1, max: 500 } }}
           placeholder="e.g., 72"
           required
         />
@@ -285,13 +282,10 @@
           <DollarSign class="h-4 w-4" />
           Declared Value (USD)
         </Label>
-        <Input
+        <NumericInput
           id="declaredValue"
-          type="number"
-          min="0"
-          max="50000"
-          step="1"
           bind:value={declaredValue}
+          options={{ precision: 0, valueRange: { min: 0, max: 50000 } }}
           placeholder="e.g., 550"
         />
       </div>
@@ -307,25 +301,19 @@
         Dimensional Weight = (L × W × H) ÷ {UNIFIED_PRICING.dimensionalWeight.divisor}
       </p>
       <div class="grid gap-2 sm:grid-cols-3">
-        <Input
-          type="number"
-          min="1"
-          max="100"
+        <NumericInput
           bind:value={length}
+          options={{ precision: 1, valueRange: { min: 1, max: 100 } }}
           placeholder="Length"
         />
-        <Input
-          type="number"
-          min="1"
-          max="100"
+        <NumericInput
           bind:value={width}
+          options={{ precision: 1, valueRange: { min: 1, max: 100 } }}
           placeholder="Width"
         />
-        <Input
-          type="number"
-          min="1"
-          max="100"
+        <NumericInput
           bind:value={height}
+          options={{ precision: 1, valueRange: { min: 1, max: 100 } }}
           placeholder="Height"
         />
       </div>

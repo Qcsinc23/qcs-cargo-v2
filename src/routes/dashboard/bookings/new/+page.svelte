@@ -3,6 +3,7 @@
   import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { DESTINATIONS, getDestination, getDestinationLabel } from '$lib/config/destinations';
@@ -593,13 +594,10 @@
                     </div>
                     
                     {#if !pkg.weightUnknown}
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        max="150"
-                        value={pkg.weight || ''}
-                        on:input={(e) => updatePackage(pkg.id, 'weight', parseFloat(e.currentTarget.value) || null)}
+                      <NumericInput
+                        value={pkg.weight}
+                        options={{ precision: 1, valueRange: { min: 0.1, max: 150 } }}
+                        onInput={(raw) => updatePackage(pkg.id, 'weight', raw)}
                         placeholder="Enter weight"
                       />
                     {:else}
@@ -629,25 +627,22 @@
                     
                     {#if !pkg.dimensionsUnknown}
                       <div class="grid grid-cols-3 gap-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={pkg.length || ''}
-                          on:input={(e) => updatePackage(pkg.id, 'length', parseInt(e.currentTarget.value) || null)}
+                        <NumericInput
+                          value={pkg.length}
+                          options={{ precision: 0, valueRange: { min: 1 } }}
+                          onInput={(raw) => updatePackage(pkg.id, 'length', raw)}
                           placeholder="L"
                         />
-                        <Input
-                          type="number"
-                          min="1"
-                          value={pkg.width || ''}
-                          on:input={(e) => updatePackage(pkg.id, 'width', parseInt(e.currentTarget.value) || null)}
+                        <NumericInput
+                          value={pkg.width}
+                          options={{ precision: 0, valueRange: { min: 1 } }}
+                          onInput={(raw) => updatePackage(pkg.id, 'width', raw)}
                           placeholder="W"
                         />
-                        <Input
-                          type="number"
-                          min="1"
-                          value={pkg.height || ''}
-                          on:input={(e) => updatePackage(pkg.id, 'height', parseInt(e.currentTarget.value) || null)}
+                        <NumericInput
+                          value={pkg.height}
+                          options={{ precision: 0, valueRange: { min: 1 } }}
+                          onInput={(raw) => updatePackage(pkg.id, 'height', raw)}
                           placeholder="H"
                         />
                       </div>
@@ -664,11 +659,10 @@
                       <DollarSign class="w-4 h-4 text-gray-400" />
                       Declared Value (USD)
                     </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={pkg.declaredValue || ''}
-                      on:input={(e) => updatePackage(pkg.id, 'declaredValue', parseFloat(e.currentTarget.value) || null)}
+                    <NumericInput
+                      value={pkg.declaredValue}
+                      options={{ precision: 0, valueRange: { min: 0 } }}
+                      onInput={(raw) => updatePackage(pkg.id, 'declaredValue', raw)}
                       placeholder="For insurance (optional)"
                     />
                   </div>

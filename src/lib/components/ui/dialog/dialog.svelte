@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Dialog as DialogPrimitive } from 'bits-ui';
 
-  type $$Props = DialogPrimitive.Props;
+  type $$Props = DialogPrimitive.RootProps;
 
   export let open: $$Props['open'] = undefined;
   export let onOpenChange: $$Props['onOpenChange'] = undefined;

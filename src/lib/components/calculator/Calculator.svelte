@@ -49,55 +49,64 @@
   // MAIN CALCULATION FUNCTION
   // ============================================
   // Event handlers
-  function handleFormInput(e: CustomEvent<{ field: string; value: string }>) {
+  function handleFormInput(e: CustomEvent<{ field: string; value: string | number | boolean | null }>) {
     const { field, value } = e.detail;
     formErrors[field] = '';
     calculationError = null;
 
+    const toNumber = (v: string | number | boolean | null): number | null => {
+      if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+      if (typeof v === 'string') {
+        const n = v ? parseFloat(v) : NaN;
+        return Number.isFinite(n) ? n : null;
+      }
+      return null;
+    };
+
     switch (field) {
       case 'destination':
-        destination = value;
+        destination = typeof value === 'string' ? value : '';
         break;
       case 'service':
-        selectedService = value;
+        selectedService = typeof value === 'string' ? value : 'standard';
         break;
       case 'includeInsurance':
-        includeInsurance = value === 'true';
+        includeInsurance = typeof value === 'boolean' ? value : value === 'true';
         break;
       case 'actualWeight':
-        actualWeight = value ? parseFloat(value) : null;
+        actualWeight = toNumber(value);
         break;
       case 'declaredValue':
-        declaredValue = value ? parseFloat(value) : null;
+        declaredValue = toNumber(value);
         break;
       case 'length':
-        length = value ? parseFloat(value) : null;
+        length = toNumber(value);
         break;
       case 'width':
-        width = value ? parseFloat(value) : null;
+        width = toNumber(value);
         break;
       case 'height':
-        height = value ? parseFloat(value) : null;
+        height = toNumber(value);
         break;
       default:
         break;
     }
   }
 
-  function handleDimensionChange(e: CustomEvent<{ dimension: string; value: string }>) {
+  function handleDimensionChange(e: CustomEvent<{ dimension: string; value: number | null }>) {
     const { dimension, value } = e.detail;
     formErrors[dimension] = '';
     calculationError = null;
 
     switch (dimension) {
       case 'length':
-        length = value ? parseFloat(value) : null;
+        length = value;
         break;
       case 'width':
-        width = value ? parseFloat(value) : null;
+        width = value;
         break;
       case 'height':
-        height = value ? parseFloat(value) : null;
+        height = value;
         break;
       default:
         break;

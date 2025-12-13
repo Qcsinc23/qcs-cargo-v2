@@ -2,6 +2,7 @@
   import { Card } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Separator } from '$lib/components/ui/separator';
   import { Switch } from '$lib/components/ui/switch';
@@ -146,47 +147,42 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div class="space-y-2">
         <Label>Guyana ($/lb)</Label>
-        <Input 
-          type="number" 
-          step="0.25" 
+        <NumericInput
           bind:value={settings.pricing.guyana}
-          on:input={markChanged}
+          options={{ precision: 2, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
       <div class="space-y-2">
         <Label>Trinidad ($/lb)</Label>
-        <Input 
-          type="number" 
-          step="0.25" 
+        <NumericInput
           bind:value={settings.pricing.trinidad}
-          on:input={markChanged}
+          options={{ precision: 2, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
       <div class="space-y-2">
         <Label>Jamaica ($/lb)</Label>
-        <Input 
-          type="number" 
-          step="0.25" 
+        <NumericInput
           bind:value={settings.pricing.jamaica}
-          on:input={markChanged}
+          options={{ precision: 2, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
       <div class="space-y-2">
         <Label>Barbados ($/lb)</Label>
-        <Input 
-          type="number" 
-          step="0.25" 
+        <NumericInput
           bind:value={settings.pricing.barbados}
-          on:input={markChanged}
+          options={{ precision: 2, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
       <div class="space-y-2">
         <Label>Suriname ($/lb)</Label>
-        <Input 
-          type="number" 
-          step="0.25" 
+        <NumericInput
           bind:value={settings.pricing.suriname}
-          on:input={markChanged}
+          options={{ precision: 2, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
     </div>
@@ -196,36 +192,35 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="space-y-2">
         <Label>Dim Weight Divisor</Label>
-        <Input 
-          type="number" 
+        <NumericInput
           bind:value={settings.pricing.dimDivisor}
-          on:input={markChanged}
+          options={{ precision: 0, valueRange: { min: 1 } }}
+          onInput={() => markChanged()}
         />
         <p class="text-xs text-slate-500">L×W×H ÷ divisor</p>
       </div>
       <div class="space-y-2">
         <Label>Minimum Charge ($)</Label>
-        <Input 
-          type="number" 
+        <NumericInput
           bind:value={settings.pricing.minCharge}
-          on:input={markChanged}
+          options={{ precision: 0, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
       <div class="space-y-2">
         <Label>Insurance Rate (%)</Label>
-        <Input 
-          type="number" 
-          step="0.01" 
+        <NumericInput
           bind:value={settings.pricing.insuranceRate}
-          on:input={markChanged}
+          options={{ precision: 2, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
       <div class="space-y-2">
         <Label>Min Insurance ($)</Label>
-        <Input 
-          type="number" 
+        <NumericInput
           bind:value={settings.pricing.minInsurance}
-          on:input={markChanged}
+          options={{ precision: 0, valueRange: { min: 0 } }}
+          onInput={() => markChanged()}
         />
       </div>
     </div>
@@ -398,11 +393,11 @@
           <Label>Max Packages per Booking</Label>
           <p class="text-sm text-slate-500">Maximum number of packages in a single booking</p>
         </div>
-        <Input 
-          type="number" 
+        <NumericInput
           class="w-24"
           bind:value={settings.general.maxPackagesPerBooking}
-          on:input={markChanged}
+          options={{ precision: 0, valueRange: { min: 1 } }}
+          onInput={() => markChanged()}
         />
       </div>
     </div>

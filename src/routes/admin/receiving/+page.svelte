@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
   import { Card } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { NumericInput } from '$lib/components/ui/numeric-input';
+  import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { 
     Search, 
     Scan,
@@ -14,15 +17,52 @@
     Camera,
     ArrowRight,
     RotateCcw,
-    Printer
+    Printer,
+    WifiOff,
+    Cloud,
+    RefreshCw
   } from 'lucide-svelte';
   import { cn } from '$lib/utils';
+  import { toast } from '$lib/stores/toast';
+  import { 
+    isOnline,
+    pendingScans,
+    syncStatus,
+    initDB,
+    initConnectivityMonitor,
+    initAudioFeedback,
+    saveScan,
+    syncPendingScans,
+    playSuccessSound,
+    playErrorSound,
+    triggerHaptic,
+    generateTrackingNumber,
+    calculateDimWeight,
+    getBillableWeight,
+    cacheBookings,
+    getCachedBookings,
+    type OfflineScan,
+    type OfflineBooking
+  } from '$lib/services/offlineScanner';
+  import SyncStatusBadge from '$lib/components/layout/SyncStatusBadge.svelte';
 
   let mode: 'scan' | 'search' | 'manual' = 'scan';
   let searchQuery = '';
   let scannedCode = '';
-  let selectedBooking: typeof todayBookings[0] | null = null;
-  let receivingPackage: {
+  let selectedBooking: Booking | null = null;
+  let isLoading = false;
+  let isSubmitting = false;
+
+  interface Booking {
+    id: string;
+    customer: string;
+    time: string;
+    packages: number;
+    status: string;
+    destination: string;
+  }
+
+  interface ReceivingPackage {
     trackingNumber: string;
     actualWeight: number | null;
     length: number | null;
@@ -30,28 +70,115 @@
     height: number | null;
     condition: 'good' | 'damaged' | 'missing_contents';
     notes: string;
-  } | null = null;
+  }
 
-  // Mock today's scheduled drop-offs
-  const todayBookings = [
-    { id: 'BK-2024-0095', customer: 'Maria G.', time: '10:00 AM', packages: 3, status: 'checked_in', destination: 'Guyana' },
-    { id: 'BK-2024-0094', customer: 'Devon T.', time: '11:30 AM', packages: 1, status: 'pending', destination: 'Jamaica' },
-    { id: 'BK-2024-0093', customer: 'Patricia W.', time: '02:00 PM', packages: 2, status: 'pending', destination: 'Trinidad' },
-    { id: 'BK-2024-0092', customer: 'James R.', time: '03:00 PM', packages: 1, status: 'pending', destination: 'Barbados' },
-    { id: 'BK-2024-0091', customer: 'Lisa M.', time: '03:30 PM', packages: 4, status: 'pending', destination: 'Trinidad' }
-  ];
+  let receivingPackage: ReceivingPackage | null = null;
+  let todayBookings: Booking[] = [];
+  let recentlyReceived: Array<{
+    id: string;
+    booking: string;
+    customer: string;
+    weight: number;
+    time: string;
+    synced: boolean;
+  }> = [];
 
-  // Mock recently received packages
-  const recentlyReceived = [
-    { id: 'PKG-2024-0312', booking: 'BK-2024-0095', customer: 'Maria G.', weight: 23.5, time: '10:15 AM' },
-    { id: 'PKG-2024-0311', booking: 'BK-2024-0095', customer: 'Maria G.', weight: 18.2, time: '10:12 AM' },
-    { id: 'PKG-2024-0310', booking: 'BK-2024-0095', customer: 'Maria G.', weight: 12.8, time: '10:08 AM' }
-  ];
+  // Cleanup function for connectivity monitor
+  let cleanup: (() => void) | null = null;
 
-  function startReceiving(booking: typeof todayBookings[0]) {
+  onMount(async () => {
+    // Initialize offline services
+    await initDB();
+    cleanup = initConnectivityMonitor();
+    initAudioFeedback();
+
+    // Load data
+    await loadTodayBookings();
+    await loadRecentScans();
+  });
+
+  onDestroy(() => {
+    cleanup?.();
+  });
+
+  // Load today's bookings from API or cache
+  async function loadTodayBookings() {
+    isLoading = true;
+    
+    try {
+      if ($isOnline) {
+        const response = await fetch('/api/admin/bookings/today');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.status === 'success') {
+            todayBookings = result.data.items || [];
+            // Cache for offline use
+            await cacheBookings(todayBookings.map(b => ({
+              ...b,
+              cachedAt: new Date().toISOString()
+            })));
+          }
+        }
+      } else {
+        // Load from cache
+        const cached = await getCachedBookings();
+        todayBookings = cached;
+        if (cached.length > 0) {
+          toast.info('Using cached booking data (offline)');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+      // Try to load from cache
+      const cached = await getCachedBookings();
+      todayBookings = cached;
+    } finally {
+      isLoading = false;
+    }
+
+    // If no data from API, use mock data for demo
+    if (todayBookings.length === 0) {
+      todayBookings = [
+        { id: 'BK-2024-0095', customer: 'Maria G.', time: '10:00 AM', packages: 3, status: 'checked_in', destination: 'Guyana' },
+        { id: 'BK-2024-0094', customer: 'Devon T.', time: '11:30 AM', packages: 1, status: 'pending', destination: 'Jamaica' },
+        { id: 'BK-2024-0093', customer: 'Patricia W.', time: '02:00 PM', packages: 2, status: 'pending', destination: 'Trinidad' },
+        { id: 'BK-2024-0092', customer: 'James R.', time: '03:00 PM', packages: 1, status: 'pending', destination: 'Barbados' },
+        { id: 'BK-2024-0091', customer: 'Lisa M.', time: '03:30 PM', packages: 4, status: 'pending', destination: 'Trinidad' }
+      ];
+    }
+  }
+
+  // Load recent scans from IndexedDB
+  async function loadRecentScans() {
+    try {
+      const { getAllScans } = await import('$lib/services/offlineScanner');
+      const scans = await getAllScans();
+      
+      // Convert to display format
+      recentlyReceived = scans
+        .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())
+        .slice(0, 10)
+        .map(scan => ({
+          id: scan.trackingNumber,
+          booking: scan.bookingId,
+          customer: todayBookings.find(b => b.id === scan.bookingId)?.customer || 'Unknown',
+          weight: scan.actualWeight,
+          time: new Date(scan.scannedAt).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          synced: scan.synced
+        }));
+    } catch (error) {
+      console.error('Error loading recent scans:', error);
+    }
+  }
+
+  function startReceiving(booking: Booking) {
     selectedBooking = booking;
     receivingPackage = {
-      trackingNumber: `PKG-2024-${String(313 + recentlyReceived.length).padStart(4, '0')}`,
+      trackingNumber: generateTrackingNumber(),
       actualWeight: null,
       length: null,
       width: null,
@@ -61,23 +188,133 @@
     };
   }
 
-  function completeReceiving() {
-    // In production, this would save to backend
-    alert(`Package ${receivingPackage?.trackingNumber} received successfully!`);
-    receivingPackage = null;
+  async function completeReceiving() {
+    if (!receivingPackage || !selectedBooking || !receivingPackage.actualWeight) {
+      toast.error('Please enter the package weight');
+      return;
+    }
+
+    isSubmitting = true;
+
+    try {
+      // Calculate weights
+      const dimWeight = receivingPackage.length && receivingPackage.width && receivingPackage.height
+        ? calculateDimWeight(receivingPackage.length, receivingPackage.width, receivingPackage.height)
+        : undefined;
+      
+      const billableWeight = dimWeight
+        ? getBillableWeight(receivingPackage.actualWeight, dimWeight)
+        : receivingPackage.actualWeight;
+
+      // Save to IndexedDB (works offline)
+      const scan = await saveScan({
+        bookingId: selectedBooking.id,
+        trackingNumber: receivingPackage.trackingNumber,
+        actualWeight: receivingPackage.actualWeight,
+        length: receivingPackage.length || undefined,
+        width: receivingPackage.width || undefined,
+        height: receivingPackage.height || undefined,
+        dimWeight,
+        billableWeight,
+        condition: receivingPackage.condition,
+        notes: receivingPackage.notes || undefined,
+        scannedAt: new Date().toISOString(),
+        scannedBy: 'current-user' // Would come from auth context
+      });
+
+      // Success feedback
+      playSuccessSound();
+      triggerHaptic('success');
+
+      if ($isOnline) {
+        toast.success(`Package ${receivingPackage.trackingNumber} received!`);
+      } else {
+        toast.info(`Package saved offline - will sync when connected`);
+      }
+
+      // Update local state
+      recentlyReceived = [
+        {
+          id: scan.trackingNumber,
+          booking: scan.bookingId,
+          customer: selectedBooking.customer,
+          weight: scan.actualWeight,
+          time: new Date().toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          synced: scan.synced
+        },
+        ...recentlyReceived.slice(0, 9)
+      ];
+
+      // Reset form
+      receivingPackage = null;
+      selectedBooking = null;
+
+    } catch (error) {
+      console.error('Error saving scan:', error);
+      playErrorSound();
+      triggerHaptic('error');
+      toast.error('Failed to save package. Please try again.');
+    } finally {
+      isSubmitting = false;
+    }
   }
 
   function cancelReceiving() {
     receivingPackage = null;
+    selectedBooking = null;
   }
 
+  async function handleManualSync() {
+    const result = await syncPendingScans();
+    if (result.synced > 0) {
+      toast.success(`${result.synced} scan(s) synced successfully`);
+      await loadRecentScans();
+    }
+    if (result.failed > 0) {
+      toast.error(`${result.failed} scan(s) failed to sync`);
+    }
+  }
+
+  // Handle barcode scanner input
+  function handleScanInput(event: KeyboardEvent) {
+    if (event.key === 'Enter' && scannedCode) {
+      const booking = todayBookings.find(b => 
+        b.id.toLowerCase() === scannedCode.toLowerCase()
+      );
+      
+      if (booking) {
+        startReceiving(booking);
+        scannedCode = '';
+        playSuccessSound();
+        triggerHaptic('success');
+      } else {
+        toast.error('Booking not found');
+        playErrorSound();
+        triggerHaptic('error');
+      }
+    }
+  }
+
+  // Calculated weights
   $: dimWeight = receivingPackage?.length && receivingPackage?.width && receivingPackage?.height
-    ? (receivingPackage.length * receivingPackage.width * receivingPackage.height) / 166
+    ? calculateDimWeight(receivingPackage.length, receivingPackage.width, receivingPackage.height)
     : null;
   
   $: billableWeight = receivingPackage?.actualWeight && dimWeight
-    ? Math.max(receivingPackage.actualWeight, dimWeight)
-    : receivingPackage?.actualWeight || dimWeight || null;
+    ? getBillableWeight(receivingPackage.actualWeight, dimWeight)
+    : receivingPackage?.actualWeight || null;
+
+  // Filter bookings based on search
+  $: filteredBookings = searchQuery
+    ? todayBookings.filter(b => 
+        b.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.id.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : todayBookings;
 </script>
 
 <svelte:head>
@@ -91,28 +328,46 @@
       <h1 class="text-2xl font-bold text-slate-900">Package Receiving</h1>
       <p class="text-slate-500">Check in customer packages and record weights</p>
     </div>
-    <div class="flex items-center gap-2">
-      <Button variant={mode === 'scan' ? 'default' : 'outline'} size="sm" on:click={() => mode = 'scan'}>
-        <Scan class="h-4 w-4 mr-2" />
-        Scan Mode
-      </Button>
-      <Button variant={mode === 'search' ? 'default' : 'outline'} size="sm" on:click={() => mode = 'search'}>
-        <Search class="h-4 w-4 mr-2" />
-        Search
-      </Button>
+    <div class="flex items-center gap-3">
+      <!-- Sync Status Badge -->
+      <SyncStatusBadge />
+      
+      <div class="flex items-center gap-2">
+        <Button variant={mode === 'scan' ? 'default' : 'outline'} size="sm" on:click={() => mode = 'scan'}>
+          <Scan class="h-4 w-4 mr-2" />
+          Scan Mode
+        </Button>
+        <Button variant={mode === 'search' ? 'default' : 'outline'} size="sm" on:click={() => mode = 'search'}>
+          <Search class="h-4 w-4 mr-2" />
+          Search
+        </Button>
+      </div>
     </div>
   </div>
+
+  <!-- Offline Alert -->
+  {#if !$isOnline}
+    <Alert class="bg-amber-50 border-amber-200">
+      <WifiOff class="w-4 h-4 text-amber-600" />
+      <AlertDescription class="text-amber-800">
+        <strong>You're offline.</strong> Scans will be saved locally and automatically synced when you reconnect.
+        {#if $pendingScans.length > 0}
+          <span class="ml-2">({$pendingScans.length} pending)</span>
+        {/if}
+      </AlertDescription>
+    </Alert>
+  {/if}
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Receiving Area -->
     <div class="lg:col-span-2 space-y-6">
-      {#if receivingPackage}
+      {#if receivingPackage && selectedBooking}
         <!-- Active Receiving Form -->
         <Card class="p-6">
           <div class="flex items-center justify-between mb-6">
             <div>
               <h2 class="text-lg font-semibold text-slate-900">Receiving Package</h2>
-              <p class="text-sm text-slate-500">Booking: {selectedBooking?.id} · {selectedBooking?.customer}</p>
+              <p class="text-sm text-slate-500">Booking: {selectedBooking.id} · {selectedBooking.customer}</p>
             </div>
             <span class="text-lg font-mono font-bold text-blue-600">{receivingPackage.trackingNumber}</span>
           </div>
@@ -122,15 +377,13 @@
             <div class="space-y-2">
               <label for="weight-input" class="flex items-center gap-2 text-sm font-medium text-slate-700">
                 <Scale class="h-4 w-4 text-slate-400" />
-                Actual Weight (lbs)
+                Actual Weight (lbs) <span class="text-red-500">*</span>
               </label>
-              <Input
+              <NumericInput
                 id="weight-input"
-                type="number"
-                step="0.1"
-                min="0"
                 placeholder="Enter weight..."
                 bind:value={receivingPackage.actualWeight}
+                options={{ precision: 1, valueRange: { min: 0 } }}
               />
             </div>
 
@@ -141,31 +394,25 @@
                 Dimensions (in)
               </label>
               <div class="grid grid-cols-3 gap-2">
-                <Input
+                <NumericInput
                   id="length-input"
-                  type="number"
-                  step="0.5"
-                  min="0"
                   placeholder="L"
                   bind:value={receivingPackage.length}
+                  options={{ precision: 1, valueRange: { min: 0 } }}
                   aria-label="Length in inches"
                 />
-                <Input
+                <NumericInput
                   id="width-input"
-                  type="number"
-                  step="0.5"
-                  min="0"
                   placeholder="W"
                   bind:value={receivingPackage.width}
+                  options={{ precision: 1, valueRange: { min: 0 } }}
                   aria-label="Width in inches"
                 />
-                <Input
+                <NumericInput
                   id="height-input"
-                  type="number"
-                  step="0.5"
-                  min="0"
                   placeholder="H"
                   bind:value={receivingPackage.height}
+                  options={{ precision: 1, valueRange: { min: 0 } }}
                   aria-label="Height in inches"
                 />
               </div>
@@ -194,7 +441,7 @@
           <div class="mt-6 space-y-2">
             <fieldset>
               <legend class="text-sm font-medium text-slate-700">Package Condition</legend>
-              <div class="flex gap-3">
+              <div class="flex gap-3 mt-2">
                 <Button
                   variant={receivingPackage.condition === 'good' ? 'default' : 'outline'}
                   size="sm"
@@ -229,11 +476,20 @@
 
           <!-- Actions -->
           <div class="mt-6 flex items-center gap-3">
-            <Button class="flex-1" on:click={completeReceiving} disabled={!receivingPackage.actualWeight}>
-              <CheckCircle2 class="h-4 w-4 mr-2" />
-              Complete & Print Label
+            <Button 
+              class="flex-1" 
+              on:click={completeReceiving} 
+              disabled={!receivingPackage.actualWeight || isSubmitting}
+            >
+              {#if isSubmitting}
+                <RefreshCw class="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              {:else}
+                <CheckCircle2 class="h-4 w-4 mr-2" />
+                Complete & Print Label
+              {/if}
             </Button>
-            <Button variant="outline" on:click={cancelReceiving}>
+            <Button variant="outline" on:click={cancelReceiving} disabled={isSubmitting}>
               <RotateCcw class="h-4 w-4 mr-2" />
               Cancel
             </Button>
@@ -254,6 +510,7 @@
                 placeholder="Or enter booking ID manually..."
                 class="max-w-xs mx-auto"
                 bind:value={scannedCode}
+                on:keydown={handleScanInput}
               />
             </div>
           {:else}
@@ -274,12 +531,15 @@
 
         <!-- Today's Bookings -->
         <Card class="overflow-hidden">
-          <div class="p-4 border-b bg-slate-50">
+          <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
             <h3 class="font-semibold text-slate-900">Today's Drop-offs</h3>
+            {#if isLoading}
+              <RefreshCw class="h-4 w-4 text-slate-400 animate-spin" />
+            {/if}
           </div>
           <div class="divide-y">
-            {#each todayBookings as booking (booking.id)}
-              <div class="p-4 flex items-center justify-between hover:bg-slate-50">
+            {#each filteredBookings as booking (booking.id)}
+              <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div class="flex items-center gap-4">
                   <div class={cn(
                     'w-12 h-12 rounded-full flex items-center justify-center',
@@ -307,6 +567,16 @@
                   <ArrowRight class="h-4 w-4 ml-2" />
                 </Button>
               </div>
+            {:else}
+              <div class="p-8 text-center text-slate-500">
+                {#if searchQuery}
+                  No bookings found matching "{searchQuery}"
+                {:else if isLoading}
+                  Loading bookings...
+                {:else}
+                  No scheduled drop-offs for today
+                {/if}
+              </div>
             {/each}
           </div>
         </Card>
@@ -331,10 +601,16 @@
             <span class="text-sm text-slate-600">Packages Received</span>
             <span class="font-semibold">{recentlyReceived.length}</span>
           </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-600">Pending Sync</span>
+            <span class="font-semibold {$pendingScans.length > 0 ? 'text-amber-600' : 'text-emerald-600'}">
+              {$pendingScans.length}
+            </span>
+          </div>
           <div class="w-full bg-slate-200 rounded-full h-2">
             <div 
-              class="bg-emerald-500 h-2 rounded-full"
-              style="width: {(todayBookings.filter(b => b.status === 'checked_in').length / todayBookings.length) * 100}%"
+              class="bg-emerald-500 h-2 rounded-full transition-all"
+              style="width: {todayBookings.length > 0 ? (todayBookings.filter(b => b.status === 'checked_in').length / todayBookings.length) * 100 : 0}%"
             ></div>
           </div>
         </div>
@@ -352,10 +628,22 @@
           {#each recentlyReceived as pkg (pkg.id)}
             <div class="p-3 flex items-center justify-between">
               <div>
-                <p class="text-sm font-medium text-slate-900">{pkg.id}</p>
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-slate-900">{pkg.id}</p>
+                  {#if !pkg.synced}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">
+                      <Cloud class="w-3 h-3 mr-1" />
+                      Pending
+                    </span>
+                  {/if}
+                </div>
                 <p class="text-xs text-slate-500">{pkg.customer} · {pkg.weight} lbs</p>
               </div>
               <span class="text-xs text-slate-400">{pkg.time}</span>
+            </div>
+          {:else}
+            <div class="p-4 text-center text-slate-500 text-sm">
+              No packages received yet
             </div>
           {/each}
         </div>
@@ -377,9 +665,20 @@
             <Printer class="h-4 w-4 mr-2" />
             Reprint Last Label
           </Button>
+          {#if $pendingScans.length > 0 && $isOnline}
+            <Button 
+              variant="outline" 
+              class="w-full justify-start text-blue-600 border-blue-200 hover:bg-blue-50" 
+              size="sm"
+              on:click={handleManualSync}
+              disabled={$syncStatus === 'syncing'}
+            >
+              <RefreshCw class="h-4 w-4 mr-2 {$syncStatus === 'syncing' ? 'animate-spin' : ''}" />
+              {$syncStatus === 'syncing' ? 'Syncing...' : `Sync ${$pendingScans.length} Scan${$pendingScans.length > 1 ? 's' : ''}`}
+            </Button>
+          {/if}
         </div>
       </Card>
     </div>
   </div>
 </div>
-

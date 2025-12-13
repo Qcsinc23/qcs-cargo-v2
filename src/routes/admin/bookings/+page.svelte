@@ -297,24 +297,25 @@
                 </td>
                 <td class="px-4 py-3 text-right">
                   <DropdownMenu.Root>
-                    <DropdownMenu.Trigger asChild let:builder>
-                      <button
-                        type="button"
-                        {...builder}
-                        use:builder.action
-                        class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-                        aria-label="Booking actions"
-                      >
-                        <MoreHorizontal class="h-4 w-4" />
-                      </button>
+                    <DropdownMenu.Trigger>
+                      {#snippet child({ props })}
+                        <button
+                          {...props}
+                          type="button"
+                          class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                          aria-label="Booking actions"
+                        >
+                          <MoreHorizontal class="h-4 w-4" />
+                        </button>
+                      {/snippet}
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end">
-                      <DropdownMenu.Item on:click={() => goto(`/admin/bookings/${booking.id}`)}>
+                      <DropdownMenu.Item onSelect={() => goto(`/admin/bookings/${booking.id}`)}>
                         <Eye class="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenu.Item>
                       {#if booking.status === 'pending_payment' || booking.status === 'draft'}
-                        <DropdownMenu.Item on:click={() => updateBookingStatus(booking.id, 'confirmed')}>
+                        <DropdownMenu.Item onSelect={() => updateBookingStatus(booking.id, 'confirmed')}>
                           <CheckCircle2 class="mr-2 h-4 w-4" />
                           Confirm Booking
                         </DropdownMenu.Item>
@@ -326,13 +327,13 @@
                         </DropdownMenu.Item>
                       {/if}
                       {#if booking.status === 'confirmed'}
-                        <DropdownMenu.Item on:click={() => updateBookingStatus(booking.id, 'in_progress')}>
+                        <DropdownMenu.Item onSelect={() => updateBookingStatus(booking.id, 'in_progress')}>
                           <Clock class="mr-2 h-4 w-4" />
                           Mark In Progress
                         </DropdownMenu.Item>
                       {/if}
                       <DropdownMenu.Separator />
-                      <DropdownMenu.Item class="text-red-600" on:click={() => cancelBooking(booking.id)}>
+                      <DropdownMenu.Item class="text-red-600" onSelect={() => cancelBooking(booking.id)}>
                         <XCircle class="mr-2 h-4 w-4" />
                         Cancel Booking
                       </DropdownMenu.Item>

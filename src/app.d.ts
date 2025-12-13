@@ -1,3 +1,6 @@
+/// <reference types="@sveltejs/kit" />
+/// <reference types="vite/client" />
+
 import type PocketBase from 'pocketbase';
 import type { AuthModel } from 'pocketbase';
 

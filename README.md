@@ -69,10 +69,13 @@ Air freight shipping platform for Caribbean destinations.
 
 ## Documentation
 
-- [Product Requirements Document](docs/PRD.md)
-- [API Documentation](docs/API.md)
-- [Component Library](docs/COMPONENTS.md)
-- [Changelog](docs/CHANGELOG.md)
+| Document | Description |
+|----------|-------------|
+| [CHANGELOG.md](docs/CHANGELOG.md) | Version history and releases |
+| [PRODUCTION-MONITORING.md](docs/PRODUCTION-MONITORING.md) | Monitoring & observability setup |
+| [PRD.md](docs/PRD.md) | Full product requirements (reference) |
+
+> **Note**: Development notes are archived in `docs/archive/` for historical reference.
 
 ## Project Structure
 

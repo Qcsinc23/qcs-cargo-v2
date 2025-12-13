@@ -91,10 +91,12 @@
 
   <div class="relative">
     {#if icon}
-      <icon
+      <span
         class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors"
-        class:text-muted-foreground={hasError ? 'text-destructive' : ''}
-      />
+        class:text-destructive={hasError}
+      >
+        <svelte:component this={icon} class="h-4 w-4" />
+      </span>
     {/if}
 
     <Input

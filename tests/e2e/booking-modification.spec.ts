@@ -152,7 +152,7 @@ async function loginAsTestUser(page: any) {
   
   // Wait for redirect
   try {
-    await page.waitForURL(url => 
+    await page.waitForURL((url: URL) => 
       url.href.includes('/dashboard') || !url.href.includes('/auth/login'),
       { timeout: 15000 }
     );

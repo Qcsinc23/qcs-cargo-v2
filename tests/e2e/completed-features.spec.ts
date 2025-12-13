@@ -242,7 +242,7 @@ async function loginAsTestUser(page: any) {
   // Wait for navigation or error
   try {
     // Wait for URL change - could be dashboard or home after login
-    await page.waitForURL(url => 
+    await page.waitForURL((url: URL) => 
       url.href.includes('/dashboard') || !url.href.includes('/auth/login'),
       { timeout: 15000 }
     );

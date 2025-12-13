@@ -36,7 +36,6 @@
             {/if}
           </a>
         </li>
-      {/if}
     {/each}
   </ul>
 </nav>

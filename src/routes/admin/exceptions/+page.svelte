@@ -7,29 +7,19 @@
   import { Textarea } from '$lib/components/ui/textarea';
   import * as Dialog from '$lib/components/ui/dialog';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import * as Select from '$lib/components/ui/select';
   import {
     Search,
-    Filter,
     Plus,
     MoreHorizontal,
     Eye,
-    Edit,
     CheckCircle,
     XCircle,
     AlertTriangle,
     Clock,
-    Package,
-    MapPin,
-    Scale,
-    Ban,
     HelpCircle,
     ChevronLeft,
     ChevronRight,
-    RefreshCw,
-    Bell,
-    MessageSquare,
-    User
+    RefreshCw
   } from 'lucide-svelte';
   import { cn } from '$lib/utils';
   import { 
@@ -94,20 +84,15 @@
   let selectedExceptionId: string | null = null;
 
   // Create form
-  let newException = {
-    type: 'other' as ExceptionType,
-    priority: 'medium' as ExceptionPriority,
-    description: '',
-    package_id: '',
-    booking_id: ''
-  };
+  let newExceptionType: ExceptionType = 'other';
+  let newExceptionPriority: ExceptionPriority = 'medium';
+  let newExceptionDescription = '';
+  let newExceptionPackageId = '';
 
   // Resolve form
-  let resolveData = {
-    resolution: '',
-    resolution_notes: '',
-    notifyCustomer: true
-  };
+  let resolveResolution = '';
+  let resolveNotes = '';
+  let resolveNotifyCustomer = true;
 
   $: selectedException = exceptions.find(e => e.id === selectedExceptionId);
 
@@ -145,19 +130,22 @@
       const response = await fetch('/api/admin/exceptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newException)
+        body: JSON.stringify({
+          type: newExceptionType,
+          priority: newExceptionPriority,
+          description: newExceptionDescription,
+          package_id: newExceptionPackageId || null
+        })
       });
 
       if (response.ok) {
         toast.success('Exception created successfully');
         createDialogOpen = false;
-        newException = {
-          type: 'other',
-          priority: 'medium',
-          description: '',
-          package_id: '',
-          booking_id: ''
-        };
+        // Reset form
+        newExceptionType = 'other';
+        newExceptionPriority = 'medium';
+        newExceptionDescription = '';
+        newExceptionPackageId = '';
         await loadExceptions();
       } else {
         const error = await response.json();
@@ -199,17 +187,20 @@
         body: JSON.stringify({
           id: selectedExceptionId,
           status: 'resolved',
-          resolution: resolveData.resolution,
-          resolution_notes: resolveData.resolution_notes,
-          customer_notified: resolveData.notifyCustomer,
-          customer_notification_date: resolveData.notifyCustomer ? new Date().toISOString() : null
+          resolution: resolveResolution,
+          resolution_notes: resolveNotes,
+          customer_notified: resolveNotifyCustomer,
+          customer_notification_date: resolveNotifyCustomer ? new Date().toISOString() : null
         })
       });
 
       if (response.ok) {
         toast.success('Exception resolved');
         resolveDialogOpen = false;
-        resolveData = { resolution: '', resolution_notes: '', notifyCustomer: true };
+        // Reset form
+        resolveResolution = '';
+        resolveNotes = '';
+        resolveNotifyCustomer = true;
         await loadExceptions();
       } else {
         toast.error('Failed to resolve exception');
@@ -230,27 +221,19 @@
     const exception = exceptions.find(e => e.id === id);
     if (exception) {
       const typeConfig = getExceptionType(exception.type);
-      resolveData.resolution = typeConfig?.resolutionOptions[0] || '';
+      resolveResolution = typeConfig?.resolutionOptions[0] || '';
     }
     resolveDialogOpen = true;
   }
 
-  function getTypeIcon(type: ExceptionType) {
-    const typeConfig = getExceptionType(type);
-    return typeConfig?.icon || HelpCircle;
+  function handleFilterChange() {
+    currentPage = 1;
+    loadExceptions();
   }
 
   onMount(() => {
     loadExceptions();
   });
-
-  // Reactively reload when filters change
-  $: if (statusFilter || typeFilter || priorityFilter || searchQuery) {
-    if (!loading) {
-      currentPage = 1;
-      loadExceptions();
-    }
-  }
 </script>
 
 <svelte:head>
@@ -340,45 +323,43 @@
           type="text"
           placeholder="Search by tracking # or description..."
           bind:value={searchQuery}
+          on:input={handleFilterChange}
           class="pl-10"
         />
       </div>
       <div class="flex gap-2 flex-wrap">
-        <Select.Root bind:selected={{ value: statusFilter, label: statusFilter === 'all' ? 'All Status' : EXCEPTION_STATUS_CONFIG[statusFilter as ExceptionStatus]?.label }}>
-          <Select.Trigger class="w-[140px]">
-            <Select.Value placeholder="Status" />
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Item value="all">All Status</Select.Item>
-            {#each Object.entries(EXCEPTION_STATUS_CONFIG) as [key, config]}
-              <Select.Item value={key}>{config.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
+        <select
+          bind:value={statusFilter}
+          on:change={handleFilterChange}
+          class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <option value="all">All Status</option>
+          {#each Object.entries(EXCEPTION_STATUS_CONFIG) as [key, config]}
+            <option value={key}>{config.label}</option>
+          {/each}
+        </select>
 
-        <Select.Root bind:selected={{ value: typeFilter, label: typeFilter === 'all' ? 'All Types' : getExceptionType(typeFilter as ExceptionType)?.label }}>
-          <Select.Trigger class="w-[160px]">
-            <Select.Value placeholder="Type" />
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Item value="all">All Types</Select.Item>
-            {#each EXCEPTION_TYPES as type}
-              <Select.Item value={type.id}>{type.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
+        <select
+          bind:value={typeFilter}
+          on:change={handleFilterChange}
+          class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <option value="all">All Types</option>
+          {#each EXCEPTION_TYPES as type}
+            <option value={type.id}>{type.label}</option>
+          {/each}
+        </select>
 
-        <Select.Root bind:selected={{ value: priorityFilter, label: priorityFilter === 'all' ? 'All Priority' : EXCEPTION_PRIORITY_CONFIG[priorityFilter as ExceptionPriority]?.label }}>
-          <Select.Trigger class="w-[140px]">
-            <Select.Value placeholder="Priority" />
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Item value="all">All Priority</Select.Item>
-            {#each Object.entries(EXCEPTION_PRIORITY_CONFIG) as [key, config]}
-              <Select.Item value={key}>{config.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
+        <select
+          bind:value={priorityFilter}
+          on:change={handleFilterChange}
+          class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <option value="all">All Priority</option>
+          {#each Object.entries(EXCEPTION_PRIORITY_CONFIG) as [key, config]}
+            <option value={key}>{config.label}</option>
+          {/each}
+        </select>
       </div>
     </div>
   </Card>
@@ -567,40 +548,33 @@
     <div class="grid gap-4 py-4">
       <div class="grid gap-2">
         <Label for="type">Exception Type</Label>
-        <Select.Root bind:selected={{ value: newException.type, label: getExceptionType(newException.type)?.label }}>
-          <Select.Trigger>
-            <Select.Value placeholder="Select type" />
-          </Select.Trigger>
-          <Select.Content>
-            {#each EXCEPTION_TYPES as type}
-              <Select.Item value={type.id}>
-                <div class="flex items-center gap-2">
-                  <svelte:component this={type.icon} class={cn('w-4 h-4', type.color)} />
-                  {type.label}
-                </div>
-              </Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
+        <select
+          id="type"
+          bind:value={newExceptionType}
+          class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          {#each EXCEPTION_TYPES as type}
+            <option value={type.id}>{type.label}</option>
+          {/each}
+        </select>
       </div>
       <div class="grid gap-2">
         <Label for="priority">Priority</Label>
-        <Select.Root bind:selected={{ value: newException.priority, label: EXCEPTION_PRIORITY_CONFIG[newException.priority]?.label }}>
-          <Select.Trigger>
-            <Select.Value placeholder="Select priority" />
-          </Select.Trigger>
-          <Select.Content>
-            {#each Object.entries(EXCEPTION_PRIORITY_CONFIG) as [key, config]}
-              <Select.Item value={key}>{config.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
+        <select
+          id="priority"
+          bind:value={newExceptionPriority}
+          class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          {#each Object.entries(EXCEPTION_PRIORITY_CONFIG) as [key, config]}
+            <option value={key}>{config.label}</option>
+          {/each}
+        </select>
       </div>
       <div class="grid gap-2">
         <Label for="package_id">Package ID (optional)</Label>
         <Input
           id="package_id"
-          bind:value={newException.package_id}
+          bind:value={newExceptionPackageId}
           placeholder="Enter tracking number or package ID"
         />
       </div>
@@ -608,7 +582,7 @@
         <Label for="description">Description</Label>
         <Textarea
           id="description"
-          bind:value={newException.description}
+          bind:value={newExceptionDescription}
           placeholder="Describe the issue in detail..."
           rows={4}
         />
@@ -616,7 +590,7 @@
     </div>
     <Dialog.Footer>
       <Button variant="outline" on:click={() => createDialogOpen = false}>Cancel</Button>
-      <Button on:click={createException} disabled={!newException.description}>
+      <Button on:click={createException} disabled={!newExceptionDescription}>
         Create Exception
       </Button>
     </Dialog.Footer>
@@ -727,23 +701,22 @@
       <div class="grid gap-4 py-4">
         <div class="grid gap-2">
           <Label for="resolution">Resolution</Label>
-          <Select.Root bind:selected={{ value: resolveData.resolution, label: resolveData.resolution }}>
-            <Select.Trigger>
-              <Select.Value placeholder="Select resolution" />
-            </Select.Trigger>
-            <Select.Content>
-              {#each typeConfig?.resolutionOptions || [] as option}
-                <Select.Item value={option}>{option}</Select.Item>
-              {/each}
-              <Select.Item value="Other">Other (specify in notes)</Select.Item>
-            </Select.Content>
-          </Select.Root>
+          <select
+            id="resolution"
+            bind:value={resolveResolution}
+            class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            {#each typeConfig?.resolutionOptions || [] as option}
+              <option value={option}>{option}</option>
+            {/each}
+            <option value="Other">Other (specify in notes)</option>
+          </select>
         </div>
         <div class="grid gap-2">
           <Label for="resolution_notes">Resolution Notes</Label>
           <Textarea
             id="resolution_notes"
-            bind:value={resolveData.resolution_notes}
+            bind:value={resolveNotes}
             placeholder="Add any additional details about the resolution..."
             rows={3}
           />
@@ -752,7 +725,7 @@
           <input
             type="checkbox"
             id="notifyCustomer"
-            bind:checked={resolveData.notifyCustomer}
+            bind:checked={resolveNotifyCustomer}
             class="rounded border-gray-300"
           />
           <Label for="notifyCustomer" class="text-sm font-normal">
@@ -763,11 +736,10 @@
     {/if}
     <Dialog.Footer>
       <Button variant="outline" on:click={() => resolveDialogOpen = false}>Cancel</Button>
-      <Button on:click={resolveException} disabled={!resolveData.resolution}>
+      <Button on:click={resolveException} disabled={!resolveResolution}>
         <CheckCircle class="w-4 h-4 mr-2" />
         Resolve Exception
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
-

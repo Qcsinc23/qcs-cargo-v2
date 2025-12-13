@@ -3,7 +3,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { calculateDeliveryEstimate, type DeliveryEstimate } from '$lib/services/deliveryEstimator';
-  import { Clock, Calendar, Truck, Zap, Shield } from 'lucide-svelte';
+  import { Clock, Calendar, Truck, Zap, Shield, AlertTriangle, Plane } from 'lucide-svelte';
 
   export let serviceType: string | null = null;
   export let destinationId: string | null = null;
@@ -51,7 +51,7 @@
         <CardTitle class="flex items-center gap-2 text-lg">
           <Calendar class="w-5 h-5 text-blue-600" />
           Estimated Delivery
-          <Badge variant="outline" class={getConfidenceColor(estimate.confidence)} class="ml-auto">
+          <Badge variant="outline" class="{getConfidenceColor(estimate.confidence)} ml-auto">
             <svelte:component this={getConfidenceIcon(estimate.confidence)} class="w-3 h-3 mr-1" />
             {estimate.confidence} confidence
           </Badge>
@@ -112,7 +112,7 @@
         <div class="font-medium text-gray-900">{estimate.formattedRange}</div>
         <div class="text-sm text-gray-600">
           {estimate.transitDays.min}-{estimate.transitDays.max} business days
-          <Badge variant="outline" size="sm" class={getConfidenceColor(estimate.confidence)} class="ml-2">
+          <Badge variant="outline" size="sm" class="{getConfidenceColor(estimate.confidence)} ml-2">
             {estimate.confidence}
           </Badge>
         </div>

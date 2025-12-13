@@ -18,7 +18,8 @@ import {
   Cog,
   Warehouse,
   Scan,
-  LayoutGrid
+  LayoutGrid,
+  AlertTriangle
 } from 'lucide-svelte';
 
 export interface NavItem {
@@ -127,6 +128,12 @@ export const navigationConfig: {
       icon: Truck
     },
     {
+      id: 'exceptions',
+      label: 'Exceptions',
+      href: '/admin/exceptions',
+      icon: AlertTriangle
+    },
+    {
       id: 'settings',
       label: 'Settings',
       href: '/admin/settings',
@@ -169,6 +176,12 @@ export const navigationConfig: {
       label: 'Receiving',
       href: '/admin/receiving',
       icon: Truck
+    },
+    {
+      id: 'exceptions',
+      label: 'Exceptions',
+      href: '/admin/exceptions',
+      icon: AlertTriangle
     },
     {
       id: 'activity',

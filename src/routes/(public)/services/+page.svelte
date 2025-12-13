@@ -181,7 +181,7 @@
           <div class="text-center group">
             <div class="relative inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6 group-hover:bg-primary-500 transition-colors">
               <svelte:component this={step.icon} class="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
-              <div class="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              <div class="absolute -top-2 -right-2 w-8 h-8 bg-amber-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
                 {step.step}
               </div>
             </div>

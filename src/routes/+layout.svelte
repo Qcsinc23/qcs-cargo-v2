@@ -16,6 +16,11 @@
   }
 </script>
 
+<svelte:head>
+  <title>QCS Cargo - Caribbean Air Freight Services</title>
+  <meta name="description" content="Reliable air freight shipping to the Caribbean. Ship to Guyana, Jamaica, Trinidad, Barbados, and Suriname." />
+</svelte:head>
+
 <SkipLink />
 
 <slot />

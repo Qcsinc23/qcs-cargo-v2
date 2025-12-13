@@ -51,7 +51,7 @@
 {#if !$isOnline}
   <div 
     transition:slide={{ duration: 200 }}
-    class="fixed bottom-0 left-0 right-0 bg-amber-500 text-white py-3 px-4 z-50
+    class="fixed bottom-0 left-0 right-0 bg-amber-700 text-white py-3 px-4 z-50
            flex items-center justify-center gap-3 text-sm font-medium shadow-lg"
     role="alert"
     aria-live="assertive"
@@ -59,7 +59,7 @@
     <WifiOff class="w-5 h-5 flex-shrink-0" />
     <span>You're offline. Scans will be saved locally and synced when you reconnect.</span>
     {#if $pendingScans.length > 0}
-      <span class="bg-amber-600 px-2 py-0.5 rounded-full text-xs">
+      <span class="bg-amber-800 px-2 py-0.5 rounded-full text-xs">
         {$pendingScans.length} pending
       </span>
     {/if}

@@ -1,34 +1,50 @@
 name: Lighthouse CI
-
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Mondays at 2am UTC
 
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'npm'
-
+      
       - name: Install dependencies
         run: npm ci
-
-      - name: Build
+      
+      - name: Build application
         run: npm run build
-
+        env:
+          VITE_PUBLIC_POCKETBASE_URL: http://127.0.0.1:8090
+          VITE_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      
+      - name: Start server
+        run: npm run preview -- --port 5179 &
+        env:
+          VITE_PUBLIC_POCKETBASE_URL: http://127.0.0.1:8090
+      
+      - name: Wait for server
+        run: npx wait-on http://localhost:5179
+      
       - name: Run Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v10
+        run: |
+          npm install -g @lhci/cli@0.12.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        if: always()
         with:
-          configPath: './lighthouserc.json'
-          uploadArtifacts: true
-          temporaryPublicStorage: true
+          name: lighthouse-results
+          path: .lighthouseci

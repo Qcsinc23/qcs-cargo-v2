@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.40.0",
     "@sveltejs/adapter-node": "^5.4.0",
     "@sveltejs/kit": "^2.49.2",
@@ -59,6 +60,7 @@
     "vitest": "^4.0.15"
   },
   "dependencies": {
+    "@sentry/sveltekit": "^10.30.0",
     "@stripe/stripe-js": "^2.2.0",
     "bits-ui": "^1.8.0",
     "class-variance-authority": "^0.7.0",

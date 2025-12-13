@@ -3,6 +3,23 @@ import { sequence } from '@sveltejs/kit/hooks';
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 import { dev } from '$app/environment';
+import * as Sentry from '@sentry/sveltekit';
+
+// Initialize Sentry for server-side error tracking
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.SENTRY_ENVIRONMENT || 'development',
+  tracesSampleRate: 1.0,
+  
+  // Server-side filtering
+  beforeSend(event) {
+    // Don't send PocketBase connection errors in development
+    if (event.exception?.values?.[0]?.value?.includes('ECONNREFUSED') && dev) {
+      return null;
+    }
+    return event;
+  }
+});
 
 // Correlation + minimal admin audit logging
 const correlationHook: Handle = async ({ event, resolve }) => {
@@ -129,3 +146,6 @@ const securityHook: Handle = async ({ event, resolve }) => {
 };
 
 export const handle = sequence(correlationHook, authHook, securityHook);
+
+// Use Sentry's error handler
+export const handleError = Sentry.handleErrorWithSentry();

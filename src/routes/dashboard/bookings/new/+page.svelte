@@ -6,6 +6,7 @@
   import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
+  import { DraftBookingDialog, DraftSaveIndicator } from '$lib/components/booking';
   import { DESTINATIONS, getDestination, getDestinationLabel } from '$lib/config/destinations';
   import { SERVICES_INFO, TIME_SLOTS, SATURDAY_SLOTS } from '$lib/config/constants';
   import { booking, currentStep, packageCount, hasMultiplePackages, totalWeight, hasUnknownWeight, type BookingPackage, type BookingRecipient, createEmptyPackage } from '$lib/stores/booking';
@@ -395,9 +396,16 @@
   <title>New Booking | QCS Cargo</title>
 </svelte:head>
 
+<!-- Draft Booking Dialog -->
+<DraftBookingDialog />
+
 <div class="max-w-4xl mx-auto">
   <!-- Progress Indicator -->
   <div class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold text-gray-900">New Booking</h1>
+      <DraftSaveIndicator />
+    </div>
     <div class="flex items-center justify-between mb-2">
       {#each [1, 2, 3, 4, 5] as stepNum}
         <div class="flex items-center {stepNum < 5 ? 'flex-1' : ''}">

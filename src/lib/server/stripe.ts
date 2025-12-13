@@ -1,16 +1,39 @@
 import Stripe from 'stripe';
-import { STRIPE_SECRET_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
-if (!STRIPE_SECRET_KEY) {
-  throw new Error('Missing required environment variable: STRIPE_SECRET_KEY');
+// Lazy initialization of Stripe
+let stripeInstance: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    const secretKey = env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error('Missing required environment variable: STRIPE_SECRET_KEY');
+    }
+    stripeInstance = new Stripe(secretKey, {
+      // Use apiVersion compatible with the installed stripe@14.7.0 type declarations
+      apiVersion: '2023-10-16',
+      typescript: true,
+      telemetry: false // Disable telemetry for production
+    });
+  }
+  return stripeInstance;
 }
 
-export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  // Use apiVersion compatible with the installed stripe@14.7.0 type declarations
-  apiVersion: '2023-10-16',
-  typescript: true,
-  telemetry: false // Disable telemetry for production
+export const stripe = {
+  get paymentIntents() { return getStripe().paymentIntents; },
+  get customers() { return getStripe().customers; },
+  get refunds() { return getStripe().refunds; },
+  get webhooks() { return getStripe().webhooks; }
+};
+
+// Deprecated: direct export for backwards compatibility
+export const _stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return getStripe()[prop as keyof Stripe];
+  }
 });
+
 
 /**
  * Create a payment intent for a booking

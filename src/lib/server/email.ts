@@ -1,23 +1,34 @@
 import { Resend } from 'resend';
-import { RESEND_API_KEY, FROM_EMAIL, REPLY_TO_EMAIL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { PUBLIC_COMPANY_NAME, PUBLIC_SITE_URL } from '$env/static/public';
 
-// Validate required environment variables
-const requiredEnvVars = {
-  RESEND_API_KEY,
-  FROM_EMAIL,
-  REPLY_TO_EMAIL,
-  PUBLIC_COMPANY_NAME,
-  PUBLIC_SITE_URL
-};
-
-for (const [key, value] of Object.entries(requiredEnvVars)) {
+// Helper to get env var or fallback
+function getEnvVar(name: string, fallback?: string): string {
+  const value = env[name] || fallback;
   if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
+    console.warn(`[email] Missing environment variable: ${name}`);
+    return '';
   }
+  return value;
 }
 
-const resend = new Resend(RESEND_API_KEY);
+// Get env vars with fallbacks
+const RESEND_API_KEY = getEnvVar('RESEND_API_KEY');
+const FROM_EMAIL = getEnvVar('FROM_EMAIL', getEnvVar('RESEND_FROM_EMAIL', 'noreply@qcscargo.com'));
+const REPLY_TO_EMAIL = getEnvVar('REPLY_TO_EMAIL', getEnvVar('ADMIN_EMAIL', 'support@qcscargo.com'));
+
+// Create Resend instance (lazy initialization)
+let resendInstance: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    if (!RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is required for sending emails');
+    }
+    resendInstance = new Resend(RESEND_API_KEY);
+  }
+  return resendInstance;
+}
 
 interface EmailOptions {
   to: string | string[];
@@ -31,6 +42,7 @@ export async function sendEmail(options: EmailOptions) {
   const { to, subject, html, text, replyTo } = options;
   
   try {
+    const resend = getResend();
     const { data, error } = await resend.emails.send({
       from: `${PUBLIC_COMPANY_NAME} <${FROM_EMAIL}>`,
       to: Array.isArray(to) ? to : [to],

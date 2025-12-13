@@ -1,6 +1,6 @@
 import { json, error, text } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { STRIPE_WEBHOOK_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { constructWebhookEvent } from '$lib/server/stripe';
 import { sendBookingConfirmationEmail } from '$lib/server/email';
 import { sendBookingConfirmation as sendBookingNotifications } from '$lib/server/notifications';
@@ -18,6 +18,7 @@ export const POST: RequestHandler = async ({ request }) => {
     throw error(400, { message: 'Missing signature' });
   }
 
+  const STRIPE_WEBHOOK_SECRET = env.STRIPE_WEBHOOK_SECRET;
   if (!STRIPE_WEBHOOK_SECRET) {
     console.error('[stripe_webhook] STRIPE_WEBHOOK_SECRET not configured');
     throw error(500, { message: 'Webhook not configured' });

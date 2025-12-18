@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-
-# Disallow admin and API routes
-Disallow: /admin/
-Disallow: /api/
-
-Sitemap: https://qcscargo.com/sitemap.xml

@@ -30,18 +30,18 @@
   }
 </script>
 
-<header class="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm">
+<header class="sticky top-0 z-40 w-full border-b border-border/40 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
   <div class="container flex h-16 items-center justify-between">
     <a href="/" class="mr-6 flex items-center space-x-2">
       <Logo class="h-8 w-auto" />
     </a>
-    <nav class="hidden items-center space-x-6 text-sm font-medium md:flex">
+    <nav class="hidden items-center space-x-7 text-xs font-medium uppercase tracking-[0.28em] md:flex">
       {#each navLinks as link}
         <a
           href={link.href}
-          class="transition-colors hover:text-gray-900 dark:hover:text-white {activePath === link.href
-            ? 'text-gray-900 dark:text-white'
-            : 'text-gray-700 dark:text-gray-200'}"
+          class="transition-colors hover:text-[#023E8A] {activePath === link.href
+            ? 'text-[#001D3D]'
+            : 'text-[#001D3D]/70'}"
         >
           {link.label}
         </a>
@@ -49,24 +49,45 @@
     </nav>
     <div class="hidden items-center gap-4 md:flex">
       {#if user}
-        <span class="text-sm text-gray-600">Welcome, {user.name || user.email}</span>
-        <Button variant="ghost" href="/dashboard">
+        <span class="text-sm text-[#001D3D]/70">Welcome, {user.name || user.email}</span>
+        <Button
+          variant="ghost"
+          href="/dashboard"
+          class="uppercase tracking-[0.24em] text-xs hover:bg-black/5 hover:text-[#001D3D]"
+        >
           <User class="mr-2 h-4 w-4" />
           Dashboard
         </Button>
-        <Button variant="outline" on:click={() => (logoutDialogOpen = true)}>
+        <Button
+          variant="outline"
+          class="border-[#0077B6]/25 bg-transparent hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.24em] text-xs"
+          on:click={() => (logoutDialogOpen = true)}
+        >
           <LogOut class="mr-2 h-4 w-4" />
           Logout
         </Button>
       {:else}
-        <Button variant="ghost" href="/auth/login">Login</Button>
-        <Button href="/auth/register">Sign Up</Button>
+        <Button
+          variant="ghost"
+          href="/auth/login"
+          class="uppercase tracking-[0.28em] text-xs hover:bg-black/5 hover:text-[#001D3D]"
+        >
+          Login
+        </Button>
+        <Button
+          variant="outline"
+          href="/auth/register"
+          class="border border-[#0077B6]/25 bg-transparent text-[#001D3D] hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
+        >
+          Sign Up
+        </Button>
       {/if}
     </div>
     <div class="md:hidden">
       <Button
         variant="ghost"
         size="icon"
+        class="hover:bg-black/5"
         on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
       >
         {#if mobileMenuOpen}
@@ -80,14 +101,14 @@
   </div>
 
   {#if mobileMenuOpen}
-    <div class="border-t md:hidden">
-      <nav class="container flex flex-col space-y-4 py-4">
+    <div class="border-t border-border/30 md:hidden">
+      <nav class="container flex flex-col space-y-5 py-6">
         {#each navLinks as link}
           <a
             href={link.href}
-            class="text-lg font-medium transition-colors hover:text-gray-900 dark:hover:text-white {activePath === link.href
-              ? 'text-gray-900 dark:text-white'
-              : 'text-gray-700 dark:text-gray-200'}"
+            class="text-sm font-medium uppercase tracking-[0.28em] transition-colors hover:text-[#023E8A] {activePath === link.href
+              ? 'text-[#001D3D]'
+              : 'text-[#001D3D]/70'}"
             on:click={() => (mobileMenuOpen = false)}
           >
             {link.label}
@@ -95,21 +116,40 @@
         {/each}
         <div class="flex flex-col gap-4 pt-4">
           {#if user}
-            <div class="px-3 py-2 text-sm text-gray-600">
+            <div class="px-3 py-2 text-sm text-[#001D3D]/70">
               Welcome, {user.name || user.email}
             </div>
-            <Button variant="outline" href="/dashboard" on:click={() => (mobileMenuOpen = false)}>
+            <Button
+              variant="outline"
+              class="border-[#0077B6]/25 bg-transparent hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
+              href="/dashboard"
+              on:click={() => (mobileMenuOpen = false)}
+            >
               Dashboard
             </Button>
-            <Button variant="outline" on:click={() => (logoutDialogOpen = true)}>
+            <Button
+              variant="outline"
+              class="border-[#0077B6]/25 bg-transparent hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
+              on:click={() => (logoutDialogOpen = true)}
+            >
               <LogOut class="mr-2 h-4 w-4" />
               Logout
             </Button>
           {:else}
-            <Button variant="outline" href="/auth/login" on:click={() => (mobileMenuOpen = false)}>
+            <Button
+              variant="outline"
+              class="border-[#0077B6]/25 bg-transparent hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
+              href="/auth/login"
+              on:click={() => (mobileMenuOpen = false)}
+            >
               Login
             </Button>
-            <Button href="/auth/register" on:click={() => (mobileMenuOpen = false)}>
+            <Button
+              variant="outline"
+              class="border border-[#0077B6]/25 bg-transparent text-[#001D3D] hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
+              href="/auth/register"
+              on:click={() => (mobileMenuOpen = false)}
+            >
               Sign Up
             </Button>
           {/if}

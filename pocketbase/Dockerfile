@@ -25,7 +25,8 @@ USER pocketbase
 EXPOSE 8090
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
-  CMD wget -q -O /dev/null http://localhost:8090/api/health || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:8090/api/health || exit 1
 
 CMD ["./pocketbase", "serve", "--http=0.0.0.0:8090"]
+
 

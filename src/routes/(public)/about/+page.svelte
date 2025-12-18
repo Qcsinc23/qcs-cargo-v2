@@ -41,21 +41,27 @@
   <meta name="description" content="Learn about QCS Cargo's 15+ years of experience shipping to the Caribbean. Family-owned, community-focused, and committed to connecting loved ones across borders." />
 </svelte:head>
 
-<main class="min-h-screen">
+<main class="min-h-screen bg-background text-foreground">
   <!-- Hero Section -->
-  <section class="relative bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 py-24 text-white overflow-hidden">
-    <div class="absolute inset-0 opacity-20">
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,_rgba(59,130,246,0.3),_transparent_50%)]"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,_rgba(245,158,11,0.2),_transparent_50%)]"></div>
+  <section class="relative overflow-hidden bg-gradient-to-r from-[#023E8A] via-[#0077B6] to-[#023E8A] py-32 sm:py-40">
+    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div
+        class="absolute inset-0 opacity-30"
+        style="background-image: linear-gradient(90deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px), linear-gradient(0deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px); background-size: 96px 96px;"
+      ></div>
+      <div class="absolute -top-32 left-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[#90E0EF]/20 blur-3xl"></div>
+      <div class="absolute -bottom-40 right-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#CAF0F8]/15 blur-3xl"></div>
     </div>
     
     <div class="container mx-auto px-4 relative">
       <div class="max-w-3xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-          Connecting Families 
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Across Borders</span>
+        <h1 class="font-display text-4xl md:text-6xl lg:text-7xl mb-6 leading-tight text-[#F0F9FF]">
+          Connecting Families
+          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-[#CAF0F8] via-[#90E0EF] to-[#CAF0F8]">
+            Across Borders
+          </span>
         </h1>
-        <p class="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+        <p class="text-base sm:text-lg text-[#CAF0F8]/75 mb-10 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
           For over 15 years, QCS Cargo has been the trusted link between New Jersey and the Caribbean, 
           helping families stay connected through reliable air freight services.
         </p>
@@ -64,13 +70,13 @@
   </section>
 
   <!-- Trust Stats -->
-  <section class="bg-white py-8 border-b">
+  <section class="bg-background py-12 border-b border-border/25">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
         {#each TRUST_SIGNALS as signal}
           <div class="p-4">
-            <div class="text-3xl md:text-4xl font-bold text-primary-600">{signal.value}</div>
-            <div class="text-slate-600">{signal.label}</div>
+            <div class="font-display text-3xl md:text-4xl text-foreground">{signal.value}</div>
+            <div class="text-xs uppercase tracking-[0.22em] text-muted-foreground/75 mt-2">{signal.label}</div>
           </div>
         {/each}
       </div>
@@ -78,15 +84,15 @@
   </section>
 
   <!-- Our Story -->
-  <section class="py-20 bg-slate-50">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
       <div class="grid lg:grid-cols-2 gap-12 items-center">
         <div>
-          <span class="text-primary-600 font-semibold text-sm uppercase tracking-wide">Our Story</span>
-          <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2 mb-6">
+          <span class="text-xs uppercase tracking-[0.35em] text-muted-foreground/80">Our Story</span>
+          <h2 class="font-display text-3xl md:text-5xl text-foreground mt-4 mb-8">
             From Humble Beginnings to Caribbean's Trusted Carrier
           </h2>
-          <div class="space-y-4 text-slate-600 leading-relaxed">
+          <div class="space-y-5 text-muted-foreground/80 leading-relaxed tracking-wide font-light">
             <p>
               QCS Cargo was founded in 2009 by members of the Caribbean diaspora who understood firsthand 
               the challenges of sending packages home. What started as a small operation in Kearny, New Jersey, 
@@ -105,43 +111,43 @@
           </div>
         </div>
         <div class="relative">
-          <div class="aspect-square rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 p-8 text-white">
+          <div class="aspect-square rounded-2xl bg-gradient-to-br from-[#0077B6] to-[#023E8A] p-8 text-[#F0F9FF] border border-white/10">
             <div class="h-full flex flex-col justify-center">
               <Plane class="w-16 h-16 mb-6 opacity-80" />
               <blockquote class="text-2xl font-medium italic mb-4">
                 "We don't just ship packages—we deliver peace of mind and keep families connected."
               </blockquote>
-              <p class="text-primary-200">— QCS Cargo Founding Principle</p>
+              <p class="text-[#CAF0F8]/80 font-light tracking-wide">— QCS Cargo Founding Principle</p>
             </div>
           </div>
           <!-- Decorative elements -->
-          <div class="absolute -bottom-4 -right-4 w-32 h-32 bg-amber-400 rounded-2xl -z-10"></div>
-          <div class="absolute -top-4 -left-4 w-24 h-24 bg-primary-200 rounded-2xl -z-10"></div>
+          <div class="absolute -bottom-4 -right-4 w-32 h-32 bg-[#90E0EF]/25 rounded-2xl -z-10"></div>
+          <div class="absolute -top-4 -left-4 w-24 h-24 bg-[#CAF0F8]/15 rounded-2xl -z-10"></div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Our Values -->
-  <section class="py-20 bg-white">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
-      <div class="text-center mb-16">
-        <span class="text-primary-600 font-semibold text-sm uppercase tracking-wide">What We Stand For</span>
-        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2 mb-4">Our Core Values</h2>
-        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+      <div class="text-center mb-20">
+        <span class="text-xs uppercase tracking-[0.35em] text-muted-foreground/80">What We Stand For</span>
+        <h2 class="font-display text-3xl md:text-5xl text-foreground mt-4 mb-6">Our Core Values</h2>
+        <p class="text-base sm:text-lg text-muted-foreground/80 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
           These principles guide everything we do, from handling your first package to celebrating our 50,000th delivery.
         </p>
       </div>
 
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
         {#each values as value}
-          <Card class="text-center border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <Card class="text-center bg-card border-border/30 shadow-sm hover:border-[#0077B6]/25 transition-colors">
             <CardContent class="pt-8 pb-6">
-              <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6">
-                <svelte:component this={value.icon} class="w-8 h-8 text-primary-600" />
+              <div class="inline-flex items-center justify-center w-16 h-16 bg-[#E6F6FB] border border-[#0077B6]/15 rounded-full mb-7">
+                <svelte:component this={value.icon} class="w-8 h-8 text-[#023E8A]" />
               </div>
-              <h3 class="text-xl font-semibold text-slate-900 mb-3">{value.title}</h3>
-              <p class="text-slate-600">{value.description}</p>
+              <h3 class="font-display text-xl text-foreground mb-3">{value.title}</h3>
+              <p class="text-sm text-muted-foreground/80 font-light leading-relaxed tracking-wide">{value.description}</p>
             </CardContent>
           </Card>
         {/each}
@@ -150,30 +156,30 @@
   </section>
 
   <!-- Timeline -->
-  <section class="py-20 bg-slate-50">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
       <div class="text-center mb-16">
-        <span class="text-primary-600 font-semibold text-sm uppercase tracking-wide">Our Journey</span>
-        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2 mb-4">Milestones</h2>
+        <span class="text-xs uppercase tracking-[0.35em] text-muted-foreground/80">Our Journey</span>
+        <h2 class="font-display text-3xl md:text-5xl text-foreground mt-4 mb-0">Milestones</h2>
       </div>
 
       <div class="max-w-4xl mx-auto">
         <div class="relative">
           <!-- Timeline line -->
-          <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-primary-200 transform md:-translate-x-1/2"></div>
+          <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-border/35 transform md:-translate-x-1/2"></div>
           
           {#each milestones as milestone, index}
             <div class="relative flex items-start gap-8 mb-12 {index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}">
               <!-- Timeline dot -->
-              <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-primary-500 rounded-full transform -translate-x-1/2 mt-1.5 ring-4 ring-white"></div>
+              <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-[#90E0EF] rounded-full transform -translate-x-1/2 mt-1.5 ring-4 ring-background"></div>
               
               <!-- Content -->
               <div class="ml-12 md:ml-0 md:w-1/2 {index % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'}">
-                <span class="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-2">
+                <span class="inline-flex items-center px-3 py-2 bg-muted/60 border border-border/30 text-muted-foreground/80 rounded-full text-xs uppercase tracking-[0.28em] mb-3">
                   {milestone.year}
                 </span>
-                <h3 class="text-xl font-bold text-slate-900 mb-2">{milestone.title}</h3>
-                <p class="text-slate-600">{milestone.description}</p>
+                <h3 class="font-display text-xl text-foreground mb-3">{milestone.title}</h3>
+                <p class="text-sm text-muted-foreground/80 font-light leading-relaxed tracking-wide">{milestone.description}</p>
               </div>
             </div>
           {/each}
@@ -183,12 +189,12 @@
   </section>
 
   <!-- Destinations We Serve -->
-  <section class="py-20 bg-white">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
       <div class="text-center mb-16">
-        <span class="text-primary-600 font-semibold text-sm uppercase tracking-wide">Where We Ship</span>
-        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2 mb-4">Our Caribbean Network</h2>
-        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+        <span class="text-xs uppercase tracking-[0.35em] text-muted-foreground/80">Where We Ship</span>
+        <h2 class="font-display text-3xl md:text-5xl text-foreground mt-4 mb-6">Our Caribbean Network</h2>
+        <p class="text-base sm:text-lg text-muted-foreground/80 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
           Weekly departures to major Caribbean destinations with reliable transit times.
         </p>
       </div>
@@ -197,14 +203,16 @@
         {#each DESTINATIONS as destination}
           <a 
             href="/destinations/{destination.id}"
-            class="group p-6 bg-slate-50 rounded-xl hover:bg-primary-50 transition-colors text-center"
+            class="group p-6 rounded-2xl bg-card border border-border/30 shadow-sm hover:border-[#0077B6]/25 transition-colors text-center"
           >
             <div class="text-4xl mb-3">{destination.flag}</div>
-            <h3 class="font-semibold text-slate-900 group-hover:text-primary-600 transition-colors">
+            <h3 class="font-display text-lg text-foreground transition-colors">
               {destination.name}
             </h3>
-            <p class="text-sm text-slate-500 mt-1">{destination.capital}</p>
-            <p class="text-xs text-primary-600 font-medium mt-2">{destination.transitDays.min}-{destination.transitDays.max} days</p>
+            <p class="text-sm text-muted-foreground/75 mt-2 font-light tracking-wide">{destination.capital}</p>
+            <p class="text-xs text-[#0077B6] font-semibold mt-3 tracking-[0.22em] uppercase">
+              {destination.transitDays.min}-{destination.transitDays.max} days
+            </p>
           </a>
         {/each}
       </div>
@@ -212,31 +220,31 @@
   </section>
 
   <!-- Testimonials -->
-  <section class="py-20 bg-gradient-to-br from-slate-900 to-primary-900 text-white">
+  <section class="py-32 sm:py-40 bg-gradient-to-b from-background via-white to-[#F3DDD4]/45 text-foreground">
     <div class="container mx-auto px-4">
       <div class="text-center mb-16">
-        <span class="text-primary-400 font-semibold text-sm uppercase tracking-wide">Testimonials</span>
-        <h2 class="text-3xl md:text-4xl font-bold mt-2 mb-4">What Our Customers Say</h2>
+        <span class="text-xs uppercase tracking-[0.35em] text-muted-foreground/80">Testimonials</span>
+        <h2 class="font-display text-3xl md:text-5xl mt-4 text-foreground">What Our Customers Say</h2>
       </div>
 
       <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {#each TESTIMONIALS as testimonial}
-          <Card class="bg-white/10 border-0 backdrop-blur">
+          <Card class="bg-card border border-border/30 shadow-sm">
             <CardContent class="pt-6">
-              <Quote class="w-8 h-8 text-amber-400 mb-4" />
-              <p class="text-white/90 mb-6 leading-relaxed">"{testimonial.text}"</p>
+              <Quote class="w-8 h-8 text-[#B8860B]/60 mb-4" />
+              <p class="text-foreground/90 mb-6 leading-relaxed">"{testimonial.text}"</p>
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div class="w-10 h-10 bg-muted/60 border border-border/30 rounded-full flex items-center justify-center text-foreground font-semibold">
                   {testimonial.name.charAt(0)}
                 </div>
                 <div>
-                  <p class="font-semibold text-white">{testimonial.name}</p>
-                  <p class="text-sm text-white/60">{testimonial.location} → {testimonial.destination}</p>
+                  <p class="font-semibold text-foreground">{testimonial.name}</p>
+                  <p class="text-sm text-muted-foreground/75">{testimonial.location} → {testimonial.destination}</p>
                 </div>
               </div>
               <div class="flex gap-1 mt-4">
                 {#each Array(testimonial.rating) as _}
-                  <Star class="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <Star class="w-4 h-4 fill-[#D6B15E] text-[#D6B15E]" />
                 {/each}
               </div>
             </CardContent>
@@ -247,43 +255,47 @@
   </section>
 
   <!-- Contact Info -->
-  <section class="py-20 bg-white">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
         <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Visit Our Warehouse</h2>
-          <p class="text-lg text-slate-600">
+          <h2 class="font-display text-3xl md:text-5xl text-foreground mb-6">Visit Our Warehouse</h2>
+          <p class="text-base sm:text-lg text-muted-foreground/80 font-light leading-relaxed tracking-wide">
             Drop off your packages at our convenient Kearny, NJ location.
           </p>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8 text-center">
           <div class="p-6">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-4">
-              <MapPin class="w-6 h-6 text-primary-600" />
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-muted/60 border border-border/30 rounded-full mb-6">
+              <MapPin class="w-6 h-6 text-[#023E8A]" />
             </div>
-            <h3 class="font-semibold text-slate-900 mb-2">Address</h3>
-            <p class="text-slate-600">{COMPANY.fullAddress}</p>
+            <h3 class="font-display text-lg text-foreground mb-3">Address</h3>
+            <p class="text-sm text-muted-foreground/80 font-light leading-relaxed tracking-wide">{COMPANY.fullAddress}</p>
           </div>
           <div class="p-6">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-4">
-              <Phone class="w-6 h-6 text-primary-600" />
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-muted/60 border border-border/30 rounded-full mb-6">
+              <Phone class="w-6 h-6 text-[#023E8A]" />
             </div>
-            <h3 class="font-semibold text-slate-900 mb-2">Phone</h3>
-            <a href="tel:{COMPANY.phone}" class="text-primary-600 hover:underline">{COMPANY.phone}</a>
+            <h3 class="font-display text-lg text-foreground mb-3">Phone</h3>
+            <a href="tel:{COMPANY.phone}" class="text-sm text-[#023E8A] hover:text-[#0077B6] transition-colors font-medium tracking-wide">{COMPANY.phone}</a>
           </div>
           <div class="p-6">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-4">
-              <Clock class="w-6 h-6 text-primary-600" />
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-muted/60 border border-border/30 rounded-full mb-6">
+              <Clock class="w-6 h-6 text-[#023E8A]" />
             </div>
-            <h3 class="font-semibold text-slate-900 mb-2">Hours</h3>
-            <p class="text-slate-600">Mon-Fri: {COMPANY.hours.weekday}</p>
-            <p class="text-slate-600">Sat: {COMPANY.hours.saturday}</p>
+            <h3 class="font-display text-lg text-foreground mb-3">Hours</h3>
+            <p class="text-sm text-muted-foreground/80 font-light tracking-wide">Mon-Fri: {COMPANY.hours.weekday}</p>
+            <p class="text-sm text-muted-foreground/80 font-light tracking-wide">Sat: {COMPANY.hours.saturday}</p>
           </div>
         </div>
 
         <div class="text-center mt-12">
-          <Button href="/contact" size="lg">
+          <Button
+            href="/contact"
+            size="lg"
+            class="h-14 px-10 bg-transparent border border-[#0077B6]/30 hover:bg-[#0077B6]/5 hover:text-foreground tracking-[0.3em] uppercase text-xs font-semibold"
+          >
             Get in Touch
           </Button>
         </div>

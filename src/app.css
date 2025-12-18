@@ -1,4 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Self-hosted fonts (prevents CDN/subsetting rendering issues) */
+@import '@fontsource/inter/300.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/playfair-display/400.css';
+@import '@fontsource/playfair-display/500.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
+
 @import './lib/styles/design-tokens.css';
 @import './lib/styles/utilities.css';
 @tailwind base;
@@ -7,26 +19,45 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Soft Neutrals + Ocean Signature (minimalist default; ocean reserved for hero/CTA) */
+    --background: 40 53% 97%; /* #FBF8F2 (ivory) */
+    --foreground: 214 28% 15%; /* #1B2430 (ink) */
+
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 214 28% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 214 28% 15%;
+
+    /* Brand ocean */
+    --primary: 214 97% 27%; /* #023E8A */
+    --primary-foreground: 40 53% 97%; /* ivory */
+
+    --secondary: 201 100% 36%; /* #0077B6 */
+    --secondary-foreground: 40 53% 97%;
+
+    /* Soft neutrals */
+    --muted: 35 39% 90%; /* #F0E8DD (sand) */
+    /* Tuned so text-muted-foreground/80 still meets WCAG AA (4.5:1) on white */
+    --muted-foreground: 214 18% 34%;
+
+    /* Earth-tone accents (used sparingly) */
+    --accent: 131 19% 89%; /* #DDE8DF (sage) */
+    --accent-foreground: 214 28% 15%;
+
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --destructive-foreground: 204 100% 97%;
+
+    --border: 35 20% 82%;
+    --input: 35 20% 82%;
+    --ring: 201 100% 36%;
     --radius: 0.5rem;
+
+    /* Optional extra tones (use via custom CSS/inline colors) */
+    --tone-ivory: 40 53% 97%; /* #FBF8F2 */
+    --tone-offwhite: 40 36% 95%; /* #F7F4EE */
+    --tone-beige: 35 40% 88%; /* #EDE3D5 */
+    --tone-peach: 17 56% 89%; /* #F3DDD4 */
+    --tone-sage: 131 19% 89%; /* #DDE8DF */
   }
 
   * {

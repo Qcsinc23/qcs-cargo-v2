@@ -101,7 +101,7 @@ export function generateInvoicePDF(invoice: InvoiceData): any {
               { text: '35 Obrien St, E12', style: 'companyInfo' },
               { text: 'Kearny, NJ 07032', style: 'companyInfo' },
               { text: 'Phone: 201-249-0929', style: 'companyInfo' },
-              { text: 'Email: sales@quietcraftsolutions.com', style: 'companyInfo' }
+              { text: 'Email: sales@qcs-cargo.com', style: 'companyInfo' }
             ]
           },
           {
@@ -237,7 +237,7 @@ export function generateInvoicePDF(invoice: InvoiceData): any {
         margin: [0, 40, 0, 0]
       },
       {
-        text: 'For questions about this invoice, please contact us at sales@quietcraftsolutions.com or call 201-249-0929',
+        text: 'For questions about this invoice, please contact us at sales@qcs-cargo.com or call 201-249-0929',
         style: 'footerText',
         alignment: 'center',
         margin: [0, 10, 0, 0]

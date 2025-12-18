@@ -407,12 +407,13 @@
           <a href="tel:201-249-0929" class="text-primary-600 hover:underline">
             📞 (201) 249-0929
           </a>
-          <a href="mailto:support@quietcraftsolutions.com" class="text-primary-600 hover:underline">
-            ✉️ support@quietcraftsolutions.com
+          <a href="mailto:support@qcs-cargo.com" class="text-primary-600 hover:underline">
+            ✉️ support@qcs-cargo.com
           </a>
         </div>
       </CardContent>
     </Card>
   {/if}
 </div>
+
 

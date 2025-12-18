@@ -14,8 +14,12 @@ function getEnvVar(name: string, fallback?: string): string {
 
 // Get env vars with fallbacks
 const RESEND_API_KEY = getEnvVar('RESEND_API_KEY');
-const FROM_EMAIL = getEnvVar('FROM_EMAIL', getEnvVar('RESEND_FROM_EMAIL', 'noreply@qcscargo.com'));
-const REPLY_TO_EMAIL = getEnvVar('REPLY_TO_EMAIL', getEnvVar('ADMIN_EMAIL', 'support@qcscargo.com'));
+// RESEND_FROM_EMAIL may be either a plain email (noreply@...) or a full mailbox string (Name <noreply@...>).
+// Prefer RESEND_FROM_EMAIL if present (it matches Resend's expected "from" format); otherwise build from FROM_EMAIL.
+const RESEND_FROM_EMAIL = getEnvVar('RESEND_FROM_EMAIL');
+const FROM_EMAIL = getEnvVar('FROM_EMAIL', 'noreply@qcs-cargo.com');
+const REPLY_TO_EMAIL = getEnvVar('REPLY_TO_EMAIL', getEnvVar('ADMIN_EMAIL', 'support@qcs-cargo.com'));
+const FROM_ADDRESS = RESEND_FROM_EMAIL || `${PUBLIC_COMPANY_NAME} <${FROM_EMAIL}>`;
 
 // Create Resend instance (lazy initialization)
 let resendInstance: Resend | null = null;
@@ -44,7 +48,7 @@ export async function sendEmail(options: EmailOptions) {
   try {
     const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: `${PUBLIC_COMPANY_NAME} <${FROM_EMAIL}>`,
+      from: FROM_ADDRESS,
       to: Array.isArray(to) ? to : [to],
       reply_to: replyTo || REPLY_TO_EMAIL,
       subject,

@@ -11,7 +11,9 @@
   <title>Legal | QCS Cargo</title>
 </svelte:head>
 
-<div class="text-center py-12">
-  <p class="text-slate-500">Redirecting to Terms of Service...</p>
-</div>
+<main class="min-h-screen bg-background text-foreground">
+  <div class="container mx-auto px-4 py-20 sm:py-28 text-center">
+    <p class="text-sm text-muted-foreground/75 tracking-wide">Redirecting to Terms of Service...</p>
+  </div>
+</main>
 

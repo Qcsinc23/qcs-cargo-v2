@@ -7,5 +7,5 @@
 
 <div class="flex items-center gap-2 {className}">
   <Package class="h-full w-auto text-primary-600" />
-  <span class="text-xl font-bold text-primary-800 dark:text-white">QCS Cargo</span>
+  <span class="text-xl font-bold text-foreground">QCS Cargo</span>
 </div>

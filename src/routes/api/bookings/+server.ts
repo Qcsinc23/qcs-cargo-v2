@@ -207,3 +207,4 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     throw error(500, { message: 'Failed to fetch bookings' });
   }
 };
+

@@ -41,32 +41,49 @@
   <meta name="description" content="Explore QCS Cargo's comprehensive shipping services: Standard Air Freight, Express Delivery, Door-to-Door, Consolidated Cargo, Customs Clearance, and Special Handling." />
 </svelte:head>
 
-<main class="min-h-screen">
+<main class="min-h-screen bg-background text-foreground">
   <!-- Hero Section -->
-  <section class="relative bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 py-20 text-white overflow-hidden">
+  <section class="relative overflow-hidden bg-gradient-to-r from-[#023E8A] via-[#0077B6] to-[#023E8A] py-32 sm:py-40">
     <!-- Background pattern -->
-    <div class="absolute inset-0 opacity-10">
-      <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+    <div class="pointer-events-none absolute inset-0">
+      <div
+        class="absolute inset-0 opacity-30"
+        style="background-image: linear-gradient(90deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px), linear-gradient(0deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px); background-size: 96px 96px;"
+        aria-hidden="true"
+      ></div>
+      <div class="absolute -top-32 left-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[#90E0EF]/20 blur-3xl" aria-hidden="true"></div>
+      <div class="absolute -bottom-40 right-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#CAF0F8]/15 blur-3xl" aria-hidden="true"></div>
     </div>
     
     <div class="container mx-auto px-4 relative">
       <div class="max-w-3xl mx-auto text-center">
-        <span class="inline-block px-4 py-1 bg-primary-500/20 text-primary-300 rounded-full text-sm font-medium mb-6">
-          Trusted Since 2009
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#90E0EF]/25 bg-white/5 text-xs uppercase tracking-[0.35em] text-[#CAF0F8]/80 mb-8">
+          White‑Glove Services
         </span>
-        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-          Shipping Solutions for 
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Every Need</span>
+        <h1 class="font-display text-4xl md:text-5xl lg:text-6xl mb-6 leading-tight text-[#F0F9FF]">
+          Shipping Solutions for
+          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-[#CAF0F8] via-[#90E0EF] to-[#CAF0F8]">
+            Every Need
+          </span>
         </h1>
-        <p class="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+        <p class="text-base sm:text-lg text-[#CAF0F8]/75 mb-10 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
           From standard air freight to specialized handling, we have the perfect service for your Caribbean shipping requirements.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button href="/shipping-calculator" size="lg" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold">
+          <Button
+            href="/shipping-calculator"
+            size="lg"
+            class="h-14 px-10 bg-transparent border border-[#90E0EF]/50 text-[#F0F9FF] hover:bg-white/5 hover:border-[#CAF0F8]/60 tracking-[0.3em] uppercase text-xs font-semibold"
+          >
             <Calculator class="w-5 h-5 mr-2" />
             Get a Quote
           </Button>
-          <Button href="/contact" variant="outline" size="lg" class="bg-transparent border-white/30 text-white hover:bg-white/10">
+          <Button
+            href="/contact"
+            variant="outline"
+            size="lg"
+            class="h-14 px-10 bg-transparent border border-[#90E0EF]/30 text-[#CAF0F8] hover:bg-white/5 hover:border-[#CAF0F8]/50 tracking-[0.3em] uppercase text-xs font-semibold"
+          >
             <Phone class="w-5 h-5 mr-2" />
             Contact Us
           </Button>
@@ -76,13 +93,13 @@
   </section>
 
   <!-- Trust Signals Bar -->
-  <section class="bg-white border-b py-6">
+  <section class="bg-background border-b border-border/25 py-10">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
         {#each TRUST_SIGNALS as signal}
           <div>
-            <div class="text-2xl md:text-3xl font-bold text-primary-600">{signal.value}</div>
-            <div class="text-sm text-slate-600">{signal.label}</div>
+            <div class="font-display text-2xl md:text-3xl text-foreground">{signal.value}</div>
+            <div class="text-xs uppercase tracking-[0.22em] text-muted-foreground/75 mt-2">{signal.label}</div>
           </div>
         {/each}
       </div>
@@ -90,11 +107,11 @@
   </section>
 
   <!-- Services Grid -->
-  <section class="py-20 bg-slate-50">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Our Services</h2>
-        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+      <div class="text-center mb-20">
+        <h2 class="font-display text-3xl md:text-5xl text-foreground mb-6">Our Services</h2>
+        <p class="text-base sm:text-lg text-muted-foreground/80 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
           Choose the service that best fits your shipping needs. All services include real-time tracking and dedicated customer support.
         </p>
       </div>
@@ -102,55 +119,63 @@
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {#each SERVICES_INFO as service, index}
           {@const Icon = getIcon(service.icon)}
-          <Card class="group hover:shadow-xl transition-all duration-300 border-0 shadow-md overflow-hidden {index === 0 ? 'ring-2 ring-primary-500 ring-offset-2' : ''}">
+          <Card
+            class="group overflow-hidden bg-card border-border/30 shadow-sm transition-colors hover:border-[#0077B6]/25 {index === 0
+              ? 'ring-1 ring-[#90E0EF]/35'
+              : ''}"
+          >
             {#if index === 0}
-              <div class="bg-primary-500 text-white text-center py-1 text-sm font-medium">
+              <div class="bg-[#E6F6FB] text-[#023E8A] text-center py-2 text-xs uppercase tracking-[0.28em]">
                 Most Popular
               </div>
             {/if}
             <CardHeader class="pb-4">
               <div class="flex items-start justify-between">
-                <div class="p-3 bg-primary-100 rounded-xl group-hover:bg-primary-500 group-hover:text-white transition-colors">
-                  <Icon class="w-6 h-6 text-primary-600 group-hover:text-white" />
+                <div class="p-3 bg-[#E6F6FB] rounded-xl border border-[#0077B6]/15 group-hover:border-[#0077B6]/25 transition-colors">
+                  <Icon class="w-6 h-6 text-[#023E8A]" />
                 </div>
                 <div class="text-right">
-                  <div class="text-2xl font-bold text-slate-900">
+                  <div class="text-2xl font-semibold text-foreground">
                     {formatPrice(service)}
                   </div>
                   {#if service.priceNote && service.startingPrice}
-                    <div class="text-xs text-slate-500">{service.priceNote}</div>
+                    <div class="text-xs text-muted-foreground/70">{service.priceNote}</div>
                   {/if}
                 </div>
               </div>
-              <CardTitle class="text-xl mt-4">{service.name}</CardTitle>
-              <CardDescription class="text-primary-600 font-medium">
+              <CardTitle class="font-display text-xl mt-4">{service.name}</CardTitle>
+              <CardDescription class="text-[#001D3D]/60 font-light tracking-wide">
                 {service.tagline}
               </CardDescription>
             </CardHeader>
             <CardContent class="space-y-4">
-              <p class="text-slate-600 text-sm leading-relaxed">
+              <p class="text-muted-foreground/80 text-sm leading-relaxed tracking-wide font-light">
                 {service.description}
               </p>
               
               <div class="space-y-2">
                 {#each service.features as feature}
                   <div class="flex items-center gap-2 text-sm">
-                    <Check class="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span class="text-slate-700">{feature}</span>
+                    <Check class="w-4 h-4 text-[#90E0EF] flex-shrink-0" />
+                    <span class="text-muted-foreground/85 font-light tracking-wide">{feature}</span>
                   </div>
                 {/each}
               </div>
 
               {#if service.transitTime !== 'N/A' && service.transitTime !== 'Varies'}
-                <div class="pt-4 border-t">
+                <div class="pt-5 border-t border-border/30">
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-500">Transit Time</span>
-                    <span class="font-semibold text-slate-900">{service.transitTime}</span>
+                    <span class="text-muted-foreground/70 uppercase tracking-[0.22em] text-xs">Transit Time</span>
+                    <span class="font-semibold text-foreground">{service.transitTime}</span>
                   </div>
                 </div>
               {/if}
 
-              <Button href="/shipping-calculator" variant="outline" class="w-full mt-4 group-hover:bg-primary-500 group-hover:text-white group-hover:border-primary-500 transition-colors">
+              <Button
+                href="/shipping-calculator"
+                variant="outline"
+                class="w-full mt-8 bg-transparent border border-[#0077B6]/25 hover:bg-black/5 hover:border-[#0077B6]/35 tracking-[0.3em] uppercase text-xs font-semibold"
+              >
                 Get Quote
                 <ArrowRight class="w-4 h-4 ml-2" />
               </Button>
@@ -162,11 +187,11 @@
   </section>
 
   <!-- How It Works -->
-  <section class="py-20 bg-white">
+  <section class="py-32 sm:py-40 bg-background">
     <div class="container mx-auto px-4">
       <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">How It Works</h2>
-        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+        <h2 class="font-display text-3xl md:text-5xl text-foreground mb-6">How It Works</h2>
+        <p class="text-base sm:text-lg text-muted-foreground/80 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
           Shipping with QCS Cargo is simple. Follow these four easy steps.
         </p>
       </div>
@@ -179,14 +204,14 @@
           { step: 4, title: 'Track & Receive', description: 'Follow your shipment in real-time until it\'s safely delivered.', icon: Plane }
         ] as step}
           <div class="text-center group">
-            <div class="relative inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6 group-hover:bg-primary-500 transition-colors">
-              <svelte:component this={step.icon} class="w-7 h-7 text-primary-600 group-hover:text-white transition-colors" />
-              <div class="absolute -top-2 -right-2 w-8 h-8 bg-amber-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+            <div class="relative inline-flex items-center justify-center w-16 h-16 bg-muted/60 border border-border/30 rounded-full mb-7 group-hover:border-[#0077B6]/25 transition-colors">
+              <svelte:component this={step.icon} class="w-7 h-7 text-[#023E8A] transition-colors" />
+              <div class="absolute -top-2 -right-2 w-8 h-8 bg-[#D6B15E] border border-[#D6B15E]/60 rounded-full flex items-center justify-center text-[#001D3D] font-bold text-sm">
                 {step.step}
               </div>
             </div>
-            <h3 class="text-lg font-semibold text-slate-900 mb-2">{step.title}</h3>
-            <p class="text-slate-600 text-sm">{step.description}</p>
+            <h3 class="font-display text-lg text-foreground mb-3">{step.title}</h3>
+            <p class="text-muted-foreground/80 text-sm font-light leading-relaxed tracking-wide">{step.description}</p>
           </div>
         {/each}
       </div>
@@ -194,18 +219,30 @@
   </section>
 
   <!-- CTA Section -->
-  <section class="py-20 bg-gradient-to-r from-primary-600 to-primary-700 text-white">
+  <section class="relative overflow-hidden py-32 sm:py-40 bg-gradient-to-r from-[#023E8A] via-[#0077B6] to-[#023E8A]">
+    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 30%, rgba(144,224,239,0.25), transparent 55%), radial-gradient(circle at 80% 60%, rgba(202,240,248,0.18), transparent 55%);"></div>
+    </div>
     <div class="container mx-auto px-4 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to Ship?</h2>
-      <p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+      <h2 class="font-display text-3xl md:text-5xl text-[#F0F9FF] mb-6">Ready to Ship?</h2>
+      <p class="text-base sm:text-lg text-[#CAF0F8]/75 mb-12 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
         Get an instant quote or speak with our team about your shipping needs.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button href="/shipping-calculator" size="lg" class="bg-white text-primary-600 hover:bg-slate-100">
+        <Button
+          href="/shipping-calculator"
+          size="lg"
+          class="h-14 px-10 bg-transparent border border-[#90E0EF]/50 text-[#F0F9FF] hover:bg-white/5 hover:border-[#CAF0F8]/60 tracking-[0.3em] uppercase text-xs font-semibold"
+        >
           <Calculator class="w-5 h-5 mr-2" />
           Calculate Shipping Cost
         </Button>
-        <Button href="tel:{COMPANY.phone}" variant="outline" size="lg" class="bg-transparent border-white/30 text-white hover:bg-white/10">
+        <Button
+          href="tel:{COMPANY.phone}"
+          variant="outline"
+          size="lg"
+          class="h-14 px-10 bg-transparent border border-white/20 text-[#FFF1D6] hover:bg-white/5 hover:border-[#D6B15E]/55 tracking-[0.3em] uppercase text-xs font-semibold"
+        >
           <Phone class="w-5 h-5 mr-2" />
           Call {COMPANY.phone}
         </Button>

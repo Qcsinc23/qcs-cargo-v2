@@ -118,8 +118,8 @@
             <li class="flex items-start gap-3 p-3 rounded-lg bg-red-50/50">
               <AlertCircle class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p class="font-medium text-slate-900">{item.name}</p>
-                <p class="text-sm text-slate-600">{item.reason}</p>
+                <p class="font-medium text-foreground">{item.name}</p>
+                <p class="text-sm text-muted-foreground/85">{item.reason}</p>
               </div>
             </li>
           {/each}
@@ -145,8 +145,8 @@
               <div class="flex items-start gap-3">
                 <Info class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p class="font-medium text-slate-900">{item.name}</p>
-                  <p class="text-sm text-slate-600">{item.reason}</p>
+                  <p class="font-medium text-foreground">{item.name}</p>
+                  <p class="text-sm text-muted-foreground/85">{item.reason}</p>
                   {#if item.note}
                     <p class="text-sm text-amber-700 mt-1 font-medium">{item.note}</p>
                   {/if}
@@ -160,15 +160,16 @@
   </div>
 
   <!-- Disclaimer -->
-  <div class="mt-8 p-4 bg-slate-100 rounded-lg text-sm text-slate-600">
+  <div class="mt-10 p-5 bg-muted/60 rounded-xl border border-border/30 text-sm text-muted-foreground/85">
     <p class="font-medium mb-2">Important Notice</p>
     <p>
       This list is not exhaustive. Regulations may vary by destination country and are subject to change. 
       Items not listed here may still be prohibited or restricted. When in doubt, please 
-      <a href="/contact" class="text-primary-600 hover:underline">contact us</a> before shipping.
+      <a href="/contact" class="text-[#023E8A] hover:underline">contact us</a> before shipping.
     </p>
   </div>
 </div>
+
 
 
 

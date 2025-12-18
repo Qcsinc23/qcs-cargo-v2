@@ -105,20 +105,28 @@
   <meta name="description" content="Contact QCS Cargo for shipping inquiries, quotes, or support. Visit our Kearny, NJ warehouse or reach us by phone and email." />
 </svelte:head>
 
-<main class="min-h-screen bg-slate-50">
+<main class="min-h-screen bg-background text-foreground">
   <!-- Hero -->
-  <section class="bg-gradient-to-br from-primary-600 to-primary-800 py-12 text-white">
-    <div class="container mx-auto px-4 text-center">
-      <h1 class="text-3xl md:text-4xl font-bold mb-2">
+  <section class="relative overflow-hidden bg-gradient-to-r from-[#023E8A] via-[#0077B6] to-[#023E8A] py-32 sm:py-40">
+    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div
+        class="absolute inset-0 opacity-30"
+        style="background-image: linear-gradient(90deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px), linear-gradient(0deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px); background-size: 96px 96px;"
+      ></div>
+      <div class="absolute -top-32 left-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[#90E0EF]/20 blur-3xl"></div>
+      <div class="absolute -bottom-40 right-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#CAF0F8]/15 blur-3xl"></div>
+    </div>
+    <div class="container mx-auto px-4 text-center relative">
+      <h1 class="font-display text-4xl md:text-6xl text-[#F0F9FF] mb-6">
         Get in Touch
       </h1>
-      <p class="text-primary-100">
-        We're here to help with all your shipping needs
+      <p class="text-base sm:text-lg text-[#CAF0F8]/75 max-w-2xl mx-auto font-light leading-relaxed tracking-wide">
+        Concierge‑level support for every shipment—questions, quotes, or special handling.
       </p>
     </div>
   </section>
 
-  <section class="py-12">
+  <section class="py-24 sm:py-28">
     <div class="container mx-auto px-4">
       <div class="grid lg:grid-cols-3 gap-8">
         <!-- Contact Info -->
@@ -129,39 +137,47 @@
             </CardHeader>
             <CardContent class="space-y-4">
               <div class="flex items-start gap-3">
-                <MapPin class="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                <MapPin class="w-5 h-5 text-[#90E0EF] flex-shrink-0 mt-1" />
                 <div>
                   <p class="font-medium">Address</p>
-                  <p class="text-sm text-slate-600">{COMPANY.fullAddress}</p>
+                  <p class="text-sm text-muted-foreground/80 font-light leading-relaxed tracking-wide">
+                    {COMPANY.fullAddress}
+                  </p>
                 </div>
               </div>
               <div class="flex items-start gap-3">
-                <Phone class="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                <Phone class="w-5 h-5 text-[#90E0EF] flex-shrink-0 mt-1" />
                 <div>
                   <p class="font-medium">Phone</p>
-                  <a href="tel:{COMPANY.phone}" class="text-sm text-primary-600 hover:underline">
+                  <a
+                    href="tel:{COMPANY.phone}"
+                    class="text-sm text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide"
+                  >
                     {COMPANY.phone}
                   </a>
                 </div>
               </div>
               <div class="flex items-start gap-3">
-                <Mail class="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                <Mail class="w-5 h-5 text-[#90E0EF] flex-shrink-0 mt-1" />
                 <div>
                   <p class="font-medium">Email</p>
-                  <a href="mailto:{COMPANY.email}" class="text-sm text-primary-600 hover:underline">
+                  <a
+                    href="mailto:{COMPANY.email}"
+                    class="text-sm text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide"
+                  >
                     {COMPANY.email}
                   </a>
                 </div>
               </div>
               <div class="flex items-start gap-3">
-                <MessageSquare class="w-5 h-5 text-primary-600 flex-shrink-0 mt-1" />
+                <MessageSquare class="w-5 h-5 text-[#90E0EF] flex-shrink-0 mt-1" />
                 <div>
                   <p class="font-medium">WhatsApp</p>
                   <a 
                     href="https://wa.me/{COMPANY.social.whatsapp.replace(/[^0-9]/g, '')}" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-sm text-primary-600 hover:underline"
+                    class="text-sm text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide"
                   >
                     {COMPANY.social.whatsapp}
                   </a>
@@ -180,15 +196,15 @@
             <CardContent>
               <ul class="space-y-2 text-sm">
                 <li class="flex justify-between">
-                  <span class="text-slate-600">Monday - Friday</span>
+                  <span class="text-muted-foreground/80 font-light tracking-wide">Monday - Friday</span>
                   <span class="font-medium">{COMPANY.hours.weekday}</span>
                 </li>
                 <li class="flex justify-between">
-                  <span class="text-slate-600">Saturday</span>
+                  <span class="text-muted-foreground/80 font-light tracking-wide">Saturday</span>
                   <span class="font-medium">{COMPANY.hours.saturday}</span>
                 </li>
                 <li class="flex justify-between">
-                  <span class="text-slate-600">Sunday</span>
+                  <span class="text-muted-foreground/80 font-light tracking-wide">Sunday</span>
                   <span class="font-medium text-red-600">{COMPANY.hours.sunday}</span>
                 </li>
               </ul>
@@ -197,7 +213,7 @@
 
           <!-- Map Embed -->
           <Card class="overflow-hidden">
-            <div class="h-48 bg-slate-200">
+            <div class="h-56 bg-muted/40 border border-border/30 rounded-xl">
               <iframe
                 title="QCS Cargo Location"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.1!2d-74.1502!3d40.7676!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDQ2JzAzLjQiTiA3NMKwMDknMDAuNyJX!5e0!3m2!1sen!2sus!4v1234567890"

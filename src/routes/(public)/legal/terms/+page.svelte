@@ -9,10 +9,14 @@
   <meta name="description" content="Terms and conditions for using QCS Cargo shipping services. Read our terms of service before booking." />
 </svelte:head>
 
-<header class="mb-8 pb-8 border-b">
-  <h1 class="text-3xl font-bold text-slate-900 mb-2">Terms of Service</h1>
-  <p class="text-slate-500">Last updated: {lastUpdated}</p>
-</header>
+<main class="min-h-screen bg-background text-foreground">
+  <div class="container mx-auto px-4 py-20 sm:py-28">
+    <header class="mb-10 pb-8 border-b border-border/25">
+      <h1 class="font-display text-4xl sm:text-5xl text-foreground mb-2">Terms of Service</h1>
+      <p class="text-sm text-muted-foreground/75 tracking-wide">Last updated: {lastUpdated}</p>
+    </header>
+
+    <article class="prose prose-slate prose-headings:font-display prose-a:text-[#023E8A] prose-a:no-underline hover:prose-a:text-[#0077B6] max-w-none">
 
 <section>
   <h2>1. Agreement to Terms</h2>
@@ -27,6 +31,9 @@
   </p>
 </section>
 
+    </article>
+  </div>
+</main>
 <section>
   <h2>2. Description of Services</h2>
   <p>{COMPANY.name} provides air freight shipping services between the United States and Caribbean destinations, including:</p>

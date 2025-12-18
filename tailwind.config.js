@@ -87,6 +87,7 @@ const config = {
       },
       fontFamily: {
         sans: ['Inter', ...fontFamily.sans],
+        display: ['"Playfair Display"', ...fontFamily.serif],
         mono: ['JetBrains Mono', ...fontFamily.mono]
       },
       keyframes: {

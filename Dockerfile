@@ -6,7 +6,7 @@ ARG PUBLIC_POCKETBASE_URL=http://localhost:8090
 ARG PUBLIC_SITE_URL=http://localhost:5173
 ARG PUBLIC_COMPANY_NAME="QCS Cargo"
 ARG PUBLIC_COMPANY_PHONE="201-249-0929"
-ARG PUBLIC_COMPANY_EMAIL="sales@quietcraftsolutions.com"
+ARG PUBLIC_COMPANY_EMAIL="sales@qcs-cargo.com"
 ARG PUBLIC_COMPANY_ADDRESS="35 Obrien St, E12 Kearny, NJ 07032"
 ARG PUBLIC_STRIPE_KEY=""
 ARG PUBLIC_SENTRY_DSN=""
@@ -54,6 +54,6 @@ ENV PORT=3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
 
 CMD ["node", "build"]

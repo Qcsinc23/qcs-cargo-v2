@@ -3,8 +3,8 @@ export const COMPANY = {
   name: 'QCS Cargo',
   fullName: 'Quiet Craft Solutions Cargo',
   phone: '201-249-0929',
-  email: 'sales@quietcraftsolutions.com',
-  supportEmail: 'support@quietcraftsolutions.com',
+  email: 'sales@qcs-cargo.com',
+  supportEmail: 'support@qcs-cargo.com',
   address: {
     street: '35 Obrien St, E12',
     city: 'Kearny',

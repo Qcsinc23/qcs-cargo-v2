@@ -1,7 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
-import { handleAuth } from '@kinde-oss/kinde-auth-sveltekit';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -26,13 +25,6 @@ function getBestEffortClientIp(request: Request, fallback: () => string): string
   if (realIp) return realIp.trim();
   return fallback();
 }
-
-// Kinde expects GET /api/auth/login to initiate the login flow.
-// This route previously only supported POST (PocketBase email/password), which caused 405s when
-// clicking "Login" as a normal link navigation. We keep POST for legacy /auth-legacy pages.
-export const GET: RequestHandler = async (event) => {
-  return handleAuth(event);
-};
 
 export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
   if (!locals.pb) {

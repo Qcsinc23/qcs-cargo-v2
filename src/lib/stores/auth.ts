@@ -194,16 +194,9 @@ function createAuthStore() {
       }
     },
 
-    // Logout
+    // Logout (Kinde-based)
     async logout() {
       update(state => ({ ...state, isLoading: true }));
-
-      try {
-        await requestJson<{ success: true }>('/api/auth/logout', { method: 'POST' });
-      } catch (error: unknown) {
-        update(state => ({ ...state, isLoading: false }));
-        throw new Error(getErrorMessage(error, 'Logout failed'));
-      }
 
       set({
         user: null,
@@ -211,9 +204,10 @@ function createAuthStore() {
         isLoading: false
       });
 
-      // Invalidate all server data and redirect
-      await invalidateAll();
-      goto('/');
+      // Redirect to Kinde logout endpoint
+      if (browser) {
+        window.location.href = '/api/auth/logout';
+      }
     },
 
     // Request password reset

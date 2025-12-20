@@ -26,7 +26,8 @@
   async function handleLogout() {
     logoutDialogOpen = false;
     mobileMenuOpen = false;
-    await auth.logout();
+    // Kinde handles logout via API route
+    window.location.href = '/api/auth/logout';
   }
 </script>
 
@@ -69,14 +70,14 @@
       {:else}
         <Button
           variant="ghost"
-          href="/auth/login"
+          href="/api/auth/login"
           class="uppercase tracking-[0.28em] text-xs hover:bg-black/5 hover:text-[#001D3D]"
         >
           Login
         </Button>
         <Button
           variant="outline"
-          href="/auth/register"
+          href="/api/auth/register"
           class="border border-[#0077B6]/25 bg-transparent text-[#001D3D] hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
         >
           Sign Up
@@ -139,7 +140,7 @@
             <Button
               variant="outline"
               class="border-[#0077B6]/25 bg-transparent hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
-              href="/auth/login"
+              href="/api/auth/login"
               on:click={() => (mobileMenuOpen = false)}
             >
               Login
@@ -147,7 +148,7 @@
             <Button
               variant="outline"
               class="border border-[#0077B6]/25 bg-transparent text-[#001D3D] hover:bg-black/5 hover:text-[#001D3D] uppercase tracking-[0.28em] text-xs"
-              href="/auth/register"
+              href="/api/auth/register"
               on:click={() => (mobileMenuOpen = false)}
             >
               Sign Up

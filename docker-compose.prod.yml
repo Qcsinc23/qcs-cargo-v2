@@ -71,6 +71,12 @@ services:
       args:
         PUBLIC_POCKETBASE_URL: ${PUBLIC_POCKETBASE_URL}
         PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+        KINDE_ISSUER_URL: ${KINDE_ISSUER_URL:-https://qcsinc.kinde.com}
+        KINDE_CLIENT_ID: ${KINDE_CLIENT_ID}
+        KINDE_CLIENT_SECRET: ${KINDE_CLIENT_SECRET}
+        KINDE_REDIRECT_URL: ${KINDE_REDIRECT_URL}
+        KINDE_POST_LOGOUT_REDIRECT_URL: ${KINDE_POST_LOGOUT_REDIRECT_URL}
+        KINDE_POST_LOGIN_REDIRECT_URL: ${KINDE_POST_LOGIN_REDIRECT_URL}
     container_name: qcs_web
     restart: unless-stopped
     environment:
@@ -84,6 +90,14 @@ services:
       - ADMIN_EMAIL=${ADMIN_EMAIL:-support@qcs-cargo.com}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      # Kinde Auth
+      - KINDE_ISSUER_URL=${KINDE_ISSUER_URL:-https://qcsinc.kinde.com}
+      - KINDE_CLIENT_ID=${KINDE_CLIENT_ID}
+      - KINDE_CLIENT_SECRET=${KINDE_CLIENT_SECRET}
+      - KINDE_REDIRECT_URL=${KINDE_REDIRECT_URL}
+      - KINDE_POST_LOGOUT_REDIRECT_URL=${KINDE_POST_LOGOUT_REDIRECT_URL}
+      - KINDE_POST_LOGIN_REDIRECT_URL=${KINDE_POST_LOGIN_REDIRECT_URL}
+      - KINDE_SCOPE=${KINDE_SCOPE:-profile email offline openid}
     depends_on:
       qcs_pocketbase:
         condition: service_healthy

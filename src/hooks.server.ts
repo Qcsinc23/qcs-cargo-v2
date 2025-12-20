@@ -1,5 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+import { sessionHooks } from "@kinde-oss/kinde-auth-sveltekit";
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 import { dev } from '$app/environment';
@@ -55,57 +56,34 @@ const correlationHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-// Authentication hook
-const authHook: Handle = async ({ event, resolve }) => {
-  // Create PocketBase instance for this request
+// Kinde Authentication hook
+const kindeAuthHook: Handle = async ({ event, resolve }) => {
+  // Initialize Kinde session
+  sessionHooks({ event });
+  
+  // Still need PocketBase for data operations (not auth)
   event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
-
-  // Load auth store from cookie
-  const cookie = event.request.headers.get('cookie') || '';
-  event.locals.pb.authStore.loadFromCookie(cookie);
-
-  try {
-    // Verify and refresh auth if valid
-    if (event.locals.pb.authStore.isValid && event.locals.pb.authStore.model) {
-      // Only refresh if we have a valid token
-      if (event.locals.pb.authStore.token) {
-        try {
-          await event.locals.pb.collection('users').authRefresh();
-        } catch (refreshError) {
-          // If refresh fails, continue with existing valid auth
-          // This can happen if the token is still valid but refresh endpoint fails
-          if (dev) {
-            console.log('[Auth Hook] Refresh failed, using existing auth:', refreshError);
-          }
-        }
-      }
-      event.locals.user = event.locals.pb.authStore.model;
-    }
-  } catch (error) {
-    // Log error in development for debugging
-    if (dev) {
-      console.error('[Auth Hook Error]', error);
-    }
-    // Clear invalid auth
-    event.locals.pb.authStore.clear();
+  
+  // Get Kinde user from session (Kinde sets event.locals.user via sessionHooks)
+  const kindeUser = event.locals.user as any;
+  
+  if (kindeUser) {
+    // Map Kinde user to your app's user structure
+    event.locals.user = {
+      id: kindeUser.id || kindeUser.sub,
+      email: kindeUser.email,
+      name: kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
+      emailVerified: kindeUser.email_verified || false,
+      picture: kindeUser.picture || null,
+      // Preserve any additional Kinde properties
+      kindeId: kindeUser.id || kindeUser.sub,
+      role: 'user' // Default role, adjust based on your needs
+    };
+  } else {
     event.locals.user = null;
   }
 
   const response = await resolve(event);
-
-  // Set auth cookie with appropriate settings for the environment
-  // In development, secure must be false for localhost to work
-  // BUG FIX: httpOnly should be true to prevent XSS attacks from reading the cookie
-  response.headers.append(
-    'set-cookie',
-    event.locals.pb.authStore.exportToCookie({ 
-      httpOnly: true, 
-      secure: !dev, 
-      sameSite: 'Lax',
-      path: '/'
-    })
-  );
-
   return response;
 };
 
@@ -117,14 +95,13 @@ const securityHook: Handle = async ({ event, resolve }) => {
   // In production, replace with actual PocketBase domain
   const pocketbaseUrl = process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
-  // Content Security Policy for payment security
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
-    `connect-src 'self' https://api.stripe.com ${pocketbaseUrl}`,
+    `connect-src 'self' https://api.stripe.com ${pocketbaseUrl} https://qcsinc.kinde.com`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",
@@ -145,7 +122,7 @@ const securityHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-export const handle = sequence(correlationHook, authHook, securityHook);
+export const handle = sequence(correlationHook, kindeAuthHook, securityHook);
 
 // Use Sentry's error handler
 export const handleError = Sentry.handleErrorWithSentry();

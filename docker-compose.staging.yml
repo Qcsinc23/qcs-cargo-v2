@@ -48,6 +48,12 @@ services:
         PUBLIC_COMPANY_PHONE: "201-249-0929"
         PUBLIC_COMPANY_EMAIL: sales@qcs-cargo.com
         PUBLIC_COMPANY_ADDRESS: 35 Obrien St E12 Kearny NJ 07032
+        KINDE_ISSUER_URL: ${KINDE_ISSUER_URL:-https://qcsinc.kinde.com}
+        KINDE_CLIENT_ID: ${KINDE_CLIENT_ID}
+        KINDE_CLIENT_SECRET: ${KINDE_CLIENT_SECRET}
+        KINDE_REDIRECT_URL: ${KINDE_REDIRECT_URL:-http://82.25.85.157:3001/api/auth/kinde_callback}
+        KINDE_POST_LOGOUT_REDIRECT_URL: ${KINDE_POST_LOGOUT_REDIRECT_URL:-http://82.25.85.157:3001}
+        KINDE_POST_LOGIN_REDIRECT_URL: ${KINDE_POST_LOGIN_REDIRECT_URL:-http://82.25.85.157:3001/dashboard}
     container_name: qcs_web
     restart: unless-stopped
     environment:
@@ -62,6 +68,14 @@ services:
       - PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL:-http://82.25.85.157:8091}
       - PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-http://82.25.85.157:3001}
       - FRONTEND_URL=${FRONTEND_URL:-http://82.25.85.157:3001}
+      # Kinde Auth
+      - KINDE_ISSUER_URL=${KINDE_ISSUER_URL:-https://qcsinc.kinde.com}
+      - KINDE_CLIENT_ID=${KINDE_CLIENT_ID}
+      - KINDE_CLIENT_SECRET=${KINDE_CLIENT_SECRET}
+      - KINDE_REDIRECT_URL=${KINDE_REDIRECT_URL:-http://82.25.85.157:3001/api/auth/kinde_callback}
+      - KINDE_POST_LOGOUT_REDIRECT_URL=${KINDE_POST_LOGOUT_REDIRECT_URL:-http://82.25.85.157:3001}
+      - KINDE_POST_LOGIN_REDIRECT_URL=${KINDE_POST_LOGIN_REDIRECT_URL:-http://82.25.85.157:3001/dashboard}
+      - KINDE_SCOPE=${KINDE_SCOPE:-profile email offline openid}
     depends_on:
       qcs_pocketbase:
         condition: service_healthy

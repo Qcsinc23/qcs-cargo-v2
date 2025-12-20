@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
+import { handleAuth } from '@kinde-oss/kinde-auth-sveltekit';
 
 const registerSchema = z
   .object({
@@ -14,6 +15,13 @@ const registerSchema = z
     message: 'Passwords do not match',
     path: ['passwordConfirm']
   });
+
+// Kinde expects GET /api/auth/register to initiate the signup flow.
+// This route previously only supported POST (PocketBase create user), which caused 405s when
+// clicking "Sign Up" as a normal link navigation. We keep POST for legacy /auth-legacy pages.
+export const GET: RequestHandler = async (event) => {
+  return handleAuth(event);
+};
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.pb) {

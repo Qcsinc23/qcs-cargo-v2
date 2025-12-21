@@ -98,6 +98,7 @@ services:
       - KINDE_POST_LOGOUT_REDIRECT_URL=${KINDE_POST_LOGOUT_REDIRECT_URL}
       - KINDE_POST_LOGIN_REDIRECT_URL=${KINDE_POST_LOGIN_REDIRECT_URL}
       - KINDE_SCOPE=${KINDE_SCOPE:-profile email offline openid}
+      - KINDE_COOKIE_DOMAIN=${KINDE_COOKIE_DOMAIN:-}
     depends_on:
       qcs_pocketbase:
         condition: service_healthy

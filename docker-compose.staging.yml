@@ -51,9 +51,9 @@ services:
         KINDE_ISSUER_URL: ${KINDE_ISSUER_URL:-https://qcsinc.kinde.com}
         KINDE_CLIENT_ID: ${KINDE_CLIENT_ID}
         KINDE_CLIENT_SECRET: ${KINDE_CLIENT_SECRET}
-        KINDE_REDIRECT_URL: ${KINDE_REDIRECT_URL:-http://82.25.85.157:3001/api/auth/kinde_callback}
-        KINDE_POST_LOGOUT_REDIRECT_URL: ${KINDE_POST_LOGOUT_REDIRECT_URL:-http://82.25.85.157:3001}
-        KINDE_POST_LOGIN_REDIRECT_URL: ${KINDE_POST_LOGIN_REDIRECT_URL:-http://82.25.85.157:3001/dashboard}
+        KINDE_REDIRECT_URL: ${KINDE_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001/api/auth/kinde_callback}
+        KINDE_POST_LOGOUT_REDIRECT_URL: ${KINDE_POST_LOGOUT_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001}
+        KINDE_POST_LOGIN_REDIRECT_URL: ${KINDE_POST_LOGIN_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001/dashboard}
     container_name: qcs_web
     restart: unless-stopped
     environment:
@@ -72,9 +72,9 @@ services:
       - KINDE_ISSUER_URL=${KINDE_ISSUER_URL:-https://qcsinc.kinde.com}
       - KINDE_CLIENT_ID=${KINDE_CLIENT_ID}
       - KINDE_CLIENT_SECRET=${KINDE_CLIENT_SECRET}
-      - KINDE_REDIRECT_URL=${KINDE_REDIRECT_URL:-http://82.25.85.157:3001/api/auth/kinde_callback}
-      - KINDE_POST_LOGOUT_REDIRECT_URL=${KINDE_POST_LOGOUT_REDIRECT_URL:-http://82.25.85.157:3001}
-      - KINDE_POST_LOGIN_REDIRECT_URL=${KINDE_POST_LOGIN_REDIRECT_URL:-http://82.25.85.157:3001/dashboard}
+      - KINDE_REDIRECT_URL=${KINDE_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001/api/auth/kinde_callback}
+      - KINDE_POST_LOGOUT_REDIRECT_URL=${KINDE_POST_LOGOUT_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001}
+      - KINDE_POST_LOGIN_REDIRECT_URL=${KINDE_POST_LOGIN_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001/dashboard}
       - KINDE_SCOPE=${KINDE_SCOPE:-profile email offline openid}
     depends_on:
       qcs_pocketbase:

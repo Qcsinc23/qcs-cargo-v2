@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) {
-    throw redirect(302, '/auth/login');
+    throw redirect(302, '/api/auth/login');
   }
 
   const bookingId = params.id;

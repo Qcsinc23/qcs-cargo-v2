@@ -62,16 +62,28 @@ function createAuthStore() {
   // Client JS cannot read the auth cookie, so we initialize this store from server-rendered
   // `data.user` via `auth.initialize(...)` in `src/routes/+layout.svelte`.
 
-  function transformUser(model: AuthModel | null): User | null {
+  function transformUser(model: any | null): User | null {
     if (!model) return null;
+    
+    // Handle both Kinde users (from hooks.server.ts) and PocketBase users
+    const isKindeUser = 'kindeId' in model || 'picture' in model;
+    
+    // For Kinde users, picture is already a URL; for PocketBase, we need to generate it
+    let avatar: string | undefined;
+    if (isKindeUser) {
+      avatar = model.picture || undefined;
+    } else if (model.avatar) {
+      avatar = pb.files.getUrl(model, model.avatar, { thumb: '100x100' });
+    }
+    
     return {
       id: model.id,
       email: model.email,
       name: model.name || '',
       phone: model.phone,
       role: model.role || 'customer',
-      avatar: model.avatar ? pb.files.getUrl(model, model.avatar, { thumb: '100x100' }) : undefined,
-      verified: model.verified || false,
+      avatar,
+      verified: model.verified ?? model.emailVerified ?? false,
       address_line1: model.address_line1,
       address_line2: model.address_line2,
       city: model.city,
@@ -84,8 +96,8 @@ function createAuthStore() {
       notify_transit: model.notify_transit,
       notify_delivered: model.notify_delivered,
       stripe_customer_id: model.stripe_customer_id,
-      created: model.created,
-      updated: model.updated
+      created: model.created || new Date().toISOString(),
+      updated: model.updated || new Date().toISOString()
     };
   }
 

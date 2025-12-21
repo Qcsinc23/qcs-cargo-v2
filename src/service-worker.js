@@ -6,10 +6,11 @@ const API_CACHE = 'qcs-api-v2';
 // Assets to cache on install
 const STATIC_ASSETS = [
   '/',
-  '/auth/login',
-  '/auth/register',
   '/shipping-calculator',
+  '/track',
+  '/pricing',
   '/admin/receiving',
+  '/dashboard',
   '/manifest.json',
   '/sounds/scan-success.mp3',
   '/sounds/scan-error.mp3'

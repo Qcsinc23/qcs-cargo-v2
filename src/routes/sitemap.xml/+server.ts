@@ -13,8 +13,8 @@ const staticPages = [
   { url: '/prohibited-items', priority: 0.6, changefreq: 'monthly' },
   { url: '/faq', priority: 0.6, changefreq: 'monthly' },
   { url: '/contact', priority: 0.5, changefreq: 'monthly' },
-  { url: '/auth/login', priority: 0.3, changefreq: 'yearly' },
-  { url: '/auth/register', priority: 0.3, changefreq: 'yearly' }
+  { url: '/about', priority: 0.5, changefreq: 'monthly' },
+  { url: '/services', priority: 0.5, changefreq: 'monthly' }
 ];
 
 function generateSitemap(): string {

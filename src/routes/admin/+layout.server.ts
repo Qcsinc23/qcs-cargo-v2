@@ -4,7 +4,8 @@ import { redirect } from '@sveltejs/kit';
 export const load: LayoutServerLoad = async ({ locals }) => {
   // Protect admin routes - require authentication
   if (!locals.user) {
-    throw redirect(302, '/auth/login?redirect=/admin');
+    // Redirect to Kinde login
+    throw redirect(302, '/api/auth/login');
   }
 
   const role = (locals.user as any)?.role as string | undefined;

@@ -372,7 +372,7 @@ export async function sendAccountDeletionEmail(to: string, name: string) {
     <p>If you didn't request this deletion or want to recover your account, simply log in within the next 30 days:</p>
 
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/auth/login" class="button">Recover Account</a>
+      <a href="${PUBLIC_SITE_URL}/api/auth/login" class="button">Recover Account</a>
     </p>
 
     <p>If you have any questions, please contact our support team.</p>

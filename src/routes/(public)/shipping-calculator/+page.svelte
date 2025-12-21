@@ -177,7 +177,7 @@
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <Button
           size="lg"
-          href="/auth/register"
+          href="/api/auth/register"
           class="h-14 px-10 bg-transparent border border-[#90E0EF]/50 text-[#F0F9FF] hover:bg-white/5 hover:border-[#CAF0F8]/60 tracking-[0.3em] uppercase text-xs font-semibold"
         >
           Create Account

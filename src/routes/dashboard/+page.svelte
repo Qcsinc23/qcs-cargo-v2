@@ -205,7 +205,7 @@
             </div>
           </div>
         </a>
-        <a href="/tracking" class="group block p-4 rounded-lg border hover:bg-primary-50 hover:border-primary-200 transition-colors">
+        <a href="/track" class="group block p-4 rounded-lg border hover:bg-primary-50 hover:border-primary-200 transition-colors">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
               <MapPin class="w-5 h-5 text-blue-600" />

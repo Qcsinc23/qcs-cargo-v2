@@ -547,7 +547,7 @@
         <Button
           variant="default"
           class="sm:flex-1"
-          href="/auth/register"
+          href="/api/auth/register"
         >
           Book Shipment
         </Button>

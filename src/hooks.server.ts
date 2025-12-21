@@ -56,8 +56,21 @@ const correlationHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
+// #region agent log
+const debugLog = (msg: string, data: any, hyp: string) => fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts',message:msg,data,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:hyp})}).catch(()=>{});
+// #endregion
+
 // Kinde Authentication hook
 const kindeAuthHook: Handle = async ({ event, resolve }) => {
+  const isAuthCallback = event.url.pathname.includes('kinde_callback');
+  
+  // #region agent log
+  if (isAuthCallback) {
+    const stateCookie = event.cookies.get('kinde_ac-state-key');
+    await debugLog('kindeAuthHook entry (callback)', { path: event.url.pathname, hasStateCookie: !!stateCookie, stateCookieValue: stateCookie?.slice(0,20), allCookies: event.cookies.getAll().map(c => c.name) }, 'B');
+  }
+  // #endregion
+  
   // Initialize Kinde session
   sessionHooks({ event });
   
@@ -66,6 +79,12 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   
   // Get Kinde user from session (Kinde sets event.locals.user via sessionHooks)
   const kindeUser = event.locals.user as any;
+  
+  // #region agent log
+  if (isAuthCallback) {
+    await debugLog('after sessionHooks', { hasUser: !!kindeUser, userKeys: kindeUser ? Object.keys(kindeUser) : null }, 'D');
+  }
+  // #endregion
   
   if (kindeUser) {
     // Map Kinde user to your app's user structure
@@ -84,6 +103,13 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   }
 
   const response = await resolve(event);
+  
+  // #region agent log
+  if (isAuthCallback) {
+    await debugLog('kindeAuthHook response', { status: response.status, location: response.headers.get('location') }, 'C');
+  }
+  // #endregion
+  
   return response;
 };
 

@@ -57,7 +57,10 @@ const correlationHook: Handle = async ({ event, resolve }) => {
 };
 
 // #region agent log
-const debugLog = (msg: string, data: any, hyp: string) => fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts',message:msg,data,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:hyp})}).catch(()=>{});
+const debugLog = (msg: string, data: any, hyp: string) => {
+  console.log(`[DEBUG][${hyp}] ${msg}:`, JSON.stringify(data));
+  return fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts',message:msg,data,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:hyp})}).catch(()=>{});
+};
 // #endregion
 
 // Kinde Authentication hook

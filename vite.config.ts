@@ -33,7 +33,11 @@ export default defineConfig({
       'svelte',
       '@sveltejs/kit',
       'lucide-svelte',
-      'tailwindcss'
+      'tailwindcss',
+      'intl-number-input'
     ]
+  },
+  ssr: {
+    noExternal: ['intl-number-input']
   }
 });

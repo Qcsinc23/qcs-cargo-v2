@@ -1,9 +1,11 @@
 <script lang="ts">
   import { cn } from '$lib/utils';
   import { onDestroy, onMount } from 'svelte';
-  import { NumberInput } from 'intl-number-input';
   import type { NumberInputOptions, NumberInputValue } from 'intl-number-input';
   import type { HTMLInputAttributes } from 'svelte/elements';
+  
+  // Dynamic import to ensure module loads correctly
+  let NumberInputClass: typeof import('intl-number-input').NumberInput | null = null;
 
   /**
    * NOTE: We intentionally use `intl-number-input` directly here.
@@ -31,7 +33,7 @@
   export { className as class };
 
   let inputEl: HTMLInputElement | null = null;
-  let numberInput: NumberInput | null = null;
+  let numberInput: any = null; // NumberInput instance (type from intl-number-input)
   let isFocused = false;
 
   const getMergedOptions = (): NumberInputOptions => ({
@@ -73,15 +75,36 @@
     numberInput.setOptions(getMergedOptions());
   }
 
-  onMount(() => {
+  onMount(async () => {
     if (!inputEl) return;
+    
+    // Dynamic import to ensure module loads
+    if (!NumberInputClass) {
+      try {
+        const module = await import('intl-number-input');
+        NumberInputClass = module.NumberInput;
+      } catch (err) {
+        console.error('[NumericInput] Failed to import intl-number-input:', err);
+        return;
+      }
+    }
+    
+    if (!NumberInputClass) {
+      console.error('[NumericInput] NumberInput constructor is not available.');
+      return;
+    }
 
-    numberInput = new NumberInput({
-      el: inputEl,
-      options: getMergedOptions(),
-      onInput: handleNumberInput,
-      onChange: handleNumberChange
-    });
+    try {
+      numberInput = new NumberInputClass({
+        el: inputEl,
+        options: getMergedOptions(),
+        onInput: handleNumberInput,
+        onChange: handleNumberChange
+      });
+    } catch (err) {
+      console.error('[NumericInput] Failed to initialize:', err);
+      return;
+    }
 
     if (value != null) {
       numberInput.setValue(value);

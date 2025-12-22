@@ -11,7 +11,7 @@
 
 import PocketBase from 'pocketbase';
 
-const pb = new PocketBase('http://localhost:8090');
+const pb = new PocketBase(process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090');
 
 const ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
 const ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD || 'Qcsinc@2025*';
@@ -114,16 +114,20 @@ async function setupSchema() {
       const hasRole = usersCollection.schema.some(f => f.name === 'role');
       if (!hasRole) {
         console.log('   Adding role field to users collection...');
-        usersCollection.schema.push({
-          name: 'role',
-          type: 'select',
-          options: { values: ['customer', 'staff', 'admin'] },
-          required: false
-        });
-        await pb.collections.update(usersCollection.id, {
-          schema: usersCollection.schema
-        });
-        console.log('   ✅ Role field added');
+        try {
+          usersCollection.schema.push({
+            name: 'role',
+            type: 'select',
+            options: { values: ['customer', 'staff', 'admin'], maxSelect: 1 },
+            required: false
+          });
+          await pb.collections.update(usersCollection.id, {
+            schema: usersCollection.schema
+          });
+          console.log('   ✅ Role field added');
+        } catch (e) {
+          console.log(`   ⚠️  Could not update users collection: ${e.message}`);
+        }
       } else {
         console.log('   ✅ Role field already exists');
       }

@@ -3,7 +3,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import { DESTINATIONS } from '$lib/config/destinations';
-  import { MapPin, Clock, Plane, ArrowRight } from 'lucide-svelte';
+  import { MapPin, Clock, Plane, ArrowRight, Calculator } from 'lucide-svelte';
 </script>
 
 <section class="py-24 sm:py-32 bg-background">

@@ -6,6 +6,7 @@ import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import * as Sentry from '@sentry/sveltekit';
+import { syncKindeUserToPocketBase } from '$lib/server/kinde-sync';
 
 // Initialize Sentry for server-side error tracking
 Sentry.init({
@@ -120,16 +121,57 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   }
   
   if (kindeUser) {
-    // Map Kinde user to your app's user structure
-    event.locals.user = {
-      id: kindeUser.id || (kindeUser as any).sub,
-      email: kindeUser.email,
-      name: kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
-      emailVerified: (kindeUser as any).email_verified || false,
-      picture: kindeUser.picture || null,
-      kindeId: kindeUser.id || (kindeUser as any).sub,
-      role: 'user'
-    };
+    try {
+      // Sync Kinde user to PocketBase and get PocketBase user record
+      const pbUser = await syncKindeUserToPocketBase(kindeUser, event.locals.pb);
+      
+      // Map PocketBase user to app's user structure
+      // Use PocketBase user ID (not Kinde ID) for all database operations
+      event.locals.user = {
+        id: pbUser.id, // ✅ PocketBase user ID (not Kinde ID)
+        email: pbUser.email,
+        name: pbUser.name || kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
+        phone: pbUser.phone || undefined,
+        role: (pbUser.role as 'customer' | 'staff' | 'admin') || 'customer',
+        verified: pbUser.email_verified || (kindeUser as any).email_verified || false,
+        avatar: kindeUser.picture || pbUser.avatar || undefined,
+        stripe_customer_id: pbUser.stripe_customer_id || undefined,
+        created: pbUser.created,
+        updated: pbUser.updated
+      };
+
+      // #region agent log
+      await debugLog('kinde-sync success', {
+        kindeId: kindeUser.id,
+        pbUserId: pbUser.id,
+        email: pbUser.email
+      }, 'F');
+      // #endregion
+    } catch (err: any) {
+      // Log error but don't break auth flow - user is still authenticated via Kinde
+      console.error('[hooks] Failed to sync Kinde user to PocketBase:', err?.message || err);
+      
+      // #region agent log
+      await debugLog('kinde-sync error', {
+        error: err?.message || String(err),
+        kindeId: kindeUser.id,
+        email: kindeUser.email
+      }, 'G');
+      // #endregion
+      
+      // Fallback: Use Kinde user data (but this will cause issues with database operations)
+      // This should rarely happen, but provides graceful degradation
+      event.locals.user = {
+        id: kindeUser.id || (kindeUser as any).sub,
+        email: kindeUser.email,
+        name: kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
+        verified: (kindeUser as any).email_verified || false,
+        avatar: kindeUser.picture || undefined,
+        role: 'customer', // Default fallback
+        created: new Date().toISOString(),
+        updated: new Date().toISOString()
+      };
+    }
   } else {
     event.locals.user = null;
   }

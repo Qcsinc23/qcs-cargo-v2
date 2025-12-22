@@ -3,6 +3,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import { sessionHooks, kindeAuthClient } from "@kinde-oss/kinde-auth-sveltekit";
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import * as Sentry from '@sentry/sveltekit';
 
@@ -79,7 +80,19 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   await sessionHooks({ event });
   
   // Still need PocketBase for data operations (not auth)
+  // Authenticate as admin for server-side operations
   event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+  
+  // Authenticate PocketBase with admin credentials for server-side operations
+  const adminEmail = env.POCKETBASE_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
+  const adminPassword = env.POCKETBASE_ADMIN_PASSWORD || 'Qcsinc@2025*';
+  
+  try {
+    await event.locals.pb.admins.authWithPassword(adminEmail, adminPassword);
+  } catch (err: any) {
+    console.error('[hooks] Failed to authenticate PocketBase admin:', err?.message || err);
+    // Continue anyway - some routes might not need admin access
+  }
   
   // Get the authenticated user from Kinde using the stored tokens
   // Skip for auth routes to avoid interfering with the auth flow

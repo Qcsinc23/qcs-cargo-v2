@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { sessionHooks } from "@kinde-oss/kinde-auth-sveltekit";
+import { sessionHooks, kindeAuthClient } from "@kinde-oss/kinde-auth-sveltekit";
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 import { dev } from '$app/environment';
@@ -63,6 +63,7 @@ const debugLog = (msg: string, data: any, hyp: string) => fetch('http://127.0.0.
 // Kinde Authentication hook
 const kindeAuthHook: Handle = async ({ event, resolve }) => {
   const isAuthCallback = event.url.pathname.includes('kinde_callback');
+  const isAuthRoute = event.url.pathname.startsWith('/api/auth/');
   
   // #region agent log
   if (isAuthCallback) {
@@ -71,32 +72,47 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   }
   // #endregion
   
-  // Initialize Kinde session
-  sessionHooks({ event });
+  // Initialize Kinde session storage methods on event.request
+  await sessionHooks({ event });
   
   // Still need PocketBase for data operations (not auth)
   event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
   
-  // Get Kinde user from session (Kinde sets event.locals.user via sessionHooks)
-  const kindeUser = event.locals.user as any;
-  
-  // #region agent log
-  if (isAuthCallback) {
-    await debugLog('after sessionHooks', { hasUser: !!kindeUser, userKeys: kindeUser ? Object.keys(kindeUser) : null }, 'D');
+  // Get the authenticated user from Kinde using the stored tokens
+  // Skip for auth routes to avoid interfering with the auth flow
+  let kindeUser = null;
+  if (!isAuthRoute) {
+    try {
+      const isAuthenticated = await kindeAuthClient.isAuthenticated(event.request);
+      // #region agent log
+      await debugLog('isAuthenticated check', { isAuthenticated, path: event.url.pathname }, 'D');
+      // #endregion
+      
+      if (isAuthenticated) {
+        kindeUser = await kindeAuthClient.getUser(event.request);
+        // #region agent log
+        await debugLog('getUser result', { hasUser: !!kindeUser, userId: kindeUser?.id, email: kindeUser?.email }, 'D');
+        // #endregion
+      }
+    } catch (err: any) {
+      // #region agent log
+      await debugLog('kindeAuthClient error', { error: err?.message || String(err) }, 'E');
+      // #endregion
+      // If token is expired or invalid, user will be null (not authenticated)
+      kindeUser = null;
+    }
   }
-  // #endregion
   
   if (kindeUser) {
     // Map Kinde user to your app's user structure
     event.locals.user = {
-      id: kindeUser.id || kindeUser.sub,
+      id: kindeUser.id || (kindeUser as any).sub,
       email: kindeUser.email,
       name: kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
-      emailVerified: kindeUser.email_verified || false,
+      emailVerified: (kindeUser as any).email_verified || false,
       picture: kindeUser.picture || null,
-      // Preserve any additional Kinde properties
-      kindeId: kindeUser.id || kindeUser.sub,
-      role: 'user' // Default role, adjust based on your needs
+      kindeId: kindeUser.id || (kindeUser as any).sub,
+      role: 'user'
     };
   } else {
     event.locals.user = null;
@@ -105,8 +121,8 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
   
   // #region agent log
-  if (isAuthCallback) {
-    await debugLog('kindeAuthHook response', { status: response.status, location: response.headers.get('location') }, 'C');
+  if (isAuthCallback || event.url.pathname === '/dashboard') {
+    await debugLog('kindeAuthHook response', { path: event.url.pathname, status: response.status, location: response.headers.get('location'), hasUser: !!event.locals.user }, 'C');
   }
   // #endregion
   

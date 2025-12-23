@@ -58,25 +58,8 @@ const correlationHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-// #region agent log
-const debugLog = (msg: string, data: any, hyp: string) => {
-  console.log(`[DEBUG][${hyp}] ${msg}:`, JSON.stringify(data));
-  return fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts',message:msg,data,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:hyp})}).catch(()=>{});
-};
-// #endregion
-
 // Kinde Authentication hook
 const kindeAuthHook: Handle = async ({ event, resolve }) => {
-  const isAuthCallback = event.url.pathname.includes('kinde_callback');
-  const isAuthRoute = event.url.pathname.startsWith('/api/auth/');
-  
-  // #region agent log
-  if (isAuthCallback) {
-    const stateCookie = event.cookies.get('kinde_ac-state-key');
-    await debugLog('kindeAuthHook entry (callback)', { path: event.url.pathname, hasStateCookie: !!stateCookie, stateCookieValue: stateCookie?.slice(0,20), allCookies: event.cookies.getAll().map(c => c.name) }, 'B');
-  }
-  // #endregion
-  
   // Initialize Kinde session storage methods on event.request
   await sessionHooks({ event });
   
@@ -98,23 +81,16 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   // Get the authenticated user from Kinde using the stored tokens
   // Skip for auth routes to avoid interfering with the auth flow
   let kindeUser = null;
+  const isAuthRoute = event.url.pathname.startsWith('/api/auth/');
+
   if (!isAuthRoute) {
     try {
       const isAuthenticated = await kindeAuthClient.isAuthenticated(event.request);
-      // #region agent log
-      await debugLog('isAuthenticated check', { isAuthenticated, path: event.url.pathname }, 'D');
-      // #endregion
       
       if (isAuthenticated) {
         kindeUser = await kindeAuthClient.getUser(event.request);
-        // #region agent log
-        await debugLog('getUser result', { hasUser: !!kindeUser, userId: kindeUser?.id, email: kindeUser?.email }, 'D');
-        // #endregion
       }
     } catch (err: any) {
-      // #region agent log
-      await debugLog('kindeAuthClient error', { error: err?.message || String(err) }, 'E');
-      // #endregion
       // If token is expired or invalid, user will be null (not authenticated)
       kindeUser = null;
     }
@@ -139,25 +115,9 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
         created: pbUser.created,
         updated: pbUser.updated
       };
-
-      // #region agent log
-      await debugLog('kinde-sync success', {
-        kindeId: kindeUser.id,
-        pbUserId: pbUser.id,
-        email: pbUser.email
-      }, 'F');
-      // #endregion
     } catch (err: any) {
       // Log error but don't break auth flow - user is still authenticated via Kinde
       console.error('[hooks] Failed to sync Kinde user to PocketBase:', err?.message || err);
-      
-      // #region agent log
-      await debugLog('kinde-sync error', {
-        error: err?.message || String(err),
-        kindeId: kindeUser.id,
-        email: kindeUser.email
-      }, 'G');
-      // #endregion
       
       // Fallback: Use Kinde user data (but this will cause issues with database operations)
       // This should rarely happen, but provides graceful degradation
@@ -177,12 +137,6 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   }
 
   const response = await resolve(event);
-  
-  // #region agent log
-  if (isAuthCallback || event.url.pathname === '/dashboard') {
-    await debugLog('kindeAuthHook response', { path: event.url.pathname, status: response.status, location: response.headers.get('location'), hasUser: !!event.locals.user }, 'C');
-  }
-  // #endregion
   
   return response;
 };

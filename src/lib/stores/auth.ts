@@ -148,64 +148,6 @@ function createAuthStore() {
       }
     },
 
-    // Login with email/password
-    async login(email: string, password: string) {
-      update(state => ({ ...state, isLoading: true }));
-
-      try {
-        const data = await requestJson<{ success: true; user: AuthModel }>('/api/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password })
-        });
-
-        const user = transformUser(data.user);
-
-        update(state => ({
-          ...state,
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        }));
-
-        return { success: true, user };
-      } catch (error: unknown) {
-        update(state => ({ ...state, isLoading: false }));
-        throw new Error(getErrorMessage(error, 'Login failed'));
-      }
-    },
-
-    // Register new user
-    async register(data: {
-      email: string;
-      password: string;
-      passwordConfirm: string;
-      name: string;
-      phone?: string;
-    }) {
-      update(state => ({ ...state, isLoading: true }));
-
-      try {
-        const response = await requestJson<{ success: true; user: AuthModel }>('/api/auth/register', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-
-        const user = transformUser(response.user);
-
-        update(state => ({
-          ...state,
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        }));
-
-        return { success: true, user };
-      } catch (error: unknown) {
-        update(state => ({ ...state, isLoading: false }));
-        throw new Error(getErrorMessage(error, 'Registration failed'));
-      }
-    },
-
     // Logout (Kinde-based)
     async logout() {
       update(state => ({ ...state, isLoading: true }));
@@ -219,36 +161,6 @@ function createAuthStore() {
       // Redirect to Kinde logout endpoint
       if (browser) {
         window.location.href = '/api/auth/logout';
-      }
-    },
-
-    // Request password reset
-    async requestPasswordReset(email: string) {
-      try {
-        await pb.collection('users').requestPasswordReset(email);
-        return { success: true };
-      } catch (error: unknown) {
-        throw new Error(getErrorMessage(error, 'Failed to send reset email'));
-      }
-    },
-
-    // Confirm password reset
-    async confirmPasswordReset(token: string, password: string, passwordConfirm: string) {
-      try {
-        await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm);
-        return { success: true };
-      } catch (error: unknown) {
-        throw new Error(getErrorMessage(error, 'Failed to reset password'));
-      }
-    },
-
-    // Request email verification
-    async requestVerification(email: string) {
-      try {
-        await pb.collection('users').requestVerification(email);
-        return { success: true };
-      } catch (error: unknown) {
-        throw new Error(getErrorMessage(error, 'Failed to send verification email'));
       }
     },
 
@@ -325,67 +237,6 @@ function createAuthStore() {
         return { success: true };
       } catch (error: unknown) {
         throw new Error(getErrorMessage(error, 'Failed to change password'));
-      }
-    },
-
-    // OAuth login (Google)
-    async loginWithGoogle() {
-      try {
-        if (!browser) {
-          throw new Error('Google login is only available in the browser');
-        }
-
-        const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
-
-        const token = pb.authStore.token;
-        const model = pb.authStore.model;
-
-        if (!token) {
-          throw new Error('Google login failed to return a session token');
-        }
-
-        const sync = await requestJson<{ success: true; user: AuthModel }>('/api/auth/oauth-sync', {
-          method: 'POST',
-          body: JSON.stringify({ token, model })
-        });
-
-        // Remove token from JS-accessible storage; rely on httpOnly cookie going forward.
-        pb.authStore.clear();
-
-        const user = transformUser(sync.user);
-
-        update(state => ({
-          ...state,
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        }));
-
-        return { success: true, user };
-      } catch (error: unknown) {
-        throw new Error(getErrorMessage(error, 'Google login failed'));
-      }
-    },
-
-    // Request Magic Link login
-    async requestMagicLink(email: string) {
-      try {
-        // PocketBase doesn't have built-in magic link, so we use OTP (one-time password)
-        // This sends a verification email that can be used as a magic link
-        await pb.collection('users').requestVerification(email);
-        return { success: true };
-      } catch (error: unknown) {
-        throw new Error(getErrorMessage(error, 'Failed to send magic link'));
-      }
-    },
-
-    // Verify email token (for magic link / verification)
-    async verifyEmail(token: string) {
-      try {
-        await pb.collection('users').confirmVerification(token);
-        return { success: true };
-      } catch (error: unknown) {
-        throw new Error(getErrorMessage(error, 'Failed to verify email'));
       }
     },
 

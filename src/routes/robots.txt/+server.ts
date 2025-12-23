@@ -11,7 +11,6 @@ Allow: /
 # Disallow admin and API routes
 Disallow: /dashboard/
 Disallow: /api/
-Disallow: /auth/reset-password
 
 # Sitemap
 Sitemap: ${BASE_URL}/sitemap.xml

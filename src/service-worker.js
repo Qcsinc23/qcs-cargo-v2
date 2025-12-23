@@ -27,8 +27,48 @@ const OFFLINE_ADMIN_ROUTES = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(async (cache) => {
+        // Cache assets individually with error handling
+        // This prevents a single failed resource from breaking the entire cache installation
+        const cachePromises = STATIC_ASSETS.map(async (url) => {
+          try {
+            const response = await fetch(url);
+            if (response.ok) {
+              await cache.put(url, response);
+              console.log(`[ServiceWorker] Cached: ${url}`);
+              return { url, status: 'success' };
+            } else {
+              console.warn(`[ServiceWorker] Failed to cache ${url}: ${response.status} ${response.statusText}`);
+              return { url, status: 'failed', error: `HTTP ${response.status}` };
+            }
+          } catch (error) {
+            console.warn(`[ServiceWorker] Failed to cache ${url}:`, error.message);
+            return { url, status: 'failed', error: error.message };
+          }
+        });
+
+        // Wait for all cache operations to complete (success or failure)
+        const results = await Promise.allSettled(cachePromises);
+        
+        // Log summary
+        const successful = results.filter(r => r.status === 'fulfilled' && r.value.status === 'success').length;
+        const failed = results.length - successful;
+        
+        console.log(`[ServiceWorker] Cache installation complete: ${successful} succeeded, ${failed} failed`);
+        
+        if (failed > 0) {
+          const failures = results
+            .filter(r => r.status === 'fulfilled' && r.value.status === 'failed')
+            .map(r => r.value.url);
+          console.warn(`[ServiceWorker] Failed to cache:`, failures);
+        }
+      })
       .then(() => self.skipWaiting())
+      .catch((error) => {
+        console.error('[ServiceWorker] Cache installation error:', error);
+        // Still skip waiting even if caching fails
+        self.skipWaiting();
+      })
   );
 });
 

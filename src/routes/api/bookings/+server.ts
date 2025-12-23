@@ -25,6 +25,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
+  // Validate user ID format - must be a PocketBase user ID (not a Kinde UUID)
+  // Kinde IDs are UUIDs. PocketBase IDs are shorter alphanumeric strings.
+  const userId = locals.user.id;
+  if (!userId || userId.length < 10) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:28',message:'Invalid user ID format detected',data:{userId,userIdLength:userId?.length,userIdType:typeof userId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    console.error('[create_booking] Invalid user ID format - user sync may have failed', { userId });
+    throw error(500, { 
+      message: 'User account not properly synchronized. Please log out and log back in.',
+      details: 'User ID format invalid - this usually means user sync to PocketBase failed'
+    });
+  }
+
   const correlationId = locals.correlationId || crypto.randomUUID();
 
   try {

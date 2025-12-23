@@ -98,8 +98,14 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
   
   if (kindeUser) {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts:100',message:'Starting user sync',data:{kindeId:kindeUser.id,email:kindeUser.email,pbAuthValid:event.locals.pb?.authStore?.isValid,pbIsAdmin:event.locals.pb?.authStore?.isAdmin},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       // Sync Kinde user to PocketBase and get PocketBase user record
       const pbUser = await syncKindeUserToPocketBase(kindeUser, event.locals.pb);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts:103',message:'User sync successful',data:{pbUserId:pbUser.id,email:pbUser.email,role:pbUser.role},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       
       // Map PocketBase user to app's user structure
       // Use PocketBase user ID (not Kinde ID) for all database operations
@@ -116,21 +122,17 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
         updated: pbUser.updated
       };
     } catch (err: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts:118',message:'User sync failed - using fallback',data:{kindeId:kindeUser.id,email:kindeUser.email,errorType:err?.constructor?.name,errorMessage:err?.message,errorStatus:err?.status,errorCode:err?.response?.code,errorData:err?.response?.data},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       // Log error but don't break auth flow - user is still authenticated via Kinde
       console.error('[hooks] Failed to sync Kinde user to PocketBase:', err?.message || err);
+      console.error('[hooks] Full sync error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
       
-      // Fallback: Use Kinde user data (but this will cause issues with database operations)
-      // This should rarely happen, but provides graceful degradation
-      event.locals.user = {
-        id: kindeUser.id || (kindeUser as any).sub,
-        email: kindeUser.email,
-        name: kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
-        verified: (kindeUser as any).email_verified || false,
-        avatar: kindeUser.picture || undefined,
-        role: 'customer', // Default fallback
-        created: new Date().toISOString(),
-        updated: new Date().toISOString()
-      };
+      // CRITICAL: If sync fails, we CANNOT use Kinde ID for database operations
+      // This will cause foreign key failures. Log the error but allow the request to continue
+      // so we can see the actual booking error. The booking endpoint will fail with a clear error.
+      // In production, you may want to throw here to force sync to succeed.
     }
   } else {
     event.locals.user = null;

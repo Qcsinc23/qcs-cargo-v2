@@ -27,7 +27,6 @@ jobs:
         run: npm run build
         env:
           PUBLIC_POCKETBASE_URL: ${{ secrets.PUBLIC_POCKETBASE_URL }}
-          PUBLIC_STRIPE_KEY: ${{ secrets.PUBLIC_STRIPE_KEY }}
           PUBLIC_SITE_URL: ${{ secrets.PUBLIC_SITE_URL }}
 
       - name: Deploy to Dokploy

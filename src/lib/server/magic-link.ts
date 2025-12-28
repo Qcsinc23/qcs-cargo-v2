@@ -1,5 +1,5 @@
 import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { PUBLIC_POCKETBASE_URL, PUBLIC_SITE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { sendMagicLinkEmail } from './email';
 
@@ -53,7 +53,7 @@ export async function requestMagicLink(email: string, name?: string) {
     
     const token = generateMagicLinkToken();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    const magicLinkUrl = `${env.PUBLIC_SITE_URL || 'http://localhost:5173'}/verify?token=${token}`;
+    const magicLinkUrl = `${PUBLIC_SITE_URL}/verify?token=${token}`;
     
     if (user) {
       // Update existing user with magic link

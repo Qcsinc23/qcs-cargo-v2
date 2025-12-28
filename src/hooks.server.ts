@@ -61,6 +61,7 @@ const correlationHook: Handle = async ({ event, resolve }) => {
 const pbAuthHook: Handle = async ({ event, resolve }) => {
   // Initialize PocketBase for data operations
   event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+  event.locals.user = null; // Default to no user
   
   // Authenticate PocketBase with admin credentials for server-side operations
   const adminEmail = env.POCKETBASE_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
@@ -98,18 +99,14 @@ const pbAuthHook: Handle = async ({ event, resolve }) => {
           updated: pbUser.updated
         };
       } else {
-        // Invalid or expired token
-        event.locals.user = null;
+        // Invalid or expired token - clear it
         event.cookies.delete('pb_auth', { path: '/' });
       }
     } catch (err: any) {
-      // Token validation failed
+      // Token validation failed - clear the cookie
       console.error('[hooks] Failed to validate auth token:', err?.message || err);
-      event.locals.user = null;
       event.cookies.delete('pb_auth', { path: '/' });
     }
-  } else {
-    event.locals.user = null;
   }
 
   const response = await resolve(event);

@@ -65,14 +65,9 @@ function createAuthStore() {
   function transformUser(model: any | null): User | null {
     if (!model) return null;
     
-    // Handle both Kinde users (from hooks.server.ts) and PocketBase users
-    const isKindeUser = 'kindeId' in model || 'picture' in model;
-    
-    // For Kinde users, picture is already a URL; for PocketBase, we need to generate it
+    // For PocketBase users, generate avatar URL if avatar field exists
     let avatar: string | undefined;
-    if (isKindeUser) {
-      avatar = model.picture || undefined;
-    } else if (model.avatar) {
+    if (model.avatar) {
       avatar = pb.files.getUrl(model, model.avatar, { thumb: '100x100' });
     }
     
@@ -83,7 +78,7 @@ function createAuthStore() {
       phone: model.phone,
       role: model.role || 'customer',
       avatar,
-      verified: model.verified ?? model.emailVerified ?? false,
+      verified: model.verified ?? model.email_verified ?? false,
       address_line1: model.address_line1,
       address_line2: model.address_line2,
       city: model.city,
@@ -148,19 +143,28 @@ function createAuthStore() {
       }
     },
 
-    // Logout (Kinde-based)
+    // Logout (PocketBase magic link)
     async logout() {
       update(state => ({ ...state, isLoading: true }));
 
+      try {
+        // Call logout API endpoint
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Continue with client-side logout even if API call fails
+      }
+
+      // Clear local state
       set({
         user: null,
         isAuthenticated: false,
         isLoading: false
       });
 
-      // Redirect to Kinde logout endpoint
+      // Redirect to home or login page
       if (browser) {
-        window.location.href = '/api/auth/logout';
+        await goto('/login');
       }
     },
 

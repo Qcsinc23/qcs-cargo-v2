@@ -124,7 +124,7 @@
       <Button variant="outline" on:click={onReset} class="flex-1">
         New Quote
       </Button>
-      <Button variant="default" class="flex-1" href="/api/auth/register">
+      <Button variant="default" class="flex-1" href="/register">
         Book Shipment
       </Button>
     </div>

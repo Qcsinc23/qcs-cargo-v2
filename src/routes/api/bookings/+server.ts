@@ -25,8 +25,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
-  // Validate user ID format - must be a PocketBase user ID (not a Kinde UUID)
-  // Kinde IDs are UUIDs. PocketBase IDs are shorter alphanumeric strings.
+  // Validate user ID format - must be a valid PocketBase user ID
+  // PocketBase IDs are alphanumeric strings (15 characters)
   const userId = locals.user.id;
   if (!userId || userId.length < 10) {
     // #region agent log

@@ -18,8 +18,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     // #region agent log
     await debugLog('dashboard redirecting to login (no user)', {}, 'C');
     // #endregion
-    // Redirect to Kinde login - post_login_redirect_url handles the redirect back
-    throw redirect(302, '/api/auth/login');
+    // Redirect to login page
+    throw redirect(302, '/login');
   }
 
   // #region agent log

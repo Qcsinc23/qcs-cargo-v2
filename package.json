@@ -63,7 +63,6 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/playfair-display": "^5.2.8",
-    "@kinde-oss/kinde-auth-sveltekit": "^2.2.3",
     "@sentry/sveltekit": "^10.30.0",
     "@stripe/stripe-js": "^2.2.0",
     "bits-ui": "^1.8.0",

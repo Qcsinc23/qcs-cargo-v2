@@ -14,8 +14,6 @@ function getEnvVar(name: string, fallback?: string): string {
 
 // Get env vars with fallbacks
 const RESEND_API_KEY = getEnvVar('RESEND_API_KEY');
-// RESEND_FROM_EMAIL may be either a plain email (noreply@...) or a full mailbox string (Name <noreply@...>).
-// Prefer RESEND_FROM_EMAIL if present (it matches Resend's expected "from" format); otherwise build from FROM_EMAIL.
 const RESEND_FROM_EMAIL = getEnvVar('RESEND_FROM_EMAIL');
 const FROM_EMAIL = getEnvVar('FROM_EMAIL', 'noreply@qcs-cargo.com');
 const REPLY_TO_EMAIL = getEnvVar('REPLY_TO_EMAIL', getEnvVar('ADMIN_EMAIL', 'support@qcs-cargo.com'));
@@ -70,10 +68,10 @@ export async function sendEmail(options: EmailOptions) {
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
+    .replaceAll('&', '&')
+    .replaceAll('<', '<')
+    .replaceAll('>', '>')
+    .replaceAll('"', '"')
     .replaceAll("'", '&#039;');
 }
 
@@ -144,7 +142,7 @@ function wrapTemplate(content: string): string {
           ${content}
         </div>
         <div class="footer">
-          <p>${PUBLIC_COMPANY_NAME} - Trusted Air Freight to the Caribbean</p>
+          <p>${PUBLIC_COMPANY_NAME} - Trusted Air Freight to Caribbean</p>
           <p>35 Obrien St, E12, Kearny, NJ 07032 | 201-249-0929</p>
           <p><a href="${PUBLIC_SITE_URL}">Visit our website</a></p>
         </div>
@@ -279,8 +277,8 @@ export async function sendBookingConfirmationEmail(
           <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.packageCount}</td>
         </tr>
         <tr style="border-top: 1px solid #e5e7eb;">
-          <td style="padding: 12px 0 0; font-weight: 600;">Total:</td>
-          <td style="padding: 12px 0 0; text-align: right; font-weight: 600; font-size: 18px; color: #1e40af;">$${booking.total.toFixed(2)}</td>
+          <td style="padding: 12px 0; font-weight: 600;">Total:</td>
+          <td style="padding: 12px 0; text-align: right; font-weight: 600; font-size: 18px; color: #1e40af;">$${booking.total.toFixed(2)}</td>
         </tr>
       </table>
     </div>
@@ -409,10 +407,10 @@ export async function sendLocationUpdateEmail(
     </div>
 
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/track/${shipment.trackingNumber}" class="button">Track Package</a>
+      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track Package</a>
     </p>
 
-    <p>Stay updated with your package's journey through the Caribbean!</p>
+    <p>Stay updated with your package's journey through Caribbean!</p>
   `);
 
   return sendEmail({
@@ -465,7 +463,7 @@ export async function sendTrackingEventEmail(
     </div>
 
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/track/${shipment.trackingNumber}" class="button">View Full Timeline</a>
+      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">View Full Timeline</a>
     </p>
 
     <p>Thank you for shipping with ${PUBLIC_COMPANY_NAME}!</p>
@@ -474,6 +472,46 @@ export async function sendTrackingEventEmail(
   return sendEmail({
     to,
     subject: `${emoji} ${shipment.eventDescription} - ${shipment.trackingNumber}`,
+    html
+  });
+}
+
+// Magic Link Email
+export async function sendMagicLinkEmail({
+  to,
+  name = 'there',
+  magicLinkUrl,
+  expiresIn = '10 minutes'
+}: {
+  to: string;
+  name?: string;
+  magicLinkUrl: string;
+  expiresIn?: string;
+}) {
+  const html = wrapTemplate(`
+    <h1>🔗 Sign in to ${PUBLIC_COMPANY_NAME}</h1>
+    <p>Hi ${name},</p>
+    <p>Click the button below to sign in to your account:</p>
+    
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${magicLinkUrl}" class="button">Sign In</a>
+    </p>
+    
+    <p>Or copy and paste this link into your browser:</p>
+    <p style="word-break: break-all; color: #6b7280;">${magicLinkUrl}</p>
+    
+    <div class="info-box" style="background: #f0f9ff; border: 1px solid #bae6fd;">
+      <p><strong>⏱️ This link will expire in ${expiresIn}</strong></p>
+    </div>
+    
+    <p>If you didn't request this link, you can safely ignore this email.</p>
+    
+    <p>For security, this link can only be used once.</p>
+  `);
+
+  return sendEmail({
+    to,
+    subject: `Sign in to ${PUBLIC_COMPANY_NAME}`,
     html
   });
 }

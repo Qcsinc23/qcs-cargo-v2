@@ -1,12 +1,11 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { sessionHooks, kindeAuthClient } from "@kinde-oss/kinde-auth-sveltekit";
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import * as Sentry from '@sentry/sveltekit';
-import { syncKindeUserToPocketBase } from '$lib/server/kinde-sync';
+import { getCurrentUser } from '$lib/server/magic-link';
 
 // Initialize Sentry for server-side error tracking
 Sentry.init({
@@ -58,13 +57,9 @@ const correlationHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-// Kinde Authentication hook
-const kindeAuthHook: Handle = async ({ event, resolve }) => {
-  // Initialize Kinde session storage methods on event.request
-  await sessionHooks({ event });
-  
-  // Still need PocketBase for data operations (not auth)
-  // Authenticate as admin for server-side operations
+// PocketBase Authentication hook
+const pbAuthHook: Handle = async ({ event, resolve }) => {
+  // Initialize PocketBase for data operations
   event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
   
   // Authenticate PocketBase with admin credentials for server-side operations
@@ -78,61 +73,40 @@ const kindeAuthHook: Handle = async ({ event, resolve }) => {
     // Continue anyway - some routes might not need admin access
   }
   
-  // Get the authenticated user from Kinde using the stored tokens
-  // Skip for auth routes to avoid interfering with the auth flow
-  let kindeUser = null;
-  const isAuthRoute = event.url.pathname.startsWith('/api/auth/');
-
-  if (!isAuthRoute) {
+  // Get auth token from cookie
+  const authToken = event.cookies.get('pb_auth');
+  
+  // Get the authenticated user from PocketBase using the auth token
+  if (authToken) {
     try {
-      const isAuthenticated = await kindeAuthClient.isAuthenticated(event.request);
+      const result = await getCurrentUser(authToken);
       
-      if (isAuthenticated) {
-        kindeUser = await kindeAuthClient.getUser(event.request);
+      if (result.success && result.user) {
+        const pbUser = result.user;
+        
+        // Map PocketBase user to app's user structure
+        event.locals.user = {
+          id: pbUser.id,
+          email: pbUser.email,
+          name: pbUser.name || pbUser.email.split('@')[0],
+          phone: pbUser.phone || undefined,
+          role: pbUser.role as 'customer' | 'staff' | 'admin',
+          verified: pbUser.verified || false,
+          avatar: pbUser.avatar || undefined,
+          stripe_customer_id: pbUser.stripe_customer_id || undefined,
+          created: pbUser.created,
+          updated: pbUser.updated
+        };
+      } else {
+        // Invalid or expired token
+        event.locals.user = null;
+        event.cookies.delete('pb_auth', { path: '/' });
       }
     } catch (err: any) {
-      // If token is expired or invalid, user will be null (not authenticated)
-      kindeUser = null;
-    }
-  }
-  
-  if (kindeUser) {
-    try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts:100',message:'Starting user sync',data:{kindeId:kindeUser.id,email:kindeUser.email,pbAuthValid:event.locals.pb?.authStore?.isValid,pbIsAdmin:event.locals.pb?.authStore?.isAdmin},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      // Sync Kinde user to PocketBase and get PocketBase user record
-      const pbUser = await syncKindeUserToPocketBase(kindeUser, event.locals.pb);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts:103',message:'User sync successful',data:{pbUserId:pbUser.id,email:pbUser.email,role:pbUser.role},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
-      // Map PocketBase user to app's user structure
-      // Use PocketBase user ID (not Kinde ID) for all database operations
-      event.locals.user = {
-        id: pbUser.id, // ✅ PocketBase user ID (not Kinde ID)
-        email: pbUser.email,
-        name: pbUser.name || kindeUser.given_name || kindeUser.family_name || kindeUser.email?.split('@')[0] || 'User',
-        phone: pbUser.phone || undefined,
-        role: (pbUser.role as 'customer' | 'staff' | 'admin') || 'customer',
-        verified: pbUser.email_verified || (kindeUser as any).email_verified || false,
-        avatar: kindeUser.picture || pbUser.avatar || undefined,
-        stripe_customer_id: pbUser.stripe_customer_id || undefined,
-        created: pbUser.created,
-        updated: pbUser.updated
-      };
-    } catch (err: any) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'hooks.server.ts:118',message:'User sync failed - using fallback',data:{kindeId:kindeUser.id,email:kindeUser.email,errorType:err?.constructor?.name,errorMessage:err?.message,errorStatus:err?.status,errorCode:err?.response?.code,errorData:err?.response?.data},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      // Log error but don't break auth flow - user is still authenticated via Kinde
-      console.error('[hooks] Failed to sync Kinde user to PocketBase:', err?.message || err);
-      console.error('[hooks] Full sync error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
-      
-      // CRITICAL: If sync fails, we CANNOT use Kinde ID for database operations
-      // This will cause foreign key failures. Log the error but allow the request to continue
-      // so we can see the actual booking error. The booking endpoint will fail with a clear error.
-      // In production, you may want to throw here to force sync to succeed.
+      // Token validation failed
+      console.error('[hooks] Failed to validate auth token:', err?.message || err);
+      event.locals.user = null;
+      event.cookies.delete('pb_auth', { path: '/' });
     }
   } else {
     event.locals.user = null;
@@ -157,7 +131,7 @@ const securityHook: Handle = async ({ event, resolve }) => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob:",
-    `connect-src 'self' https://api.stripe.com ${pocketbaseUrl} https://qcsinc.kinde.com`,
+    `connect-src 'self' https://api.stripe.com ${pocketbaseUrl}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",
@@ -178,7 +152,7 @@ const securityHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-export const handle = sequence(correlationHook, kindeAuthHook, securityHook);
+export const handle = sequence(correlationHook, pbAuthHook, securityHook);
 
 // Use Sentry's error handler
 export const handleError = Sentry.handleErrorWithSentry();

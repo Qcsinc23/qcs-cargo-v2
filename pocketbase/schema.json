@@ -15,7 +15,10 @@
       { "name": "stripe_customer_id", "type": "text", "required": false },
       { "name": "email_verified", "type": "bool", "required": false },
       { "name": "deletion_scheduled_at", "type": "date", "required": false },
-      { "name": "kinde_id", "type": "text", "required": false }
+      { "name": "kinde_id", "type": "text", "required": false },
+      { "name": "magic_link_token", "type": "text", "required": false },
+      { "name": "magic_link_expires", "type": "date", "required": false },
+      { "name": "last_login", "type": "date", "required": false }
     ],
     "indexes": [
       "CREATE INDEX idx_users_role ON users(role)",

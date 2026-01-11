@@ -34,16 +34,11 @@ const correlationHook: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
   response.headers.set('x-correlation-id', correlationId);
 
-  // Log all requests in development or only errors in production
+  // Log all requests for debugging
   const duration = Date.now() - start;
-  const isError = response.status >= 400;
-  const isAdmin = event.url.pathname.startsWith('/admin');
-
-  if (isError || isAdmin || dev) {
-    console.log(
-      `[request] ${event.request.method} ${event.url.pathname} - ${response.status} (${duration}ms) [${correlationId}]`
-    );
-  }
+  console.log(
+    `[request] ${event.request.method} ${event.url.pathname} - ${response.status} (${duration}ms) [${correlationId}]`
+  );
 
   return response;
 };

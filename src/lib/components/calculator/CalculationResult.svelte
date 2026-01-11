@@ -32,7 +32,6 @@
     }
   }
 </script>
-</script>
 
 <Card class="bg-gradient-to-br from-primary-50 to-blue-50 border-primary-200">
   <CardHeader class="pb-2">

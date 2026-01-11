@@ -19,7 +19,9 @@
   } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
 
-  export let data;
+  export let data: any;
+  // @ts-ignore - data is used by SvelteKit but not directly in script
+  const _unused = data;
 
   $: bookingId = $page.params.id;
 
@@ -53,11 +55,12 @@
 
       if (result.status === 'success' && result.data) {
         booking = result.data;
+        const b = result.data as BookingModifyData;
         
         // Initialize form fields
-        scheduledDate = booking.scheduled_date.split('T')[0];
-        timeSlot = booking.time_slot;
-        specialInstructions = booking.special_instructions || '';
+        scheduledDate = b.scheduled_date.split('T')[0];
+        timeSlot = b.time_slot;
+        specialInstructions = b.special_instructions || '';
 
         // Check if modification is allowed
         checkModificationEligibility();
@@ -92,7 +95,8 @@
     }
 
     // Check 24-hour window before scheduled date
-    const scheduledDateTime = new Date(booking.scheduled_date);
+    const b = booking as BookingModifyData;
+    const scheduledDateTime = new Date(b.scheduled_date);
     const now = new Date();
     const hoursUntilAppointment = (scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 

@@ -112,7 +112,7 @@
         <div class="font-medium text-gray-900">{estimate.formattedRange}</div>
         <div class="text-sm text-gray-600">
           {estimate.transitDays.min}-{estimate.transitDays.max} business days
-          <Badge variant="outline" size="sm" class="{getConfidenceColor(estimate.confidence)} ml-2">
+          <Badge variant="outline" class="{getConfidenceColor(estimate.confidence)} ml-2">
             {estimate.confidence}
           </Badge>
         </div>

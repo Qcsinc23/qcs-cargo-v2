@@ -43,7 +43,9 @@
     HelpCircle
   } from 'lucide-svelte';
 
-  export let data;
+  export let data: any;
+  // @ts-ignore - data is used by SvelteKit but not directly in script
+  const _unused = data;
 
   // Get store state
   $: bookingState = $booking;
@@ -450,7 +452,7 @@
             {/if}
           </button>
           {#if stepNum < 5}
-            <div class="flex-1 h-1 mx-2 rounded {stepNum < step ? 'bg-primary-600' : 'bg-gray-200'}" />
+            <div class="flex-1 h-1 mx-2 rounded {stepNum < step ? 'bg-primary-600' : 'bg-gray-200'}"></div>
           {/if}
         </div>
       {/each}
@@ -837,7 +839,7 @@
                     placeholder="Gate code, landmarks, etc."
                     rows={2}
                     class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
+                  ></textarea>
                 </div>
 
                 <div class="md:col-span-2">

@@ -429,8 +429,8 @@ export async function sendETAUpdateSMS(phone: string, options: any): Promise<SMS
 
 // Run cleanup every 5 minutes
 if (typeof setInterval !== 'undefined') {
-  // Run on server
-  if (typeof process !== 'undefined' && !process.browser) {
+  // Run on server only
+  if (typeof process !== 'undefined' && typeof window === 'undefined') {
     setInterval(cleanupRateLimits, 5 * 60 * 1000);
   }
 }

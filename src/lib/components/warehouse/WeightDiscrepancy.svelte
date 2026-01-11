@@ -1,3 +1,17 @@
+<script context="module" lang="ts">
+  export interface DiscrepancyData {
+    bookingId: string;
+    trackingNumber: string;
+    estimatedWeight: number;
+    actualWeight: number;
+    weightDifference: number;
+    percentageDifference: number;
+    additionalCost: number;
+    customerEmail: string;
+    customerName: string;
+  }
+</script>
+
 <script lang="ts">
   /**
    * WeightDiscrepancy Component
@@ -27,18 +41,6 @@
   export let onProceed: (actualWeight: number, additionalCost: number) => void;
   export let onHold: (discrepancyData: DiscrepancyData) => void;
   export let onCancel: () => void;
-
-  export interface DiscrepancyData {
-    bookingId: string;
-    trackingNumber: string;
-    estimatedWeight: number;
-    actualWeight: number;
-    weightDifference: number;
-    percentageDifference: number;
-    additionalCost: number;
-    customerEmail: string;
-    customerName: string;
-  }
 
   // Configuration
   const THRESHOLD_PERCENT = 10; // Auto-approve if within 10%

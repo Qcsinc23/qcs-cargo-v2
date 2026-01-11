@@ -23,7 +23,7 @@
   
   interface Booking {
     id: string;
-    status: 'draft' | 'pending' | 'confirmed' | 'cancelled';
+    status: 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'pending_payment' | 'payment_failed';
     destination: string;
     package_count: number;
     total_weight_lbs: number;

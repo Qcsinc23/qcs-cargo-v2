@@ -220,7 +220,7 @@ export class QRCodeGenerator {
 
       // If it's a simple tracking URL, extract tracking number
       if (typeof data === 'string') {
-        const match = data.match(/\/track\/([^\/?#]+)/);
+        const match = data.match(/\/track\/([^/?#]+)/);
         if (match && match[1]) {
           return {
             trackingNumber: match[1],

@@ -75,39 +75,48 @@
     numberInput.setOptions(getMergedOptions());
   }
 
-  onMount(async () => {
+  onMount(() => {
     if (!inputEl) return;
     
-    // Dynamic import to ensure module loads
-    if (!NumberInputClass) {
-      try {
-        const module = await import('intl-number-input');
-        NumberInputClass = module.NumberInput;
-      } catch (err) {
-        console.error('[NumericInput] Failed to import intl-number-input:', err);
+    let isMounted = true;
+
+    async function init() {
+      // Dynamic import to ensure module loads
+      if (!NumberInputClass) {
+        try {
+          const module = await import('intl-number-input');
+          NumberInputClass = module.NumberInput;
+        } catch (err) {
+          console.error('[NumericInput] Failed to import intl-number-input:', err);
+          return;
+        }
+      }
+      
+      if (!isMounted) return;
+
+      if (!NumberInputClass) {
+        console.error('[NumericInput] NumberInput constructor is not available.');
         return;
       }
-    }
-    
-    if (!NumberInputClass) {
-      console.error('[NumericInput] NumberInput constructor is not available.');
-      return;
-    }
 
-    try {
-      numberInput = new NumberInputClass({
-        el: inputEl,
-        options: getMergedOptions(),
-        onInput: handleNumberInput,
-        onChange: handleNumberChange
-      });
-    } catch (err) {
-      console.error('[NumericInput] Failed to initialize:', err);
-      return;
-    }
+      try {
+        numberInput = new NumberInputClass({
+          el: inputEl as HTMLInputElement,
+          options: getMergedOptions(),
+          onInput: handleNumberInput,
+          onChange: handleNumberChange
+        });
+      } catch (err) {
+        console.error('[NumericInput] Failed to initialize:', err);
+        return;
+      }
 
-    if (value != null) {
-      numberInput.setValue(value);
+      if (value != null) {
+        numberInput.setValue(value);
+      }
+
+      (inputEl as HTMLInputElement).addEventListener('focus', handleFocus);
+      (inputEl as HTMLInputElement).addEventListener('blur', handleBlur);
     }
 
     const handleFocus = () => {
@@ -125,10 +134,10 @@
       }
     };
 
-    inputEl.addEventListener('focus', handleFocus);
-    inputEl.addEventListener('blur', handleBlur);
+    init();
 
     return () => {
+      isMounted = false;
       inputEl?.removeEventListener('focus', handleFocus);
       inputEl?.removeEventListener('blur', handleBlur);
       numberInput?.destroy?.();

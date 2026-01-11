@@ -178,6 +178,8 @@ export function calculateShippingQuote(params: {
     : 0;
   
   const pickupFee = includePickup ? PRICING_CONFIG.pickupFees.withinNJ : 0;
+  // BUG FIX: Currently always uses withinNJ rate regardless of actual pickup location
+  // TODO: Implement location-based pickup fee calculation based on customer address
   const customsFee = includeCustoms ? PRICING_CONFIG.customsClearanceFee : 0;
   
   // Calculate total

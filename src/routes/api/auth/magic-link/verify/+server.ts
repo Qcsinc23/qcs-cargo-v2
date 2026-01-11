@@ -13,11 +13,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const result = await verifyMagicLink(token);
 
     if (!result.success || !result.token) {
+      console.warn(`[verify] Magic link verification failed for token: ${token.substring(0, 8)}...`);
       return json(
         { message: 'Invalid or expired magic link' },
         { status: 401 }
       );
     }
+
+    console.log(`[verify] Successfully verified magic link for user: ${result.user.id}`);
 
     // Set the auth token in an httpOnly cookie
     cookies.set('pb_auth', result.token, {
@@ -33,17 +36,23 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       success: true
     });
   } catch (error: any) {
-    console.error('Error verifying magic link:', error);
+    console.error('[verify] Error verifying magic link:', error);
 
-    if (error.message?.includes('expired') || error.message?.includes('invalid')) {
+    const errorMessage = error.message || 'Failed to verify magic link';
+    
+    if (
+      errorMessage.toLowerCase().includes('expired') || 
+      errorMessage.toLowerCase().includes('invalid') ||
+      errorMessage.toLowerCase().includes('not found')
+    ) {
       return json(
-        { message: error.message },
+        { message: 'Invalid or expired magic link. Please request a new one.' },
         { status: 401 }
       );
     }
 
     return json(
-      { message: 'Failed to verify magic link. Please try again.' },
+      { message: 'An unexpected error occurred. Please try again later.' },
       { status: 500 }
     );
   }

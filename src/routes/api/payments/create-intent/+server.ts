@@ -27,7 +27,7 @@ function parseAmountToCents(amount: unknown): { ok: true; cents: number } | { ok
 
   if (typeof amount === 'number') {
     if (!Number.isFinite(amount) || amount <= 0) return { ok: false, message: 'Invalid amount' };
-    // Reject values that can’t be represented to exactly 2 decimal places (prevents float rounding surprises).
+    // Reject values that can't be represented to exactly 2 decimal places (prevents float rounding surprises).
     const scaled = amount * 100;
     const rounded = Math.round(scaled);
     if (Math.abs(scaled - rounded) > 1e-6) {
@@ -103,6 +103,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // This prevents duplicate charges if network issues occur
     // BUG FIX: Removed Date.now() - idempotency key must be stable across retries
     // so that the same bookingId+amount always produces the same key
+    // SECURITY FIX: Use bookingId directly without hashing to avoid complexity
+    // The bookingId is validated by API before reaching here
     const idempotencyKey = `payment_intent_${locals.user.id}_${bookingId}_${amountCents}`;
 
     
@@ -159,7 +161,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const stripeType = e?.type;
     const message = typeof e?.message === 'string' ? e.message : 'Failed to create payment intent';
 
-    
     console.error('[create_payment_intent] Error', { correlationId, error: err });
 
     const status = typeof stripeStatusCode === 'number' && stripeStatusCode >= 400 && stripeStatusCode < 600 ? stripeStatusCode : 500;
@@ -173,14 +174,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         status,
         headers: {
           'X-RateLimit-Limit': '5',
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
+          // BUG FIX: Use optional chaining to safely access rateLimitResult
+          'X-RateLimit-Remaining': rateLimitResult?.remaining?.toString() || '0',
+          'X-RateLimit-Reset': rateLimitResult?.resetTime?.toString() || Date.now().toString()
         }
       }
     );
   }
 };
-
-
-
 

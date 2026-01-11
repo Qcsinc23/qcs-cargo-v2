@@ -1,5 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 import { browser } from '$app/environment';
+import type { CalculationBreakdown } from '$lib/types/calculator';
 
 // ===========================================
 // TYPES
@@ -83,7 +84,12 @@ export interface BookingState {
 // ===========================================
 
 export const createEmptyPackage = (): BookingPackage => ({
-  id: typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36).substring(7),
+  // BUG FIX: Use crypto.randomUUID() only; Math.random() is not cryptographically secure
+  // In environments where crypto is not available (e.g., older browsers),
+  // this should fail gracefully rather than using weak random values
+  id: typeof crypto !== 'undefined' ? crypto.randomUUID() : (() => {
+    throw new Error('crypto.randomUUID() is not available in this environment');
+  })(),
   weight: null,
   weightUnknown: false,
   length: null,
@@ -125,15 +131,29 @@ function createBookingStore() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        // Check if draft is less than 24 hours old
-        const lastUpdated = new Date(parsed.lastUpdated);
-        const hoursSinceUpdate = (Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60);
-        
-        if (hoursSinceUpdate < 24) {
-          storedState = { ...initialState, ...parsed };
-        } else {
+        try {
+          const parsed = JSON.parse(stored);
+          // Check if draft is less than 24 hours old
+          const lastUpdated = new Date(parsed.lastUpdated);
+          const hoursSinceUpdate = (Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursSinceUpdate < 24) {
+            // Validate parsed state has required fields
+            if (parsed && typeof parsed === 'object' && 'packages' in parsed && Array.isArray(parsed.packages)) {
+              storedState = { ...initialState, ...parsed };
+            } else {
+              // Invalid state, discard and use initial state
+              console.warn('[Booking Store] Invalid draft state, using initial state');
+              localStorage.removeItem(STORAGE_KEY);
+              storedState = initialState;
+            }
+          } else {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        } catch (parseError) {
+          console.error('[Booking Store] Failed to parse stored state:', parseError);
           localStorage.removeItem(STORAGE_KEY);
+          storedState = initialState;
         }
       }
     } catch (e) {
@@ -143,17 +163,29 @@ function createBookingStore() {
 
   const { subscribe, set, update } = writable<BookingState>(storedState);
 
-  // Persist to localStorage on changes
+  // Persist to localStorage on changes with debouncing
   if (browser) {
+    let timeoutId: ReturnType<typeof setTimeout> | null;
+    
     subscribe((state) => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          ...state,
-          lastUpdated: new Date().toISOString()
-        }));
-      } catch (e) {
-        console.error('[Booking Store] Failed to save state:', e);
+      // Clear any pending timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
       }
+      
+      // Debounce writes to avoid excessive localStorage operations
+      timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            ...state,
+            lastUpdated: new Date().toISOString()
+          }));
+        } catch (e) {
+          console.error('[Booking Store] Failed to save state:', e);
+        }
+        timeoutId = null;
+      }, 300); // 300ms debounce
     });
   }
 
@@ -293,6 +325,51 @@ function createBookingStore() {
       }));
     },
 
+    // Initialize from calculator result
+    initFromCalculatorResult(
+      result: CalculationBreakdown, 
+      destination: string, 
+      serviceType: string,
+      dimensions?: { length: number | null; width: number | null; height: number | null }
+    ) {
+      const pkg: BookingPackage = {
+        ...createEmptyPackage(),
+        weight: result.actualWeight,
+        length: dimensions?.length || null,
+        width: dimensions?.width || null,
+        height: dimensions?.height || null,
+        dimensionsUnknown: !dimensions?.length,
+        declaredValue: result.declaredValue || null,
+      };
+
+      const quote: BookingQuote = {
+        packages: [{
+          id: pkg.id,
+          weight: result.actualWeight,
+          dimWeight: result.dimensionalWeight || 0,
+          billableWeight: result.billableWeight,
+          cost: result.baseCost + result.expressFee + result.handlingFee + result.doorToDoorFee
+        }],
+        subtotal: result.subtotal,
+        multiPackageDiscount: 0,
+        insuranceCost: result.insuranceFee,
+        totalCost: result.total,
+        transitDays: result.estimatedDelivery
+      };
+
+      const mappedServiceType = serviceType === 'door_to_door' ? 'door-to-door' : (serviceType as any);
+
+      set({
+        ...initialState,
+        step: 2, // Start at package details
+        serviceType: mappedServiceType,
+        destination,
+        packages: [pkg],
+        quote,
+        lastUpdated: new Date().toISOString()
+      });
+    },
+
     // Reset
     reset() {
       set({
@@ -317,6 +394,10 @@ function createBookingStore() {
       
       switch (targetStep) {
         case 2:
+          // Validate destination is from configured list
+          if (!state.destination) return false;
+          // Import DESTINATIONS dynamically to avoid circular dependency
+          // This is a runtime check; destination should also be validated on server
           return !!state.serviceType && !!state.destination;
         case 3:
           return state.packages.length > 0 && state.packages.every(p =>

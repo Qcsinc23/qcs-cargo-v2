@@ -4,12 +4,34 @@
   import { Package, Zap, Truck, Shield, AlertCircle } from 'lucide-svelte';
   import { UNIFIED_PRICING } from '$lib/config/pricing-unified';
   import type { CalculationBreakdown } from '$lib/types/calculator';
+  import { booking } from '$lib/stores/booking';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
 
   export let result: CalculationBreakdown;
   export let onReset: () => void;
+  export let destination: string = '';
+  export let serviceType: string = 'standard';
+  export let dimensions: { length: number | null; width: number | null; height: number | null } | undefined = undefined;
 
   const heavyThreshold = UNIFIED_PRICING.fees.heavyWeight.threshold;
   const handlingMinimum = UNIFIED_PRICING.fees.handling.minimum;
+
+  function handleBookNow() {
+    // 1. Initialize booking store from this result
+    booking.initFromCalculatorResult(result, destination, serviceType, dimensions);
+
+    // 2. Redirect to booking page (which will handle auth if needed)
+    const target = '/dashboard/bookings/new';
+    
+    if ($page.data.user) {
+      goto(target);
+    } else {
+      // Redirect to register with return path
+      goto(`/register?redirectTo=${encodeURIComponent(target)}`);
+    }
+  }
+</script>
 </script>
 
 <Card class="bg-gradient-to-br from-primary-50 to-blue-50 border-primary-200">
@@ -124,7 +146,7 @@
       <Button variant="outline" on:click={onReset} class="flex-1">
         New Quote
       </Button>
-      <Button variant="default" class="flex-1" href="/register">
+      <Button variant="default" class="flex-1" on:click={handleBookNow}>
         Book Shipment
       </Button>
     </div>

@@ -119,8 +119,7 @@ const securityHook: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
 
   // Get PocketBase URL for CSP connect-src
-  // In production, replace with actual PocketBase domain
-  const pocketbaseUrl = process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
+  const pocketbaseUrl = PUBLIC_POCKETBASE_URL || 'https://api.qcs-cargo.com';
 
   const csp = [
     "default-src 'self'",

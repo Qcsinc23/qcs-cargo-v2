@@ -114,37 +114,152 @@ export async function sendContactFormEmail(data: {
 
 // Email Templates
 const baseStyles = `
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; }
-  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-  .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #1e40af; }
-  .logo { font-size: 24px; font-weight: bold; color: #1e40af; }
-  .content { padding: 30px 0; }
-  .button { display: inline-block; background: #1e40af; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500; }
-  .footer { text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
-  .info-box { background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+    line-height: 1.6; 
+    color: #1a202c; 
+    margin: 0; 
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    background-color: #f7fafc;
+  }
+  .wrapper {
+    background-color: #f7fafc;
+    padding: 40px 20px;
+  }
+  .container { 
+    max-width: 600px; 
+    margin: 0 auto; 
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  .header { 
+    background-color: #023e8a;
+    padding: 40px 40px;
+    text-align: center;
+  }
+  .logo { 
+    font-size: 28px; 
+    font-weight: 800; 
+    color: #ffffff; 
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .content { 
+    padding: 48px 40px; 
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-top: 0;
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+  p {
+    margin-bottom: 20px;
+    color: #4a5568;
+    font-size: 16px;
+  }
+  .button-container {
+    text-align: center;
+    margin: 32px 0;
+  }
+  .button { 
+    display: inline-block; 
+    background-color: #0077b6; 
+    color: #ffffff !important; 
+    padding: 16px 32px; 
+    border-radius: 8px; 
+    text-decoration: none; 
+    font-weight: 600; 
+    font-size: 16px;
+    transition: background-color 0.2s;
+  }
+  .footer { 
+    padding: 32px 40px; 
+    background-color: #f8fafc;
+    border-top: 1px solid #edf2f7; 
+    color: #718096; 
+    font-size: 13px; 
+    text-align: center;
+  }
+  .info-box { 
+    background-color: #ebf8ff; 
+    border-left: 4px solid #3182ce;
+    padding: 16px 20px; 
+    margin: 24px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .info-box p {
+    margin: 0;
+    font-size: 14px;
+    color: #2c5282;
+  }
+  .divider {
+    height: 1px;
+    background-color: #edf2f7;
+    margin: 32px 0;
+  }
+  .secondary-text {
+    font-size: 14px;
+    color: #718096;
+  }
+  .link-fallback {
+    word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    color: #a0aec0;
+    background-color: #f8fafc;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 12px;
+  }
 `;
 
 function wrapTemplate(content: string): string {
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="x-apple-disable-message-reformatting">
+      <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+      <![endif]-->
       <style>${baseStyles}</style>
     </head>
     <body>
-      <div class="container">
-        <div class="header">
-          <div class="logo">📦 ${PUBLIC_COMPANY_NAME}</div>
-        </div>
-        <div class="content">
-          ${content}
-        </div>
-        <div class="footer">
-          <p>${PUBLIC_COMPANY_NAME} - Trusted Air Freight to Caribbean</p>
-          <p>35 Obrien St, E12, Kearny, NJ 07032 | 201-249-0929</p>
-          <p><a href="${PUBLIC_SITE_URL}">Visit our website</a></p>
+      <div class="wrapper">
+        <div class="container">
+          <div class="header">
+            <div class="logo">📦 ${PUBLIC_COMPANY_NAME}</div>
+          </div>
+          <div class="content">
+            ${content}
+          </div>
+          <div class="footer">
+            <p style="font-weight: 600; color: #4a5568; margin-bottom: 8px;">${PUBLIC_COMPANY_NAME}</p>
+            <p style="margin-bottom: 4px;">Trusted Air Freight to Caribbean</p>
+            <p style="margin-bottom: 16px;">35 Obrien St, E12, Kearny, NJ 07032 | 201-249-0929</p>
+            <p>
+              <a href="${PUBLIC_SITE_URL}" style="color: #3182ce; text-decoration: underline;">Visit our website</a>
+              &nbsp;&nbsp;•&nbsp;&nbsp;
+              <a href="${PUBLIC_SITE_URL}/legal/privacy" style="color: #3182ce; text-decoration: underline;">Privacy Policy</a>
+            </p>
+            <p style="margin-top: 24px; font-size: 11px; color: #a0aec0;">
+              &copy; ${new Date().getFullYear()} ${PUBLIC_COMPANY_NAME}. All rights reserved.
+            </p>
+          </div>
         </div>
       </div>
     </body>
@@ -156,25 +271,27 @@ function wrapTemplate(content: string): string {
 export async function sendWelcomeEmail(to: string, name: string) {
   const html = wrapTemplate(`
     <h1>Welcome to ${PUBLIC_COMPANY_NAME}, ${name}! 🎉</h1>
-    <p>Thank you for creating an account with us. We're excited to help you ship to the Caribbean!</p>
+    <p>Thank you for choosing ${PUBLIC_COMPANY_NAME}. We're thrilled to have you join our community of Caribbean shippers.</p>
     
     <div class="info-box">
-      <h3>What you can do now:</h3>
-      <ul>
-        <li>📊 Get instant shipping quotes</li>
-        <li>📦 Book shipments with easy scheduling</li>
-        <li>🔍 Track your packages in real-time</li>
-        <li>📫 Get your own mailbox address</li>
+      <p style="font-weight: 600; margin-bottom: 12px; color: #2c5282;">Get started today:</p>
+      <ul style="margin: 0; padding-left: 20px; color: #2c5282; font-size: 14px;">
+        <li style="margin-bottom: 8px;">Get instant shipping quotes with our smart calculator</li>
+        <li style="margin-bottom: 8px;">Book shipments with easy drop-off scheduling</li>
+        <li style="margin-bottom: 8px;">Track your packages in real-time from New Jersey to the Caribbean</li>
+        <li style="margin-bottom: 0;">Get your own dedicated US mailbox address</li>
       </ul>
     </div>
     
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/dashboard" class="button">Go to Dashboard</a>
-    </p>
+    <div class="button-container">
+      <a href="${PUBLIC_SITE_URL}/dashboard" class="button">Access your dashboard</a>
+    </div>
     
-    <p>If you have any questions, our team is here to help. Simply reply to this email or call us at 201-249-0929.</p>
+    <p>Our team is standing by to help you with your first shipment. If you have any questions, simply reply to this email or call us at 201-249-0929.</p>
     
-    <p>Welcome aboard!<br>The ${PUBLIC_COMPANY_NAME} Team</p>
+    <div class="divider"></div>
+    
+    <p>Welcome aboard,<br><strong>The ${PUBLIC_COMPANY_NAME} Team</strong></p>
   `);
 
   return sendEmail({
@@ -187,20 +304,20 @@ export async function sendWelcomeEmail(to: string, name: string) {
 // Verification Email
 export async function sendVerificationEmail(to: string, name: string, verificationUrl: string) {
   const html = wrapTemplate(`
-    <h1>Verify Your Email Address</h1>
+    <h1>Verify your email address</h1>
     <p>Hi ${name},</p>
-    <p>Please click the button below to verify your email address:</p>
+    <p>Welcome to ${PUBLIC_COMPANY_NAME}. To complete your registration and secure your account, please verify your email address:</p>
     
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${verificationUrl}" class="button">Verify Email</a>
-    </p>
+    <div class="button-container">
+      <a href="${verificationUrl}" class="button">Verify email address</a>
+    </div>
     
-    <p>Or copy and paste this link into your browser:</p>
-    <p style="word-break: break-all; color: #6b7280;">${verificationUrl}</p>
+    <p class="secondary-text">This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.</p>
     
-    <p>This link will expire in 24 hours.</p>
+    <div class="divider"></div>
     
-    <p>If you didn't create an account, you can safely ignore this email.</p>
+    <p class="secondary-text">Or copy and paste this link into your browser:</p>
+    <div class="link-fallback">${verificationUrl}</div>
   `);
 
   return sendEmail({
@@ -213,20 +330,22 @@ export async function sendVerificationEmail(to: string, name: string, verificati
 // Password Reset Email
 export async function sendPasswordResetEmail(to: string, name: string, resetUrl: string) {
   const html = wrapTemplate(`
-    <h1>Reset Your Password</h1>
+    <h1>Reset your password</h1>
     <p>Hi ${name},</p>
-    <p>We received a request to reset your password. Click the button below to create a new password:</p>
+    <p>We received a request to reset your ${PUBLIC_COMPANY_NAME} password. Click the button below to choose a new one:</p>
     
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${resetUrl}" class="button">Reset Password</a>
-    </p>
+    <div class="button-container">
+      <a href="${resetUrl}" class="button">Reset password</a>
+    </div>
     
-    <p>Or copy and paste this link into your browser:</p>
-    <p style="word-break: break-all; color: #6b7280;">${resetUrl}</p>
+    <div class="info-box">
+      <p><strong>Note:</strong> This link will expire in 1 hour. If you didn't request a password reset, your password will remain unchanged.</p>
+    </div>
     
-    <p>This link will expire in 1 hour.</p>
+    <div class="divider"></div>
     
-    <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+    <p class="secondary-text">If the button doesn't work, use the link below:</p>
+    <div class="link-fallback">${resetUrl}</div>
   `);
 
   return sendEmail({
@@ -250,51 +369,54 @@ export async function sendBookingConfirmationEmail(
   }
 ) {
   const html = wrapTemplate(`
-    <h1>Booking Confirmed! ✅</h1>
+    <h1>Booking confirmed! ✅</h1>
     <p>Hi ${name},</p>
-    <p>Your booking has been confirmed. Here are the details:</p>
+    <p>Your booking has been successfully created. We're looking forward to receiving your packages at our warehouse.</p>
     
-    <div class="info-box">
-      <table style="width: 100%; border-collapse: collapse;">
+    <div style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px; padding: 24px; margin: 24px 0;">
+      <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; color: #1a202c; border-bottom: 1px solid #edf2f7; padding-bottom: 12px;">Shipment Details</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <tr>
-          <td style="padding: 8px 0; color: #6b7280;">Booking ID:</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.id}</td>
+          <td style="padding: 8px 0; color: #718096;">Booking ID</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a202c;">${booking.id}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; color: #6b7280;">Destination:</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.destination}</td>
+          <td style="padding: 8px 0; color: #718096;">Destination</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a202c;">${booking.destination}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; color: #6b7280;">Drop-off Date:</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.scheduledDate}</td>
+          <td style="padding: 8px 0; color: #718096;">Drop-off Date</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a202c;">${booking.scheduledDate}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; color: #6b7280;">Time Slot:</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.timeSlot}</td>
+          <td style="padding: 8px 0; color: #718096;">Time Slot</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a202c;">${booking.timeSlot}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; color: #6b7280;">Packages:</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: 500;">${booking.packageCount}</td>
+          <td style="padding: 8px 0; color: #718096;">Package Count</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a202c;">${booking.packageCount} item(s)</td>
         </tr>
-        <tr style="border-top: 1px solid #e5e7eb;">
-          <td style="padding: 12px 0; font-weight: 600;">Total:</td>
-          <td style="padding: 12px 0; text-align: right; font-weight: 600; font-size: 18px; color: #1e40af;">$${booking.total.toFixed(2)}</td>
+        <tr style="border-top: 2px solid #edf2f7;">
+          <td style="padding: 16px 0 0 0; font-weight: 700; color: #1a202c; font-size: 16px;">Total Estimate</td>
+          <td style="padding: 16px 0 0 0; text-align: right; font-weight: 700; font-size: 20px; color: #0077b6;">$${booking.total.toFixed(2)}</td>
         </tr>
       </table>
     </div>
     
-    <h3>📍 Drop-off Location</h3>
-    <p>
-      QCS Cargo<br>
+    <h3 style="font-size: 16px; font-weight: 700; color: #1a202c; margin-bottom: 12px;">📍 Drop-off Location</h3>
+    <p style="font-size: 15px; margin-bottom: 8px;">
+      <strong>QCS Cargo Warehouse</strong><br>
       35 Obrien St, E12<br>
       Kearny, NJ 07032
     </p>
     
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/dashboard/bookings/${booking.id}" class="button">View Booking Details</a>
-    </p>
+    <div class="button-container">
+      <a href="${PUBLIC_SITE_URL}/dashboard/bookings/${booking.id}" class="button">Manage booking</a>
+    </div>
     
-    <p><strong>Important:</strong> Please bring all packages during your scheduled time slot. Late arrivals may need to reschedule.</p>
+    <div class="info-box">
+      <p><strong>Important:</strong> Please ensure all items are packed securely. We'll weigh and measure everything upon arrival to finalize your shipment.</p>
+    </div>
   `);
 
   return sendEmail({
@@ -328,19 +450,22 @@ export async function sendStatusUpdateEmail(
   const emoji = statusEmoji[shipment.status] || '📦';
 
   const html = wrapTemplate(`
-    <h1>${emoji} Shipment Update</h1>
+    <h1>Shipment Update: ${emoji} ${shipment.statusDescription}</h1>
     <p>Hi ${name},</p>
-    <p>Your shipment status has been updated:</p>
+    <p>There has been a change in the status of your shipment.</p>
     
-    <div class="info-box">
-      <p><strong>Tracking Number:</strong> ${shipment.trackingNumber}</p>
-      <p><strong>Status:</strong> ${shipment.statusDescription}</p>
-      ${shipment.location ? `<p><strong>Location:</strong> ${shipment.location}</p>` : ''}
+    <div style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center;">
+      <p style="text-transform: uppercase; font-size: 12px; font-weight: 700; color: #718096; letter-spacing: 0.05em; margin-bottom: 8px;">Tracking Number</p>
+      <p style="font-family: ui-monospace, monospace; font-size: 20px; font-weight: 700; color: #1a202c; margin-bottom: 16px;">${shipment.trackingNumber}</p>
+      <p style="font-size: 16px; color: #4a5568;">Current Status: <span style="font-weight: 600; color: #0077b6;">${shipment.statusDescription}</span></p>
+      ${shipment.location ? `<p style="font-size: 14px; color: #718096; margin-top: 4px;">Location: ${shipment.location}</p>` : ''}
     </div>
     
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track Shipment</a>
-    </p>
+    <div class="button-container">
+      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track your shipment</a>
+    </div>
+    
+    <p class="secondary-text">Need help? Reply to this email or visit our help center.</p>
   `);
 
   return sendEmail({
@@ -353,27 +478,27 @@ export async function sendStatusUpdateEmail(
 // Account Deletion Email
 export async function sendAccountDeletionEmail(to: string, name: string) {
   const html = wrapTemplate(`
-    <h1>Account Scheduled for Deletion</h1>
+    <h1>Account scheduled for deletion</h1>
     <p>Hi ${name},</p>
-    <p>Your ${PUBLIC_COMPANY_NAME} account has been scheduled for deletion.</p>
+    <p>As requested, your ${PUBLIC_COMPANY_NAME} account has been scheduled for permanent deletion.</p>
 
-    <div class="info-box" style="background: #fef3c7; border: 1px solid #f59e0b;">
-      <h3 style="color: #b45309; margin-top: 0;">⚠️ Important Information</h3>
-      <ul style="margin-bottom: 0;">
-        <li>Your account is now deactivated</li>
-        <li>You have <strong>30 days</strong> to recover your account by logging in</li>
-        <li>After 30 days, all personal data will be permanently deleted</li>
-        <li>Shipment history will be anonymized for business records</li>
+    <div style="background-color: #fffaf0; border: 1px solid #feebc8; border-radius: 8px; padding: 24px; margin: 24px 0;">
+      <h3 style="color: #9c4221; margin-top: 0; font-size: 16px; margin-bottom: 12px;">⚠️ Important details</h3>
+      <ul style="margin: 0; padding-left: 20px; color: #7b341e; font-size: 14px;">
+        <li style="margin-bottom: 8px;">Your account is now deactivated.</li>
+        <li style="margin-bottom: 8px;">You have <strong>30 days</strong> to recover your account by simply logging in.</li>
+        <li style="margin-bottom: 8px;">After 30 days, all personal data will be permanently purged.</li>
+        <li>Historical shipment records will be anonymized.</li>
       </ul>
     </div>
 
-    <p>If you didn't request this deletion or want to recover your account, simply log in within the next 30 days:</p>
+    <p>If you didn't request this or would like to keep your account, you can cancel the deletion by signing in now:</p>
 
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/api/auth/login" class="button">Recover Account</a>
-    </p>
+    <div class="button-container">
+      <a href="${PUBLIC_SITE_URL}/api/auth/login" class="button">Recover my account</a>
+    </div>
 
-    <p>If you have any questions, please contact our support team.</p>
+    <p class="secondary-text">If you intended to delete your account, no further action is required.</p>
   `);
 
   return sendEmail({
@@ -395,22 +520,22 @@ export async function sendLocationUpdateEmail(
   }
 ) {
   const html = wrapTemplate(`
-    <h1>📍 Package Location Updated</h1>
+    <h1>📍 Package location update</h1>
     <p>Hi ${name},</p>
-    <p>Your package has been tracked at a new location:</p>
+    <p>Your shipment has reached a new milestone in its journey.</p>
 
-    <div class="info-box">
-      <p><strong>Tracking Number:</strong> ${shipment.trackingNumber}</p>
-      <p><strong>Status:</strong> ${shipment.status}</p>
-      <p><strong>Current Location:</strong> ${shipment.location}</p>
-      ${shipment.notes ? `<p><strong>Notes:</strong> ${shipment.notes}</p>` : ''}
+    <div style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px; padding: 24px; margin: 24px 0;">
+      <p style="margin-bottom: 12px;"><strong>Tracking Number:</strong> <span style="font-family: monospace;">${shipment.trackingNumber}</span></p>
+      <p style="margin-bottom: 12px;"><strong>Current Location:</strong> ${shipment.location}</p>
+      <p style="margin-bottom: 0;"><strong>Status:</strong> ${shipment.status}</p>
+      ${shipment.notes ? `<p style="margin-top: 12px; font-style: italic; color: #718096;">Note: ${shipment.notes}</p>` : ''}
     </div>
 
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track Package</a>
-    </p>
+    <div class="button-container">
+      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track package</a>
+    </div>
 
-    <p>Stay updated with your package's journey through Caribbean!</p>
+    <p class="secondary-text">Thank you for shipping with ${PUBLIC_COMPANY_NAME}.</p>
   `);
 
   return sendEmail({
@@ -450,23 +575,37 @@ export async function sendTrackingEventEmail(
   const emoji = eventEmoji[shipment.eventType] || '📦';
 
   const html = wrapTemplate(`
-    <h1>${emoji} Tracking Update</h1>
+    <h1>Shipment Update: ${emoji} ${shipment.eventDescription}</h1>
     <p>Hi ${name},</p>
-    <p>There's an update on your shipment:</p>
+    <p>We're writing to let you know that your shipment has a new tracking event.</p>
 
-    <div class="info-box">
-      <p><strong>Tracking Number:</strong> ${shipment.trackingNumber}</p>
-      <p><strong>Event:</strong> ${shipment.eventDescription}</p>
-      <p><strong>Location:</strong> ${shipment.location}</p>
-      ${shipment.notes ? `<p><strong>Details:</strong> ${shipment.notes}</p>` : ''}
-      ${shipment.estimatedDelivery ? `<p><strong>Estimated Delivery:</strong> ${new Date(shipment.estimatedDelivery).toLocaleDateString()}</p>` : ''}
+    <div style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px; padding: 24px; margin: 24px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Tracking Number</td>
+          <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 600;">${shipment.trackingNumber}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Update</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600;">${shipment.eventDescription}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Location</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600;">${shipment.location}</td>
+        </tr>
+        ${shipment.estimatedDelivery ? `
+        <tr>
+          <td style="padding: 8px 0; color: #718096;">Estimated Delivery</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #0077b6;">${new Date(shipment.estimatedDelivery).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+        </tr>
+        ` : ''}
+      </table>
+      ${shipment.notes ? `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #edf2f7; color: #718096; font-style: italic;">${shipment.notes}</div>` : ''}
     </div>
 
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">View Full Timeline</a>
-    </p>
-
-    <p>Thank you for shipping with ${PUBLIC_COMPANY_NAME}!</p>
+    <div class="button-container">
+      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">View full timeline</a>
+    </div>
   `);
 
   return sendEmail({
@@ -489,29 +628,27 @@ export async function sendMagicLinkEmail({
   expiresIn?: string;
 }) {
   const html = wrapTemplate(`
-    <h1>🔗 Sign in to ${PUBLIC_COMPANY_NAME}</h1>
+    <h1>Secure Sign-in Request</h1>
     <p>Hi ${name},</p>
-    <p>Click the button below to sign in to your account:</p>
+    <p>We received a request to sign in to your ${PUBLIC_COMPANY_NAME} account. To complete the process, please click the button below:</p>
     
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${magicLinkUrl}" class="button">Sign In</a>
-    </p>
-    
-    <p>Or copy and paste this link into your browser:</p>
-    <p style="word-break: break-all; color: #6b7280;">${magicLinkUrl}</p>
-    
-    <div class="info-box" style="background: #f0f9ff; border: 1px solid #bae6fd;">
-      <p><strong>⏱️ This link will expire in ${expiresIn}</strong></p>
+    <div class="button-container">
+      <a href="${magicLinkUrl}" class="button">Sign in to your account</a>
     </div>
     
-    <p>If you didn't request this link, you can safely ignore this email.</p>
+    <div class="info-box">
+      <p><strong>Security Note:</strong> This link is only valid for ${expiresIn} and can be used only once. If you did not request this email, please ignore it—no changes will be made to your account.</p>
+    </div>
     
-    <p>For security, this link can only be used once.</p>
+    <div class="divider"></div>
+    
+    <p class="secondary-text">If the button above doesn't work, copy and paste this URL into your browser:</p>
+    <div class="link-fallback">${magicLinkUrl}</div>
   `);
 
   return sendEmail({
     to,
-    subject: `Sign in to ${PUBLIC_COMPANY_NAME}`,
+    subject: `Your sign-in link for ${PUBLIC_COMPANY_NAME}`,
     html
   });
 }

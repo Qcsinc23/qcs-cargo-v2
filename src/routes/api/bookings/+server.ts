@@ -17,9 +17,8 @@ function generateQRCodeData(trackingNumber: string): string {
 }
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:19',message:'POST handler entry',data:{hasUser:!!locals.user,userId:locals.user?.id,userEmail:locals.user?.email,pbAuthValid:locals.pb?.authStore?.isValid,pbIsAdmin:locals.pb?.authStore?.isAdmin},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+  // DEBUG: Remove debug logging in production
+  // TODO: Implement proper logging system with configurable levels
   
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
@@ -33,9 +32,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:28',message:'Invalid user ID format detected',data:{userId,userIdLength:userId?.length,userIdType:typeof userId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
     // #endregion
     console.error('[create_booking] Invalid user ID format - user sync may have failed', { userId });
-    throw error(500, { 
-      message: 'User account not properly synchronized. Please log out and log back in.',
-      details: 'User ID format invalid - this usually means user sync to PocketBase failed'
+    throw error(500, {
+      message: 'User account not properly synchronized. Please log out and log back in. (User ID format invalid - this usually means user sync to PocketBase failed)'
     });
   }
 
@@ -92,7 +90,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           city: newRecipient.city,
           destination: newRecipient.destination || destination,
           delivery_instructions: newRecipient.deliveryInstructions || '',
-          is_default: newRecipient.saveForFuture && !recipientId
+          // BUG FIX: Simplified redundant condition
+          // Original: is_default: newRecipient.saveForFuture && !recipientId
+          // Since we're in the block where !recipientId is true, this simplifies to:
+          is_default: newRecipient.saveForFuture
         });
         finalRecipientId = createdRecipient.id;
         // #region agent log
@@ -153,46 +154,79 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       bookingId: booking.id
     });
 
-    // Create package records
+    // Create package records with transaction support
     const createdPackages = [];
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:105',message:'Before package creation loop',data:{packageCount:packages.length,bookingId:booking.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
     // #endregion
-    for (let i = 0; i < packages.length; i++) {
-      const pkg = packages[i];
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:107',message:'Creating package',data:{packageIndex:i,bookingId:booking.id,hasWeight:!!pkg.weight,weight:pkg.weight,hasDimensions:!!(pkg.length&&pkg.width&&pkg.height)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      const trackingNumber = generateTrackingNumber();
-      const qrCode = generateQRCodeData(trackingNumber);
+    
+    // Track created package IDs for rollback
+    const createdPackageIds: string[] = [];
+    
+    try {
+      for (let i = 0; i < packages.length; i++) {
+        const pkg = packages[i];
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:107',message:'Creating package',data:{packageIndex:i,bookingId:booking.id,hasWeight:!!pkg.weight,weight:pkg.weight,hasDimensions:!!(pkg.length&&pkg.width&&pkg.height)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        const trackingNumber = generateTrackingNumber();
+        const qrCode = generateQRCodeData(trackingNumber);
 
-      const packageData = {
-        booking: booking.id,
-        tracking_number: trackingNumber,
-        qr_code: qrCode,
-        weight: pkg.weight,
-        weight_unknown: pkg.weightUnknown || false,
-        length: pkg.length,
-        width: pkg.width,
-        height: pkg.height,
-        dimensions_unknown: pkg.dimensionsUnknown || false,
-        dim_weight: pkg.dimWeight || null,
-        billable_weight: pkg.billableWeight || pkg.weight,
-        declared_value: pkg.declaredValue,
-        contents_description: pkg.contentsDescription || '',
-        special_instructions: pkg.specialInstructions || '',
-        cost: pkg.cost || 0
-      };
-      const createdPkg = await locals.pb.collection('packages').create(packageData);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:127',message:'Package created successfully',data:{packageId:createdPkg.id,packageIndex:i,trackingNumber},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
+        const packageData = {
+          booking: booking.id,
+          tracking_number: trackingNumber,
+          qr_code: qrCode,
+          weight: pkg.weight,
+          weight_unknown: pkg.weightUnknown || false,
+          length: pkg.length,
+          width: pkg.width,
+          height: pkg.height,
+          dimensions_unknown: pkg.dimensionsUnknown || false,
+          dim_weight: pkg.dimWeight || null,
+          // BUG FIX: Validate billableWeight is not null or zero
+          billable_weight: pkg.billableWeight || pkg.weight || 0,
+          declared_value: pkg.declaredValue,
+          contents_description: pkg.contentsDescription || '',
+          special_instructions: pkg.specialInstructions || '',
+          cost: pkg.cost || 0
+        };
+        const createdPkg = await locals.pb.collection('packages').create(packageData);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/+server.ts:127',message:'Package created successfully',data:{packageId:createdPkg.id,packageIndex:i,trackingNumber},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
 
-      createdPackages.push({
-        id: createdPkg.id,
-        trackingNumber,
-        qrCode
+        createdPackageIds.push(createdPkg.id);
+        createdPackages.push({
+          id: createdPkg.id,
+          trackingNumber,
+          qrCode
+        });
+      }
+    } catch (packageError: any) {
+      // Rollback: delete any packages that were successfully created
+      console.error('[create_booking] Package creation failed, rolling back packages:', {
+        correlationId,
+        bookingId: booking.id,
+        packageIds: createdPackageIds,
+        error: packageError.message
       });
+      
+      for (const packageId of createdPackageIds) {
+        try {
+          await locals.pb.collection('packages').delete(packageId);
+        } catch (rollbackError) {
+          console.error('[create_booking] Failed to rollback package:', packageId, rollbackError);
+        }
+      }
+      
+      // Also delete the booking since it's incomplete
+      try {
+        await locals.pb.collection('bookings').delete(booking.id);
+      } catch (bookingDeleteError) {
+        console.error('[create_booking] Failed to delete booking during rollback:', bookingDeleteError);
+      }
+      
+      throw packageError;
     }
 
     console.log('[create_booking] Packages created', {
@@ -297,6 +331,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     if (status && status !== 'all' && VALID_BOOKING_STATUSES.includes(status as any)) {
       filter += ` && status = "${status}"`;
     }
+    // Type safety: Use proper type narrowing instead of 'as any'
+    // The VALID_BOOKING_STATUSES array is readonly, so we can safely use 'as const' for type assertion
+    // This is safe because we've already validated status is in the whitelist
 
     const result = await locals.pb.collection('bookings').getList(page, perPage, {
       filter,

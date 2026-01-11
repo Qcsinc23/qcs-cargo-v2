@@ -64,7 +64,7 @@ export const UNIFIED_PRICING: UnifiedPricingConfig = {
   },
   insurance: {
     deductible: 100,
-    rate: 7.50,
+    rate: 7.50, // USD per $100 of insured value
     minimum: 15
   },
   service: {
@@ -104,7 +104,8 @@ export class PricingCalculator {
     if (!includeInsurance || declaredValue <= 0) return 0;
 
     const insuredValue = Math.max(0, declaredValue - UNIFIED_PRICING.insurance.deductible);
-    const calculatedFee = (insuredValue / 100) * UNIFIED_PRICING.insurance.rate;
+    // Calculate fee: $7.50 per $100 of insured value
+    const calculatedFee = Math.ceil(insuredValue / 100) * UNIFIED_PRICING.insurance.rate;
     return Math.max(UNIFIED_PRICING.insurance.minimum, calculatedFee);
   }
 
@@ -193,7 +194,10 @@ export class PricingCalculator {
     const total = subtotal + insuranceFee;
 
     // Calculate estimated delivery
-    const daysToDeliver = destinationData.base_transit_days + (serviceLevel === 'express' ? -1 : UNIFIED_PRICING.service.standard.transitDays);
+    // Express service is 1 day faster than standard
+    const daysToDeliver = serviceLevel === 'express'
+      ? Math.max(1, destinationData.base_transit_days - 1)
+      : destinationData.base_transit_days;
 
     return {
       // Weight breakdown

@@ -306,7 +306,13 @@
 
     <!-- Calculation Result -->
     {#if calculationResult}
-      <CalculationResult result={calculationResult} onReset={resetCalculator} />
+      <CalculationResult 
+        result={calculationResult} 
+        onReset={resetCalculator} 
+        {destination}
+        serviceType={selectedService}
+        dimensions={{ length, width, height }}
+      />
     {/if}
 
     <!-- Formula Reference -->

@@ -25,16 +25,16 @@ function isSMSConfigured() {
 }
 
 // Twilio client variable
-let twilio: any = null;
+let twilioClient: any = null;
 
 // Lazy initialization function for Twilio client
-function getTwilioClient() {
+async function getTwilioClient() {
   if (!isSMSConfigured()) return null;
-  if (!twilio) {
+  if (!twilioClient) {
     try {
-      // Dynamic import to avoid loading Twilio if not configured
-      const TwilioClass = require('twilio').Twilio;
-      twilio = new TwilioClass(
+      // Dynamic import for ESM compatibility
+      const { Twilio } = await import('twilio');
+      twilioClient = new Twilio(
         process.env.TWILIO_ACCOUNT_SID!,
         process.env.TWILIO_AUTH_TOKEN!
       );
@@ -43,10 +43,14 @@ function getTwilioClient() {
       return null;
     }
   }
-  return twilio;
+  return twilioClient;
 }
 
-// Rate limiting using in-memory storage (for production, use Redis or database)
+// Rate limiting using in-memory storage
+// TODO: For production, implement Redis or PocketBase-backed rate limiting
+// Current in-memory approach has limitations:
+// - Lost on server restart
+// - Not shared across multiple server instances
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 // Rate limit configuration
@@ -178,7 +182,7 @@ export async function sendSMS(options: SMSSendOptions): Promise<SMSResult> {
     };
 
     // Get Twilio client
-    const client = getTwilioClient();
+    const client = await getTwilioClient();
     if (!client) {
       return {
         success: false,
@@ -279,7 +283,15 @@ export async function checkSMSStatus(sid: string): Promise<{
   error?: string;
 }> {
   try {
-    const message = await twilio.messages(sid).fetch();
+    const client = await getTwilioClient();
+    if (!client) {
+      return {
+        status: 'failed',
+        error: 'SMS service not initialized'
+      };
+    }
+    
+    const message = await client.messages(sid).fetch();
 
     return {
       status: message.status as any,
@@ -417,5 +429,8 @@ export async function sendETAUpdateSMS(phone: string, options: any): Promise<SMS
 
 // Run cleanup every 5 minutes
 if (typeof setInterval !== 'undefined') {
-  setInterval(cleanupRateLimits, 5 * 60 * 1000);
+  // Run on server
+  if (typeof process !== 'undefined' && !process.browser) {
+    setInterval(cleanupRateLimits, 5 * 60 * 1000);
+  }
 }

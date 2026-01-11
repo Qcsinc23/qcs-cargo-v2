@@ -29,7 +29,7 @@ export const SERVICES: Service[] = [
     icon: 'zap'
   },
   {
-    id: 'door_to_door',
+    id: 'door-to-door', // Changed from door_to_door to match frontend kebab-case
     name: 'Door-to-Door Service',
     description: 'Complete logistics from pickup to final delivery',
     features: ['Free pickup in NJ area', 'Last-mile delivery', 'Signature confirmation'],

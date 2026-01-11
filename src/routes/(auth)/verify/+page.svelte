@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { toast } from '$lib/stores/toast';
   import { PUBLIC_COMPANY_NAME } from '$env/static/public';
 
   let email = '';
+  let redirectTo = '';
   let isVerifying = false;
   let verificationStatus: 'pending' | 'success' | 'error' = 'pending';
   let errorMessage = '';
@@ -14,6 +16,7 @@
   onMount(() => {
     // Get email from query params
     email = $page.url.searchParams.get('email') || '';
+    redirectTo = $page.url.searchParams.get('redirectTo') || '';
     
     // Check if there's a token in the URL (from magic link)
     const token = $page.url.searchParams.get('token');
@@ -47,9 +50,9 @@
       verificationStatus = 'success';
       toast.success('Successfully signed in!');
       
-      // Redirect to dashboard after a brief delay
+      // Redirect to dashboard or redirectTo after a brief delay
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        goto(redirectTo || '/dashboard');
       }, 1500);
     } catch (error: any) {
       errorMessage = error.message || 'Failed to verify magic link';
@@ -72,7 +75,7 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, redirectTo })
       });
 
       if (!response.ok) {

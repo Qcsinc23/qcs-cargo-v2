@@ -5,10 +5,14 @@
   import { Label } from '$lib/components/ui/label';
   import { toast } from '$lib/stores/toast';
   import { PUBLIC_COMPANY_NAME } from '$env/static/public';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
 
   let email = '';
   let isLoading = false;
   let emailError = '';
+
+  $: redirectTo = $page.url.searchParams.get('redirectTo') || '';
 
   async function handleSubmit() {
     if (!email) {
@@ -30,7 +34,7 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, redirectTo })
       });
 
       if (!response.ok) {
@@ -43,8 +47,12 @@
       const data = await response.json();
       toast.success(data.message || 'Magic link sent to your email!');
       
-      // Redirect to verify page
-      window.location.href = '/verify?email=' + encodeURIComponent(email);
+      // Redirect to verify page with redirectTo param
+      let verifyUrl = `/verify?email=${encodeURIComponent(email)}`;
+      if (redirectTo) {
+        verifyUrl += `&redirectTo=${encodeURIComponent(redirectTo)}`;
+      }
+      goto(verifyUrl);
     } catch (error: any) {
       emailError = error.message || 'Something went wrong. Please try again.';
       toast.error(emailError);

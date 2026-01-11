@@ -37,6 +37,12 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
   try {
     const updated = await locals.pb.collection('users').update(locals.user.id, parsed.data);
     locals.user = updated;
+    
+    // NOTE: Auth cookie is httpOnly and cannot be updated from API route
+    // The updated user will be reflected on next request when hooks.server.ts
+    // reads the auth token and fetches the user from PocketBase.
+    // For immediate reflection, consider implementing a cookie refresh mechanism.
+    
     return json({ success: true, user: updated });
   } catch (err: unknown) {
     const message =

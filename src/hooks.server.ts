@@ -142,4 +142,15 @@ const securityHook: Handle = async ({ event, resolve }) => {
 export const handle = sequence(correlationHook, pbAuthHook, securityHook);
 
 // Use Sentry's error handler
-export const handleError = Sentry.handleErrorWithSentry();
+const sentryErrorHandler = Sentry.handleErrorWithSentry();
+
+export const handleError: import('@sveltejs/kit').HandleServerError = ({ error, event }) => {
+  const message = error instanceof Error ? error.message : String(error);
+  const stack = error instanceof Error ? error.stack : '';
+  
+  console.error(
+    `[error] 500 at ${event.url.pathname} - ${message}\n${stack}`
+  );
+  
+  return sentryErrorHandler({ error, event });
+};

@@ -27,6 +27,7 @@ Sentry.init({
 
 // Correlation + minimal admin audit logging
 const correlationHook: Handle = async ({ event, resolve }) => {
+  console.log(`>>> Incoming request: ${event.request.method} ${event.url.pathname}`);
   const start = Date.now();
   const correlationId =
     event.request.headers.get('x-correlation-id') ?? crypto.randomUUID();

@@ -7,6 +7,8 @@ import { dev } from '$app/environment';
 import * as Sentry from '@sentry/sveltekit';
 import { getCurrentUser } from '$lib/server/magic-link';
 
+console.log('[hooks] Server hooks initializing...');
+
 // Initialize Sentry for server-side error tracking
 Sentry.init({
   dsn: process.env.SENTRY_DSN,

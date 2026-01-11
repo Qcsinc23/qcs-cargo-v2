@@ -111,7 +111,7 @@ The application is configured for deployment via Dokploy on Hostinger VPS.
 ### Docker Deployment
 
 ```bash
-docker-compose up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 This starts both the SvelteKit application and PocketBase.

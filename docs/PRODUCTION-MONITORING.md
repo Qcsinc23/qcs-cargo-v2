@@ -26,30 +26,25 @@ SENTRY_ENVIRONMENT=production  # or staging, development
 3. **Client-side Configuration** (`src/hooks.client.ts`):
 ```typescript
 import * as Sentry from '@sentry/sveltekit';
+import { PUBLIC_SENTRY_DSN } from '$env/static/public';
 
 Sentry.init({
-  dsn: import.meta.env.VITE_PUBLIC_SENTRY_DSN,
-  environment: import.meta.env.VITE_PUBLIC_SENTRY_ENVIRONMENT || 'development',
+  dsn: PUBLIC_SENTRY_DSN,
+  environment: 'production',
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  integrations: [
-    new Sentry.Replay({
-      maskAllText: true,
-      blockAllMedia: true
-    }),
-    new Sentry.BrowserTracing()
-  ]
 });
 ```
 
 4. **Server-side Configuration** (`src/hooks.server.ts`):
 ```typescript
 import * as Sentry from '@sentry/sveltekit';
+import { env } from '$env/dynamic/private';
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.SENTRY_ENVIRONMENT || 'development',
+  dsn: env.SENTRY_DSN,
+  environment: env.SENTRY_ENVIRONMENT || 'production',
   tracesSampleRate: 1.0
 });
 
@@ -76,24 +71,24 @@ export const handleError = Sentry.handleErrorWithSentry();
 ### Monitors to Create
 
 #### 1. Main Application
-- **URL**: https://app.qcscargo.com
+- **URL**: https://qcs-cargo.com
 - **Type**: HTTP(S)
 - **Interval**: 5 minutes
 - **Alert After**: 2 failed checks (down for 10 min)
 
 #### 2. API Health Check
-- **URL**: https://app.qcscargo.com/api/health
+- **URL**: https://qcs-cargo.com/api/health
 - **Type**: HTTP(S) with keyword monitoring
 - **Expected**: `"status":"healthy"`
 - **Interval**: 5 minutes
 
 #### 3. PocketBase Backend
-- **URL**: https://db.qcscargo.com/api/health
+- **URL**: https://api.qcs-cargo.com/api/health
 - **Type**: HTTP(S)
 - **Interval**: 5 minutes
 
 #### 4. Stripe Webhook Endpoint
-- **URL**: https://app.qcscargo.com/api/webhooks/stripe
+- **URL**: https://qcs-cargo.com/api/webhooks/stripe
 - **Type**: HTTP(S)
 - **Interval**: 15 minutes
 - **Method**: GET (ping endpoint)

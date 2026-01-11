@@ -103,6 +103,7 @@ Secondary Goals
 * GDPR/CCPA compliance (including right to deletion)
 * Support for multi-package bookings
 * Complete recipient information capture
+* SMS notifications for booking and tracking updates
 1.2 Success Metrics
 Metric	Target	Measurement Method	Frequency
 Booking Completion Time	< 2 minutes	Analytics event tracking	Real-time
@@ -128,7 +129,6 @@ Legal	Must comply with GDPR Article 17 (Right to Erasure) and CCPA
 * Multi-language support (Spanish, French Creole)
 * Automated customs documentation generation
 * Integration with third-party tracking aggregators
-* SMS/WhatsApp notifications (Phase 1 uses email only)
 * Two-factor authentication
 * Payment plans/financing
 * Account credit/balance system

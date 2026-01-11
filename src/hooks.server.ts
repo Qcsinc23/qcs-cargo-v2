@@ -6,8 +6,21 @@ import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import * as Sentry from '@sentry/sveltekit';
 import { getCurrentUser } from '$lib/server/magic-link';
+import { appendFileSync } from 'fs';
+
+const logFile = '/app/app.log';
+
+function logToFile(msg: string) {
+  try {
+    const timestamp = new Date().toISOString();
+    appendFileSync(logFile, `[${timestamp}] ${msg}\n`);
+  } catch (err) {
+    console.error('Failed to write to log file:', err);
+  }
+}
 
 console.log('[hooks] Server hooks initializing...');
+logToFile('Server hooks initializing...');
 
 // Initialize Sentry for server-side error tracking
 Sentry.init({
@@ -27,7 +40,6 @@ Sentry.init({
 
 // Correlation + minimal admin audit logging
 const correlationHook: Handle = async ({ event, resolve }) => {
-  console.log(`>>> Incoming request: ${event.request.method} ${event.url.pathname}`);
   const start = Date.now();
   const correlationId =
     event.request.headers.get('x-correlation-id') ?? crypto.randomUUID();
@@ -39,9 +51,9 @@ const correlationHook: Handle = async ({ event, resolve }) => {
 
   // Log all requests for debugging
   const duration = Date.now() - start;
-  console.log(
-    `[request] ${event.request.method} ${event.url.pathname} - ${response.status} (${duration}ms) [${correlationId}]`
-  );
+  const logMsg = `[request] ${event.request.method} ${event.url.pathname} - ${response.status} (${duration}ms) [${correlationId}]`;
+  console.log(logMsg);
+  logToFile(logMsg);
 
   return response;
 };
@@ -146,9 +158,9 @@ export const handleError: import('@sveltejs/kit').HandleServerError = ({ error, 
   const message = error instanceof Error ? error.message : String(error);
   const stack = error instanceof Error ? error.stack : '';
   
-  console.error(
-    `[error] 500 at ${event.url.pathname} - ${message}\n${stack}`
-  );
+  const errorMsg = `[error] 500 at ${event.url.pathname} - ${message}\n${stack}`;
+  console.error(errorMsg);
+  logToFile(errorMsg);
   
   return sentryErrorHandler({ error, event });
 };

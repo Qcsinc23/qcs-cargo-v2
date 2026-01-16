@@ -427,7 +427,7 @@ test.describe('Admin Access Control', () => {
     
     const url = page.url();
     // Either redirected to login or showing access denied
-    expect(url.includes('/api/auth/login') || url.includes('/dashboard') || url.includes('/admin')).toBeTruthy();
+    expect(url.includes('/login') || url.includes('/admin') || url.includes('unauthorized')).toBeTruthy();
   });
 });
 

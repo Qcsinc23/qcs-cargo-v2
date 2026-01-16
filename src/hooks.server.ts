@@ -65,14 +65,17 @@ const pbAuthHook: Handle = async ({ event, resolve }) => {
   event.locals.user = null; // Default to no user
   
   // Authenticate PocketBase with admin credentials for server-side operations
-  const adminEmail = env.POCKETBASE_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
-  const adminPassword = env.POCKETBASE_ADMIN_PASSWORD || 'Qcsinc@2025*';
-  
-  try {
-    await event.locals.pb.admins.authWithPassword(adminEmail, adminPassword);
-  } catch (err: any) {
-    console.error('[hooks] Failed to authenticate PocketBase admin:', err?.message || err);
-    // Continue anyway - some routes might not need admin access
+  const adminEmail = env.POCKETBASE_ADMIN_EMAIL;
+  const adminPassword = env.POCKETBASE_ADMIN_PASSWORD;
+  if (adminEmail && adminPassword) {
+    try {
+      await event.locals.pb.admins.authWithPassword(adminEmail, adminPassword);
+    } catch (err: any) {
+      console.error('[hooks] Failed to authenticate PocketBase admin:', err?.message || err);
+      // Continue anyway - some routes might not need admin access
+    }
+  } else {
+    console.warn('[hooks] PocketBase admin credentials not configured; admin auth skipped');
   }
   
   // Get auth token from cookie

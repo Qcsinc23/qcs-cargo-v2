@@ -26,7 +26,7 @@
     return () => window.removeEventListener('resize', checkDevice);
   });
 
-  const warehouseNav = [
+  $: warehouseNav = [
     { href: '/warehouse', label: 'Dashboard', active: $page.url.pathname === '/warehouse' },
     { href: '/warehouse/receiving', label: 'Receiving', active: $page.url.pathname.startsWith('/warehouse/receiving') },
     { href: '/warehouse/staging', label: 'Staging', active: $page.url.pathname.startsWith('/warehouse/staging') },

@@ -20,7 +20,7 @@ test.describe('Offline Scanning - Public UI Tests', () => {
     
     // Check if redirected to login or showing unauthorized
     const url = page.url();
-    const isOnLogin = url.includes('/auth/login') || url.includes('/login');
+    const isOnLogin = url.includes('/login');
     const hasUnauthorized = await page.locator('text=/unauthorized|login|sign in/i').count() > 0;
     
     // Either redirected to login or showing some auth message
@@ -291,15 +291,13 @@ test.describe('Service Worker Support', () => {
 
 test.describe('UI Component Tests - No Auth Required', () => {
   test('login page loads correctly', async ({ page }) => {
-    await page.goto('/auth/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
     // Check for any of the expected login page elements
     const hasLoginForm = await page.locator('input[type="email"], #email, input[name="email"]').count() > 0;
-    const hasPasswordField = await page.locator('input[type="password"], #password').count() > 0;
     
     expect(hasLoginForm).toBeTruthy();
-    expect(hasPasswordField).toBeTruthy();
   });
 
   test('shipping calculator loads (public page)', async ({ page }) => {

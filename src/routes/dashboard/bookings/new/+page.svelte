@@ -308,9 +308,6 @@
 
   // Submit Booking
   async function submitBooking() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/new/+page.svelte:308',message:'submitBooking called',data:{hasQuote:!!bookingState.quote,submitting,packageCount:bookingState.packages.length,hasRecipient:!!bookingState.recipient},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     if (submitting) return;
 
     if (!bookingState.quote) {
@@ -343,9 +340,6 @@
         recipient: newRecipient,
         quote: bookingState.quote
       };
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/new/+page.svelte:332',message:'Before booking API call',data:{serviceType:requestBody.serviceType,destination:requestBody.destination,hasScheduledDate:!!requestBody.scheduledDate,hasTimeSlot:!!requestBody.timeSlot,packageCount:requestBody.packages.length,hasRecipientId:!!requestBody.recipientId,hasNewRecipient:!!requestBody.recipient,hasQuote:!!requestBody.quote},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
 
       // 1) Create booking (backend sets status to pending_payment).
       const bookingResponse = await fetch('/api/bookings', {
@@ -353,19 +347,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/new/+page.svelte:345',message:'Booking API response received',data:{status:bookingResponse.status,statusText:bookingResponse.statusText,ok:bookingResponse.ok},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
 
       const bookingJson = await bookingResponse.json().catch(() => null);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/new/+page.svelte:348',message:'Booking API response parsed',data:{hasJson:!!bookingJson,jsonStatus:bookingJson?.status,jsonMessage:bookingJson?.message,hasBookingId:!!bookingJson?.data?.bookingId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       if (!bookingResponse.ok || bookingJson?.status !== 'success') {
         const msg = bookingJson?.message || 'Failed to create booking';
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/new/+page.svelte:350',message:'Booking creation failed',data:{status:bookingResponse.status,message:msg,jsonData:bookingJson},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
         throw new Error(msg);
       }
 
@@ -396,14 +381,6 @@
       booking.reset();
       goto(`/dashboard/bookings/${bookingId}`);
     } catch (err) {
-      // #region agent log
-      const errorData: any = { errorType: err?.constructor?.name };
-      if (err instanceof Error) {
-        errorData.errorMessage = err.message;
-        errorData.errorStack = err.stack?.split('\n').slice(0, 3).join(' | ');
-      }
-      fetch('http://127.0.0.1:7242/ingest/5b213dbc-91de-4ad8-8838-6c46ba2df294',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'bookings/new/+page.svelte:379',message:'Booking submission error caught',data:errorData,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
       console.error('Booking submission error:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to submit booking');
     } finally {

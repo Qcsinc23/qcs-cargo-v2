@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import PocketBase from 'pocketbase';
+import { loginAsTestUser as loginByCookie } from './helpers/auth';
 
-const PB_URL = 'http://127.0.0.1:8090';
-const TEST_ADMIN_EMAIL = 'sales@quietcraftsolutions.com';
-const TEST_ADMIN_PASSWORD = 'Qcsinc@2025*';
+const PB_URL = process.env.PB_URL || 'http://localhost:8090';
+const TEST_ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL;
+const TEST_ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD;
 const TEST_USER = {
   email: `test-modify-${Date.now()}@example.com`,
   password: 'Test123!@#',
@@ -26,6 +27,9 @@ test.beforeAll(async () => {
 
   try {
     // Authenticate as admin
+    if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
+      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+    }
     await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
     console.log('✅ Admin authenticated');
 
@@ -96,6 +100,9 @@ test.afterAll(async () => {
   const pb = new PocketBase(PB_URL);
 
   try {
+    if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
+      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+    }
     await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
 
     // Delete in correct order (respecting foreign keys)
@@ -126,49 +133,9 @@ test.afterAll(async () => {
   }
 });
 
-// Helper to login with better error handling
-async function loginAsTestUser(page: any) {
-  await page.goto('/auth/login');
-  
-  // Wait for form to be ready
-  await page.waitForSelector('input[id="email"]', { timeout: 5000 });
-  await page.waitForSelector('input[id="password"]', { timeout: 5000 });
-  
-  // Clear and fill email
-  const emailInput = page.locator('input[id="email"]');
-  await emailInput.clear();
-  await emailInput.fill(TEST_USER.email);
-  
-  // Clear and fill password  
-  const passwordInput = page.locator('input[id="password"]');
-  await passwordInput.clear();
-  await passwordInput.fill(TEST_USER.password);
-  
-  // Wait a moment for form to process
-  await page.waitForTimeout(500);
-  
-  // Click submit button
-  await page.click('button[type="submit"]');
-  
-  // Wait for redirect
-  try {
-    await page.waitForURL((url: URL) => 
-      url.href.includes('/dashboard') || !url.href.includes('/auth/login'),
-      { timeout: 15000 }
-    );
-    
-    if (page.url().includes('/auth/login')) {
-      throw new Error('Login failed - still on login page');
-    }
-  } catch (e: any) {
-    console.log(`Login failed. URL: ${page.url()}`);
-    throw new Error(`Login failed: ${e.message}`);
-  }
-}
-
 test.describe('Booking Modification Feature', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
   });
 
   test('should display "Modify Booking" button on booking detail page', async ({ page }) => {
@@ -364,6 +331,9 @@ test.describe('Booking Modification Restrictions', () => {
   test.beforeAll(async () => {
     // Create a booking that's less than 24 hours away (cannot be modified)
     const pb = new PocketBase(PB_URL);
+    if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
+      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+    }
     await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
 
     if (!testData) throw new Error('Test data not initialized');
@@ -399,6 +369,9 @@ test.describe('Booking Modification Restrictions', () => {
 
     const pb = new PocketBase(PB_URL);
     try {
+      if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
+        throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+      }
       await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
       await pb.collection('bookings').delete(restrictedBookingId);
       console.log('✅ Restricted booking deleted');
@@ -408,7 +381,7 @@ test.describe('Booking Modification Restrictions', () => {
   });
 
   test('should show restriction message for bookings within 24 hours', async ({ page }) => {
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
 
     await page.goto(`/dashboard/bookings/${restrictedBookingId}/modify`);
     

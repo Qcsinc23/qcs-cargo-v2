@@ -30,10 +30,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     const baysWithCounts = await Promise.all(
       bays.map(async (bay) => {
         const count = await locals.pb.collection('warehouse_packages').getFirstListItem(
-          `location_bay = "${bay.id}" && status != "shipped"`,
+          `location_bay = "${bay.code}" && status != "shipped"`,
           { fields: 'id' }
         ).then(() => locals.pb.collection('warehouse_packages').getList(1, 1, {
-          filter: `location_bay = "${bay.id}" && status != "shipped"`,
+          filter: `location_bay = "${bay.code}" && status != "shipped"`,
           fields: 'id'
         })).then(res => res.totalItems).catch(() => 0);
 

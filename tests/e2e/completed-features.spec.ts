@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import PocketBase from 'pocketbase';
+import { loginAsTestUser as loginByCookie } from './helpers/auth';
 
 /**
  * E2E Tests for Invoice PDF Generation and Payment Recovery
@@ -15,8 +16,8 @@ import PocketBase from 'pocketbase';
 
 // Test configuration
 const ADMIN_CREDENTIALS = {
-  email: process.env.PB_ADMIN_EMAIL || 'sales@quietcraftsolutions.com',
-  password: process.env.PB_ADMIN_PASSWORD || 'Qcsinc@2025*'
+  email: process.env.PB_ADMIN_EMAIL,
+  password: process.env.PB_ADMIN_PASSWORD
 };
 
 const TEST_USER = {
@@ -66,7 +67,10 @@ test.beforeAll(async () => {
   try {
     // Authenticate as admin
     console.log('🔐 Authenticating as admin...');
-    await pb.admins.authWithPassword(ADMIN_CREDENTIALS.email, ADMIN_CREDENTIALS.password);
+    if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
+      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+    }
+    await pb.admins.authWithPassword(ADMIN_CREDENTIALS.email!, ADMIN_CREDENTIALS.password!);
     console.log('✅ Admin authenticated\n');
     
     // Create test user
@@ -193,7 +197,10 @@ test.afterAll(async () => {
   
   try {
     // Re-auth as admin for cleanup
-    await pb.admins.authWithPassword(ADMIN_CREDENTIALS.email, ADMIN_CREDENTIALS.password);
+    if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
+      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+    }
+    await pb.admins.authWithPassword(ADMIN_CREDENTIALS.email!, ADMIN_CREDENTIALS.password!);
     
     // Delete in reverse order to respect foreign key constraints
     // 1. Invoices (references bookings)
@@ -215,66 +222,9 @@ test.afterAll(async () => {
   }
 });
 
-// Helper to login with better error handling
-async function loginAsTestUser(page: any) {
-  await page.goto(`${BASE_URL}/auth/login`);
-  
-  // Wait for form to be ready
-  await page.waitForSelector('input[id="email"]', { timeout: 5000 });
-  await page.waitForSelector('input[id="password"]', { timeout: 5000 });
-  
-  // Clear and fill email
-  const emailInput = page.locator('input[id="email"]');
-  await emailInput.clear();
-  await emailInput.fill(TEST_USER.email);
-  
-  // Clear and fill password
-  const passwordInput = page.locator('input[id="password"]');
-  await passwordInput.clear();
-  await passwordInput.fill(TEST_USER.password);
-  
-  // Wait a moment for form to process
-  await page.waitForTimeout(500);
-  
-  // Click submit button
-  await page.click('button[type="submit"]');
-  
-  // Wait for navigation or error
-  try {
-    // Wait for URL change - could be dashboard or home after login
-    await page.waitForURL((url: URL) => 
-      url.href.includes('/dashboard') || !url.href.includes('/auth/login'),
-      { timeout: 15000 }
-    );
-    
-    // If still on login page, check for errors
-    if (page.url().includes('/auth/login')) {
-      const errorText = await page.locator('[role="alert"], .text-red-600').textContent().catch(() => '');
-      if (errorText) {
-        console.log(`Login error: ${errorText}`);
-      }
-      throw new Error(`Login failed - still on login page. Error: ${errorText || 'Unknown'}`);
-    }
-    
-    console.log(`✓ Logged in, redirected to: ${page.url()}`);
-  } catch (e: any) {
-    // Take a screenshot for debugging
-    const currentUrl = page.url();
-    console.log(`Login attempt failed. Current URL: ${currentUrl}`);
-    
-    // Check if there's an error message on the page
-    const pageContent = await page.textContent('body');
-    if (pageContent?.includes('Invalid') || pageContent?.includes('incorrect')) {
-      throw new Error('Login failed - Invalid credentials');
-    }
-    
-    throw new Error(`Login failed: ${e.message}`);
-  }
-}
-
 test.describe('Invoice PDF Generation', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
   });
 
   test('should display invoice in list', async ({ page }) => {
@@ -354,7 +304,7 @@ test.describe('Invoice PDF Generation', () => {
 
 test.describe('Payment Recovery Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
   });
 
   test('should display bookings page', async ({ page }) => {
@@ -421,7 +371,7 @@ test.describe('Payment Recovery Flow', () => {
 test.describe('Integration Tests', () => {
   test('complete user flow: login → view bookings', async ({ page }) => {
     // Use the helper function for login
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
     
     // Go to bookings
     await page.goto(`${BASE_URL}/dashboard/bookings`);
@@ -435,7 +385,7 @@ test.describe('Integration Tests', () => {
 
   test('complete user flow: login → view invoices', async ({ page }) => {
     // Login
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
     
     // Navigate to invoices
     await page.goto(`${BASE_URL}/dashboard/invoices`);
@@ -449,7 +399,7 @@ test.describe('Integration Tests', () => {
 
   test('complete user flow: view invoice detail → download PDF', async ({ page }) => {
     // Login
-    await loginAsTestUser(page);
+    await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
     
     // Navigate directly to invoice
     await page.goto(`${BASE_URL}/dashboard/invoices/${createdIds.invoiceId}`);

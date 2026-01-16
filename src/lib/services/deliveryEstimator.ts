@@ -76,8 +76,10 @@ export function calculateDeliveryEstimate(options: DeliveryEstimateOptions): Del
   const businessDaysMax = calculateBusinessDays(scheduleDate, transitMax);
 
   // Calculate actual delivery dates
-  const minDeliveryDate = addBusinessDays(scheduleDate, businessDaysMin);
-  const maxDeliveryDate = addBusinessDays(scheduleDate, businessDaysMax);
+  // NOTE: calculateBusinessDays returns the total calendar days needed to achieve N business days.
+  // Do not skip weekends a second time here.
+  const minDeliveryDate = addDays(scheduleDate, businessDaysMin);
+  const maxDeliveryDate = addDays(scheduleDate, businessDaysMax);
 
   // Format the date range
   const formattedRange = formatDateRange(minDeliveryDate, maxDeliveryDate);
@@ -144,6 +146,12 @@ function addBusinessDays(startDate: Date, businessDays: number): Date {
     }
   }
 
+  return result;
+}
+
+function addDays(startDate: Date, days: number): Date {
+  const result = new Date(startDate);
+  result.setDate(result.getDate() + days);
   return result;
 }
 

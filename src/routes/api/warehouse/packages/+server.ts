@@ -112,10 +112,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     // Create warehouse package record
+    const bookingId = (packages as any).booking || packages.expand?.booking?.id || null;
+    if (!bookingId) {
+      throw error(500, { message: 'Package is missing booking relation' });
+    }
+
     const warehousePackage = await locals.pb.collection('warehouse_packages').create({
       tracking_number: trackingNumber,
       qr_code: packages.qr_code,
-      booking: packages.id,
+      booking: bookingId,
       recipient: packages.expand?.booking?.recipient || null,
       status: 'received',
       location_bay: bayLocation?.bay || '',

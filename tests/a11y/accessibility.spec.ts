@@ -21,7 +21,7 @@ test.describe('Accessibility Tests - Public Pages', () => {
   });
 
   test('login page should not have accessibility violations', async ({ page }) => {
-    await page.goto('/auth/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -32,7 +32,7 @@ test.describe('Accessibility Tests - Public Pages', () => {
   });
 
   test('register page should not have accessibility violations', async ({ page }) => {
-    await page.goto('/auth/register');
+    await page.goto('/register');
     await page.waitForLoadState('networkidle');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -78,15 +78,12 @@ test.describe('Accessibility Tests - Public Pages', () => {
 
 test.describe('Accessibility Tests - Keyboard Navigation', () => {
   test('login form should be keyboard accessible', async ({ page }) => {
-    await page.goto('/auth/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
     // Tab through form
     await page.keyboard.press('Tab'); // Focus email
     await page.keyboard.type('test@example.com');
-    
-    await page.keyboard.press('Tab'); // Focus password
-    await page.keyboard.type('password123');
     
     await page.keyboard.press('Tab'); // Focus submit button
     await page.keyboard.press('Enter'); // Should submit
@@ -151,7 +148,7 @@ test.describe('Accessibility Tests - Screen Reader Support', () => {
   });
 
   test('form inputs should have labels', async ({ page }) => {
-    await page.goto('/auth/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
     // Check email input has label
@@ -245,7 +242,7 @@ test.describe('Accessibility Tests - Focus Management', () => {
   });
 
   test('focus should be visible on interactive elements', async ({ page }) => {
-    await page.goto('/auth/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
     // Tab to first interactive element

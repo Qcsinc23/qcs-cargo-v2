@@ -4,13 +4,16 @@ import { env } from '$env/dynamic/private';
 import { constructWebhookEvent } from '$lib/server/stripe';
 import { sendBookingConfirmationEmail } from '$lib/server/email';
 import { sendBookingConfirmation as sendBookingNotifications } from '$lib/server/notifications';
-import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
-
-// Create admin PocketBase instance for webhook processing
-const adminPb = new PocketBase(PUBLIC_POCKETBASE_URL);
+import { pb, ensureAdminAuth } from '$lib/server/pocketbase';
 
 export const POST: RequestHandler = async ({ request }) => {
+  // This handler mutates PocketBase data; require admin auth to be configured.
+  if (!env.POCKETBASE_ADMIN_EMAIL || !env.POCKETBASE_ADMIN_PASSWORD) {
+    console.error('[stripe_webhook] PocketBase admin credentials not configured');
+    throw error(500, { message: 'Webhook not configured' });
+  }
+  await ensureAdminAuth();
+
   const signature = request.headers.get('stripe-signature');
 
   if (!signature) {
@@ -25,18 +28,6 @@ export const POST: RequestHandler = async ({ request }) => {
   }
 
   const payload = await request.text();
-  const eventId = request.headers.get('stripe-event-id') || '';
-
-  // Implement webhook idempotency by checking if we've already processed this event
-  try {
-    const existingEvent = await adminPb.collection('webhook_events').getFirstListItem(`event_id = "${eventId}"`);
-    if (existingEvent) {
-      console.log('[stripe_webhook] Event already processed:', eventId);
-      return json({ received: true, status: 'duplicate' });
-    }
-  } catch {
-    // Event not found, proceed with processing
-  }
 
   let event;
   try {
@@ -53,14 +44,27 @@ export const POST: RequestHandler = async ({ request }) => {
     created: event.created
   });
 
+  // Implement webhook idempotency by checking if we've already processed this event
+  try {
+    const existingEvent = await pb.collection('webhook_events').getFirstListItem(`event_id = "${event.id}"`);
+    if (existingEvent) {
+      console.log('[stripe_webhook] Event already processed:', event.id);
+      return json({ received: true, status: 'duplicate' });
+    }
+  } catch {
+    // Event not found, proceed with processing
+  }
+
+  let eventRecordId: string | null = null;
   try {
     // Store webhook event to ensure idempotency
-    await adminPb.collection('webhook_events').create({
+    const created = await pb.collection('webhook_events').create({
       event_id: event.id,
       event_type: event.type,
       processed: false,
       created: new Date(event.created * 1000).toISOString()
     });
+    eventRecordId = created?.id ?? null;
 
     switch (event.type) {
       case 'payment_intent.succeeded':
@@ -88,7 +92,9 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Mark event as processed
-    await adminPb.collection('webhook_events').update(event.id, { processed: true });
+    if (eventRecordId) {
+      await pb.collection('webhook_events').update(eventRecordId, { processed: true });
+    }
 
     return json({ received: true, processed: true });
   } catch (err) {
@@ -100,11 +106,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
     // Update event with error information
     try {
-      await adminPb.collection('webhook_events').update(event.id, {
-        processed: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
-        retry_count: 1
-      });
+      if (eventRecordId) {
+        await pb.collection('webhook_events').update(eventRecordId, {
+          processed: false,
+          error: err instanceof Error ? err.message : 'Unknown error',
+          retry_count: 1
+        });
+      }
     } catch (updateErr) {
       console.error('[stripe_webhook] Failed to update event record:', updateErr);
     }
@@ -149,7 +157,7 @@ async function handlePaymentSuccess(paymentIntent: PaymentIntentData) {
 
   try {
     // Update booking status
-    const booking = await adminPb.collection('bookings').update(booking_id, {
+    const booking = await pb.collection('bookings').update(booking_id, {
       payment_status: 'paid',
       payment_intent_id: paymentIntent.id,
       paid_at: new Date().toISOString(),
@@ -157,7 +165,7 @@ async function handlePaymentSuccess(paymentIntent: PaymentIntentData) {
     });
 
     // Create invoice record
-    await adminPb.collection('invoices').create({
+    await pb.collection('invoices').create({
       booking: booking_id,
       user: user_id,
       amount: paymentIntent.amount / 100,
@@ -170,10 +178,10 @@ async function handlePaymentSuccess(paymentIntent: PaymentIntentData) {
     // Get user details and send notifications
     if (user_id) {
       try {
-        const user = await adminPb.collection('users').getOne(user_id);
+        const user = await pb.collection('users').getOne(user_id);
 
         // Get packages for tracking numbers
-        const packages = await adminPb.collection('packages').getFullList({
+        const packages = await pb.collection('packages').getFullList({
           filter: `booking = "${booking_id}"`
         });
 
@@ -228,7 +236,7 @@ async function handlePaymentFailure(paymentIntent: PaymentIntentData) {
   if (!booking_id) return;
 
   try {
-    await adminPb.collection('bookings').update(booking_id, {
+    await pb.collection('bookings').update(booking_id, {
       payment_status: 'failed',
       payment_intent_id: paymentIntent.id,
       status: 'payment_failed'
@@ -255,7 +263,7 @@ async function handlePaymentCanceled(paymentIntent: PaymentIntentData) {
   if (!booking_id) return;
 
   try {
-    await adminPb.collection('bookings').update(booking_id, {
+    await pb.collection('bookings').update(booking_id, {
       payment_status: 'canceled',
       status: 'canceled'
     });
@@ -276,7 +284,7 @@ async function handlePaymentActionRequired(paymentIntent: PaymentIntentData) {
   if (!booking_id) return;
 
   try {
-    await adminPb.collection('bookings').update(booking_id, {
+    await pb.collection('bookings').update(booking_id, {
       payment_status: 'requires_action',
       status: 'pending_payment'
     });
@@ -296,12 +304,12 @@ async function handleDisputeCreated(charge: any) {
   try {
     if (charge.payment_intent) {
       // Look up booking by payment intent ID
-      const bookings = await adminPb.collection('bookings').getFullList({
+      const bookings = await pb.collection('bookings').getFullList({
         filter: `payment_intent_id = "${charge.payment_intent}"`
       });
 
       for (const booking of bookings) {
-        await adminPb.collection('bookings').update(booking.id, {
+        await pb.collection('bookings').update(booking.id, {
           payment_status: 'disputed',
           status: 'under_review'
         });

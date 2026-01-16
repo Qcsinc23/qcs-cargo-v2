@@ -1,5 +1,6 @@
 import PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
+import { randomBytes } from 'crypto';
 import { PUBLIC_POCKETBASE_URL, PUBLIC_SITE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { sendMagicLinkEmail } from './email';
@@ -30,8 +31,12 @@ const POCKETBASE_URL = PUBLIC_POCKETBASE_URL;
 // Helper to get an authenticated admin PocketBase instance
 async function getAdminPB() {
   const pb = new PocketBase(POCKETBASE_URL);
-  const adminEmail = env.POCKETBASE_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
-  const adminPassword = env.POCKETBASE_ADMIN_PASSWORD || 'Qcsinc@2025*';
+  const adminEmail = env.POCKETBASE_ADMIN_EMAIL;
+  const adminPassword = env.POCKETBASE_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error('PocketBase admin credentials not configured (POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)');
+  }
   
   try {
     await pb.admins.authWithPassword(adminEmail, adminPassword);
@@ -46,11 +51,7 @@ async function getAdminPB() {
  * Generate a secure magic link token
  */
 export function generateMagicLinkToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  return randomBytes(32).toString('hex');
 }
 
 /**

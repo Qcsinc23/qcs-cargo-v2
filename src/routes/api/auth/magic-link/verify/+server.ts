@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { verifyMagicLink } from '$lib/server/magic-link';
+import { dev } from '$app/environment';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
   try {
@@ -26,7 +27,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     cookies.set('pb_auth', result.token, {
       path: '/',
       httpOnly: true,
-      secure: true,
+      secure: !dev,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });

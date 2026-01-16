@@ -85,11 +85,13 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
             returned: 'Package returned'
           };
 
+          const statusOrType = event.status || event.event_type || 'update';
+
           timeline.push({
-            status: event.status,
+            status: statusOrType,
             timestamp: event.timestamp,
             location: event.location || shipment.current_location || 'Unknown',
-            description: statusDescriptions[event.status] || event.status,
+            description: statusDescriptions[statusOrType] || event.description || statusOrType,
             notes: event.notes || null
           });
         });

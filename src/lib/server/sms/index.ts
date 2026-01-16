@@ -163,8 +163,10 @@ export async function sendSMS(options: SMSSendOptions): Promise<SMSResult> {
       };
     }
 
+    const finalBody = `${body}\n\n- ${process.env.PUBLIC_COMPANY_NAME}`;
+
     // Check message length (Twilio limit is 1600 characters for single SMS)
-    if (body.length > 1600) {
+    if (finalBody.length > 1600) {
       return {
         success: false,
         error: 'Message too long. Maximum 1600 characters allowed.',
@@ -193,12 +195,10 @@ export async function sendSMS(options: SMSSendOptions): Promise<SMSResult> {
 
     // Send SMS through Twilio
     const message = await client.messages.create({
-      body: `${body}\n\n- ${process.env.PUBLIC_COMPANY_NAME}`,
+      body: finalBody,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: formatPhoneNumberForTwilio(to),
       statusCallback: `${process.env.PUBLIC_SITE_URL}/api/webhooks/sms/status`,
-      // Add custom parameters for tracking
-      trackingId
     });
 
     console.log(`[SMS Sent] To: ${to} SID: ${message.sid} Tracking: ${trackingId}`);
@@ -404,9 +404,10 @@ export async function sendAppointmentReminderSMS(phone: string, options: any): P
 }
 
 export async function sendPhoneVerificationSMS(phone: string, options: any): Promise<SMSResult> {
+  const code = options?.verificationCode ?? options?.verification_code ?? options?.code;
   return sendSMS({
     to: phone,
-    body: `Your verification code is: ${options?.code || '000000'}`,
+    body: `Your verification code is: ${code || '000000'}`,
     metadata: { category: 'verification', type: 'phone_verify' }
   });
 }

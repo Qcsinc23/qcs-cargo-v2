@@ -1,14 +1,13 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
+import { createHmac } from 'crypto';
 
 // Webhook signature verification (if carrier supports it)
 const verifyWebhookSignature = (body: string, signature: string, secret: string): boolean => {
   // Implementation depends on the carrier's signature method
   // This is a placeholder for HMAC-SHA256 verification
-  const crypto = require('crypto');
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
+  const expectedSignature = createHmac('sha256', secret)
     .update(body)
     .digest('hex');
 
@@ -128,7 +127,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     // Verify webhook signature if available
     const signature = request.headers.get('x-signature') || request.headers.get('signature');
-    if (webhookSecret && signature) {
+    if (webhookSecret) {
+      if (!signature) {
+        console.error('[carrier_webhook] Missing signature', { correlationId });
+        throw error(401, { message: 'Missing webhook signature' });
+      }
       if (!verifyWebhookSignature(body, signature, webhookSecret)) {
         console.error('[carrier_webhook] Invalid signature', { correlationId });
         throw error(401, { message: 'Invalid webhook signature' });

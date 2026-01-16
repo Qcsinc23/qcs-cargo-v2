@@ -51,6 +51,25 @@
   $: bookingState = $booking;
   $: step = $currentStep;
 
+  // Reactive validation for each step (Svelte needs direct reactive references for template updates)
+  $: isStep1Valid = bookingState.serviceType !== null && bookingState.destination !== null;
+  $: isStep2Valid = bookingState.packages.length > 0 && 
+                    bookingState.packages.every(p => (p.weight !== null && p.weight > 0) || p.weightUnknown);
+  $: isStep3Valid = bookingState.recipient !== null && 
+                    !!bookingState.recipient?.name &&
+                    !!bookingState.recipient?.phone &&
+                    !!bookingState.recipient?.addressLine1;
+  $: isStep4Valid = !!bookingState.scheduledDate && !!bookingState.timeSlot;
+  $: isStep5Valid = bookingState.quote !== null;
+
+  // Computed canProceed value that Svelte can track reactively
+  $: canProceedValue = step === 1 ? isStep1Valid :
+                       step === 2 ? isStep2Valid :
+                       step === 3 ? isStep3Valid :
+                       step === 4 ? isStep4Valid :
+                       step === 5 ? isStep5Valid :
+                       false;
+
   // Service icons mapping
   const serviceIcons: Record<string, typeof Package> = {
     standard: Plane,
@@ -80,38 +99,35 @@
     saveForFuture: false
   };
 
-  // Schedule state
+  // Schedule state - sync with store for draft resume
   let selectedDate = '';
   let availableSlots: string[] = [];
+
+  // Initialize selectedDate from store when resuming draft (runs once on mount/store change)
+  $: if (bookingState.scheduledDate && !selectedDate) {
+    selectedDate = bookingState.scheduledDate;
+    // Recalculate available slots for the stored date
+    const dayOfWeek = new Date(selectedDate).getDay();
+    if (dayOfWeek === 0) {
+      availableSlots = [];
+    } else if (dayOfWeek === 6) {
+      availableSlots = SATURDAY_SLOTS;
+    } else {
+      availableSlots = TIME_SLOTS;
+    }
+  }
 
   // Form errors
   let errors: Record<string, string> = {};
   let submitting = false;
 
-  // Step validation
+  // Step validation - uses reactive canProceedValue computed above
   function canProceed(): boolean {
-    switch (step) {
-      case 1: 
-        return bookingState.serviceType !== null && bookingState.destination !== null;
-      case 2: 
-        return bookingState.packages.length > 0 && 
-               bookingState.packages.every(p => (p.weight !== null && p.weight > 0) || p.weightUnknown);
-      case 3:
-        return bookingState.recipient !== null && 
-               !!bookingState.recipient.name &&
-               !!bookingState.recipient.phone &&
-               !!bookingState.recipient.addressLine1;
-      case 4:
-        return !!bookingState.scheduledDate && !!bookingState.timeSlot;
-      case 5:
-        return bookingState.quote !== null;
-      default:
-        return false;
-    }
+    return canProceedValue;
   }
 
   function nextStep() {
-    if (!canProceed()) return;
+    if (!canProceedValue) return;
     
     // Generate quote when moving to step 5
     if (step === 4) {
@@ -1114,7 +1130,7 @@
 
     {#if step < 5}
       <Button
-        disabled={!canProceed()}
+        disabled={!canProceedValue}
         on:click={nextStep}
       >
         Next

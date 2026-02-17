@@ -1,10 +1,10 @@
-// @ts-nocheck - pdfmake types have compatibility issues
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Initialize fonts
-if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+const pdfFontsWithVfs = pdfFonts as unknown as { pdfMake?: { vfs?: Record<string, string> } };
+if (pdfFontsWithVfs.pdfMake?.vfs) {
+  pdfMake.vfs = pdfFontsWithVfs.pdfMake.vfs;
 }
 
 interface InvoiceData {
@@ -371,4 +371,3 @@ export function generateInvoicePDFBlob(invoice: InvoiceData): Promise<Blob> {
     });
   });
 }
-

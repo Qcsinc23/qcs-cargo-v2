@@ -130,13 +130,16 @@ const securityHook: Handle = async ({ event, resolve }) => {
 
   // Get PocketBase URL for CSP connect-src
   const pocketbaseUrl = PUBLIC_POCKETBASE_URL || 'https://api.qcs-cargo.com';
+  const scriptSrc = dev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com"
+    : "script-src 'self' 'unsafe-inline' https://js.stripe.com https://checkout.stripe.com";
 
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
+    scriptSrc,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://api.qrserver.com",
     `connect-src 'self' https://api.stripe.com ${pocketbaseUrl}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
@@ -147,13 +150,18 @@ const securityHook: Handle = async ({ event, resolve }) => {
 
   // Add security headers
   response.headers.set('Content-Security-Policy', csp);
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   response.headers.set(
     'Permissions-Policy',
     'camera=(self), microphone=(), geolocation=(), payment=(self)'
   );
+  if (!dev) {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
 
   return response;
 };

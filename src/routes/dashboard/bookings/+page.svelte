@@ -1,17 +1,13 @@
 <script lang="ts">
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Badge } from '$lib/components/ui/badge';
   import { EmptyState } from '$lib/components/shared';
   import { getDestinationLabel } from '$lib/config/destinations';
   import {
     Plus,
-    Search,
     Calendar,
     Package,
     MapPin,
-    Clock,
     ChevronLeft,
     ChevronRight,
     Filter,
@@ -32,9 +28,10 @@
     created: string;
   }
 
-  // Placeholder bookings (will come from PocketBase)
-  let bookings: Booking[] = [];
-  let searchQuery = '';
+  export let data: { bookings: Booking[] };
+
+  let bookings: Booking[] = data.bookings || [];
+  $: bookings = data.bookings || [];
   let statusFilter = 'all';
   let currentPage = 1;
   const itemsPerPage = 10;
@@ -230,7 +227,7 @@
               <!-- Actions -->
               <div class="flex items-center gap-2 sm:flex-col sm:items-end">
                 {#if booking.status === 'draft'}
-                  <Button href="/dashboard/bookings/{booking.id}/edit" size="sm">
+                  <Button href="/dashboard/bookings/{booking.id}/modify" size="sm">
                     <Edit class="w-4 h-4 mr-1" />
                     Continue
                   </Button>

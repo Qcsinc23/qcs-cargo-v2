@@ -12,13 +12,15 @@ export const POST: RequestHandler = async ({ locals }) => {
   try {
     const filter = `user = "${escapePbFilterValue(locals.user.id)}"`;
 
-    while (true) {
+    let hasMore = true;
+    while (hasMore) {
       const sessionPage = await locals.pb.collection('sessions').getList(1, SESSION_PAGE_SIZE, {
         filter,
         fields: 'id'
       });
 
-      if (sessionPage.items.length === 0) {
+      hasMore = sessionPage.items.length > 0;
+      if (!hasMore) {
         break;
       }
 

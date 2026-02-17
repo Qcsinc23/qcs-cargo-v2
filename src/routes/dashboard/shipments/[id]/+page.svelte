@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from '$app/stores';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
@@ -59,14 +58,18 @@
     }>;
   }
 
-  // Placeholder shipment data (will come from PocketBase)
-  let shipment: Shipment | null = null;
-  // When shipment is loaded, use this reactive variable
+  export let data: {
+    shipment: Shipment | null;
+    shipmentId: string;
+  };
+
+  let shipment: Shipment | null = data.shipment || null;
+  $: shipment = data.shipment || null;
   $: currentShipment = shipment as Shipment | null;
 
   let copied = false;
 
-  $: shipmentId = $page.params.id;
+  $: shipmentId = data.shipmentId || currentShipment?.tracking_number || '';
   $: statusStyle = currentShipment ? (STATUS_COLORS[currentShipment.status] || STATUS_COLORS.pending) : STATUS_COLORS.pending;
 
   function formatDate(dateString: string): string {
@@ -189,7 +192,6 @@
                 {#each currentShipment.timeline as event, i}
                   {@const Icon = statusIcons[event.status] || Clock}
                   {@const isLast = i === currentShipment.timeline.length - 1}
-                  {@const eventStatusStyle = STATUS_COLORS[event.status] || STATUS_COLORS.pending}
                   <div class="flex gap-4 pb-6 last:pb-0">
                     <!-- Timeline Line -->
                     <div class="relative flex flex-col items-center">

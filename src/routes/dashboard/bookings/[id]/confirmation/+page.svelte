@@ -26,8 +26,7 @@
   import { toast } from '$lib/stores/toast';
 
   export let data: any;
-  // @ts-ignore - data is used by SvelteKit but not directly in script
-  const _unused = data;
+  $: void data;
 
   $: bookingId = $page.params.id || '';
 
@@ -419,5 +418,3 @@
     }
   }
 </style>
-
-

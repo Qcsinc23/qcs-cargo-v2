@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { STATUS_COLORS, STATUS_LABELS, COMPANY } from '$lib/config/constants';
   import { getDestinationLabel } from '$lib/config/destinations';
@@ -25,8 +24,6 @@
     Loader2
   } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
-
-  $: bookingId = $page.params.id;
 
   interface BookingDetail {
     id: string;
@@ -64,8 +61,10 @@
     paidAt?: string;
   }
 
-  // Placeholder booking data (will come from PocketBase)
-  let booking: BookingDetail | null = null;
+  export let data: { booking: BookingDetail | null };
+
+  let booking: BookingDetail | null = data.booking || null;
+  $: booking = data.booking || null;
 
   $: currentBooking = booking as BookingDetail | null;
   $: statusStyle = currentBooking ? (STATUS_COLORS[currentBooking.status] || STATUS_COLORS.pending) : STATUS_COLORS.pending;
@@ -107,11 +106,29 @@
   }
 
   async function cancelBooking() {
+    if (!currentBooking) return;
     if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
       return;
     }
-    // API call would go here
-    toast.success('Booking canceled');
+
+    try {
+      const response = await fetch(`/api/bookings/${currentBooking.id}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.status !== 'success') {
+        throw new Error(result?.message || 'Failed to cancel booking');
+      }
+
+      booking = {
+        ...currentBooking,
+        status: 'canceled'
+      };
+      toast.success('Booking canceled');
+      await goto('/dashboard/bookings');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel booking');
+    }
   }
 
   async function retryPayment() {
@@ -180,7 +197,7 @@
 
       <div class="flex gap-2">
         {#if currentBooking.status === 'draft'}
-          <Button href="/dashboard/bookings/{currentBooking.id}/edit">
+          <Button href="/dashboard/bookings/{currentBooking.id}/modify">
             <Edit class="w-4 h-4 mr-2" />
             Continue Booking
           </Button>
@@ -202,7 +219,7 @@
       <Alert class="bg-amber-50 border-amber-200">
         <AlertTriangle class="w-4 h-4 text-amber-600" />
         <AlertDescription class="text-amber-800">
-          This booking is incomplete. <a href="/dashboard/bookings/{currentBooking.id}/edit" class="underline font-medium">Continue your booking</a> to confirm.
+          This booking is incomplete. <a href="/dashboard/bookings/{currentBooking.id}/modify" class="underline font-medium">Continue your booking</a> to confirm.
         </AlertDescription>
       </Alert>
     {:else if hasFailedPayment}

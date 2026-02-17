@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
   import { EmptyState } from '$lib/components/shared';
-  import { COMPANY } from '$lib/config/constants';
+  import { STATUS_COLORS, STATUS_LABELS } from '$lib/config/constants';
+  import { getDestinationLabel } from '$lib/config/destinations';
   import { toast } from '$lib/stores/toast';
   import { 
     Package, 
@@ -20,7 +20,33 @@
     HelpCircle
   } from 'lucide-svelte';
 
-  export let data;
+  type DashboardData = {
+    user: {
+      id: string;
+      name?: string;
+    } | null;
+    stats: {
+      activeShipments: number;
+      pendingBookings: number;
+      completedShipments: number;
+    };
+    recentShipments: Array<{
+      id: string;
+      tracking_number: string;
+      status: string;
+      destination: string;
+      created: string;
+    }>;
+    upcomingBookings: Array<{
+      id: string;
+      destination: string;
+      scheduled_date: string;
+      status: string;
+      total_cost: number;
+    }>;
+  };
+
+  export let data: DashboardData;
 
   $: user = data.user;
   
@@ -38,6 +64,14 @@
     } catch (err) {
       toast.error('Failed to copy');
     }
+  }
+
+  function formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   }
 </script>
 
@@ -67,7 +101,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-muted-foreground">Active Shipments</p>
-            <p class="text-2xl font-bold">0</p>
+            <p class="text-2xl font-bold">{data.stats.activeShipments}</p>
           </div>
           <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
             <Package class="h-6 w-6 text-blue-600" />
@@ -84,7 +118,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-muted-foreground">Pending Bookings</p>
-            <p class="text-2xl font-bold">0</p>
+            <p class="text-2xl font-bold">{data.stats.pendingBookings}</p>
           </div>
           <div class="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
             <Clock class="h-6 w-6 text-amber-600" />
@@ -101,7 +135,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-muted-foreground">Completed</p>
-            <p class="text-2xl font-bold">0</p>
+            <p class="text-2xl font-bold">{data.stats.completedShipments}</p>
           </div>
           <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
             <TrendingUp class="h-6 w-6 text-green-600" />
@@ -150,16 +184,38 @@
         </a>
       </CardHeader>
       <CardContent>
-        <EmptyState
-          title="No shipments yet"
-          description="Book your first shipment to start tracking packages."
-          icon="package"
-        >
-          <Button variant="outline" size="sm" href="/dashboard/bookings/new">
-            <Plus class="h-4 w-4 mr-2" />
-            Book Shipment
-          </Button>
-        </EmptyState>
+        {#if data.recentShipments.length === 0}
+          <EmptyState
+            title="No shipments yet"
+            description="Book your first shipment to start tracking packages."
+            icon="package"
+          >
+            <Button variant="outline" size="sm" href="/dashboard/bookings/new">
+              <Plus class="h-4 w-4 mr-2" />
+              Book Shipment
+            </Button>
+          </EmptyState>
+        {:else}
+          <div class="space-y-3">
+            {#each data.recentShipments as shipment}
+              {@const statusStyle = STATUS_COLORS[shipment.status] || STATUS_COLORS.pending}
+              <a href={`/dashboard/shipments/${shipment.id}`} class="block rounded-md border p-3 hover:bg-gray-50">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="font-mono text-sm text-primary-700">{shipment.tracking_number}</p>
+                    <p class="text-sm text-gray-600">{getDestinationLabel(shipment.destination)}</p>
+                  </div>
+                  <div class="text-right">
+                    <span class={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                      {STATUS_LABELS[shipment.status] || shipment.status}
+                    </span>
+                    <p class="mt-1 text-xs text-gray-500">{formatDate(shipment.created)}</p>
+                  </div>
+                </div>
+              </a>
+            {/each}
+          </div>
+        {/if}
       </CardContent>
     </Card>
 
@@ -173,16 +229,34 @@
         </a>
       </CardHeader>
       <CardContent>
-        <EmptyState
-          title="No upcoming bookings"
-          description="Schedule a drop-off to bring packages to our warehouse."
-          icon="calendar"
-        >
-          <Button variant="outline" size="sm" href="/dashboard/bookings/new">
-            <Plus class="h-4 w-4 mr-2" />
-            Schedule Drop-off
-          </Button>
-        </EmptyState>
+        {#if data.upcomingBookings.length === 0}
+          <EmptyState
+            title="No upcoming bookings"
+            description="Schedule a drop-off to bring packages to our warehouse."
+            icon="calendar"
+          >
+            <Button variant="outline" size="sm" href="/dashboard/bookings/new">
+              <Plus class="h-4 w-4 mr-2" />
+              Schedule Drop-off
+            </Button>
+          </EmptyState>
+        {:else}
+          <div class="space-y-3">
+            {#each data.upcomingBookings as booking}
+              <a href={`/dashboard/bookings/${booking.id}`} class="block rounded-md border p-3 hover:bg-gray-50">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">{getDestinationLabel(booking.destination)}</p>
+                    <p class="text-xs text-gray-600">{formatDate(booking.scheduled_date)}</p>
+                  </div>
+                  <span class="text-sm font-semibold text-gray-900">
+                    ${booking.total_cost.toFixed(2)}
+                  </span>
+                </div>
+              </a>
+            {/each}
+          </div>
+        {/if}
       </CardContent>
     </Card>
   </div>
@@ -242,4 +316,3 @@
     </CardContent>
   </Card>
 </div>
-

@@ -11,13 +11,15 @@ async function unsetDefaultRecipientsForUser(
 ) {
   const filter = `user = "${escapePbFilterValue(userId)}" && is_default = true && id != "${escapePbFilterValue(excludeRecipientId)}"`;
 
-  while (true) {
+  let hasMore = true;
+  while (hasMore) {
     const defaultPage = await locals.pb.collection('recipients').getList(1, RECIPIENT_PAGE_SIZE, {
       filter,
       fields: 'id'
     });
 
-    if (defaultPage.items.length === 0) {
+    hasMore = defaultPage.items.length > 0;
+    if (!hasMore) {
       return;
     }
 
@@ -158,7 +160,6 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(500, { message: 'Failed to delete recipient' });
   }
 };
-
 
 
 

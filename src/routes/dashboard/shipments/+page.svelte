@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+  import { Card, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import { Badge } from '$lib/components/ui/badge';
   import { EmptyState } from '$lib/components/shared';
   import { STATUS_COLORS, STATUS_LABELS } from '$lib/config/constants';
   import { getDestinationLabel } from '$lib/config/destinations';
@@ -19,9 +18,7 @@
     Plus
   } from 'lucide-svelte';
 
-  
-  // Shipments from server (placeholder - will come from PocketBase)
-  let shipments: Array<{
+  interface ShipmentRow {
     id: string;
     tracking_number: string;
     status: string;
@@ -30,7 +27,12 @@
     created: string;
     recipient_name: string;
     estimated_delivery?: string;
-  }> = [];
+  }
+
+  export let data: { shipments: ShipmentRow[] };
+
+  let shipments: ShipmentRow[] = data.shipments || [];
+  $: shipments = data.shipments || [];
 
   let searchQuery = '';
   let statusFilter = 'all';
@@ -43,10 +45,12 @@
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
     { value: 'pending', label: 'Pending' },
+    { value: 'confirmed', label: 'Confirmed' },
     { value: 'received', label: 'Received' },
     { value: 'processing', label: 'Processing' },
     { value: 'in_transit', label: 'In Transit' },
     { value: 'customs', label: 'Customs' },
+    { value: 'out_for_delivery', label: 'Out for Delivery' },
     { value: 'delivered', label: 'Delivered' }
   ];
 
@@ -60,11 +64,17 @@
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
-      const aVal = a[sortBy as keyof typeof a];
-      const bVal = b[sortBy as keyof typeof b];
+      const aVal = a[sortBy as keyof ShipmentRow];
+      const bVal = b[sortBy as keyof ShipmentRow];
       const modifier = sortOrder === 'desc' ? -1 : 1;
+      if (sortBy === 'created') {
+        return (new Date(String(aVal)).getTime() - new Date(String(bVal)).getTime()) * modifier;
+      }
       if (typeof aVal === 'string' && typeof bVal === 'string') {
         return aVal.localeCompare(bVal) * modifier;
+      }
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return (aVal - bVal) * modifier;
       }
       return 0;
     });
@@ -288,4 +298,3 @@
     {/if}
   {/if}
 </div>
-

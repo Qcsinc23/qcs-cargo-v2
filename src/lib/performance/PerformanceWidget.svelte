@@ -79,7 +79,7 @@
   }
 </script>
 
-{#if import.meta.env.DEV || true}
+{#if import.meta.env.DEV}
   <!-- Widget Container -->
   <div class="{positionClasses} z-40 {collapsible && collapsed ? 'h-12' : 'h-auto'} transition-all duration-300">
     <Card class="shadow-lg border-2 {hasAlerts ? 'border-red-500' : ''} min-w-[200px] max-w-sm">

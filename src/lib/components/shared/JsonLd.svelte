@@ -7,11 +7,11 @@
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    '@id': 'https://qcscargo.com',
+    '@id': 'https://qcs-cargo.com',
     name: COMPANY.name,
     alternateName: COMPANY.fullName,
     description: 'Reliable Caribbean air freight shipping from New Jersey',
-    url: 'https://qcscargo.com',
+    url: 'https://qcs-cargo.com',
     telephone: COMPANY.phone,
     email: COMPANY.email,
     address: {

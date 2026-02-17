@@ -1,10 +1,14 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { WarehouseStats } from '$lib/types/warehouse';
+import { isAdminOrStaff } from '$lib/server/authz';
 
 export const GET: RequestHandler = async ({ locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
+  }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
   }
 
   try {
@@ -18,60 +22,56 @@ export const GET: RequestHandler = async ({ locals }) => {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     monthStart.setHours(0, 0, 0, 0);
 
-    // Helper to get count by status and date range
-    const getCountByStatus = async (status: string, startDate?: Date) => {
-      let filter = `status = "${status}"`;
-      if (startDate) {
-        filter += ` && received_at >= "${startDate.toISOString()}"`;
-      }
+    const countByFilter = async (filter: string) =>
+      locals.pb
+        .collection('warehouse_packages')
+        .getList(1, 1, { filter, fields: 'id' })
+        .then((res) => res.totalItems)
+        .catch(() => 0);
 
-      return locals.pb.collection('warehouse_packages').getList(1, 1, {
-        filter,
-        fields: 'id'
-      }).then(res => res.totalItems).catch(() => 0);
-    };
+    const statusFilters = {
+      todayReceived: `status = "received" && received_at >= "${today.toISOString()}"`,
+      todayVerified: `status = "verified" && received_at >= "${today.toISOString()}"`,
+      todayStaged: `status = "staged" && received_at >= "${today.toISOString()}"`,
+      todayShipped: `status = "shipped" && received_at >= "${today.toISOString()}"`,
+      todayExceptions: `status = "exception" && received_at >= "${today.toISOString()}"`,
+      weekReceived: `status = "received" && received_at >= "${weekStart.toISOString()}"`,
+      weekVerified: `status = "verified" && received_at >= "${weekStart.toISOString()}"`,
+      weekStaged: `status = "staged" && received_at >= "${weekStart.toISOString()}"`,
+      weekShipped: `status = "shipped" && received_at >= "${weekStart.toISOString()}"`,
+      weekExceptions: `status = "exception" && received_at >= "${weekStart.toISOString()}"`,
+      monthReceived: `status = "received" && received_at >= "${monthStart.toISOString()}"`,
+      monthVerified: `status = "verified" && received_at >= "${monthStart.toISOString()}"`,
+      monthStaged: `status = "staged" && received_at >= "${monthStart.toISOString()}"`,
+      monthShipped: `status = "shipped" && received_at >= "${monthStart.toISOString()}"`,
+      monthExceptions: `status = "exception" && received_at >= "${monthStart.toISOString()}"`,
+      pendingToVerify: 'status = "received"',
+      pendingToStage: 'status = "verified"',
+      pendingToShip: 'status = "staged"',
+      pendingExceptions: 'status = "exception"'
+    } as const;
 
-    // Get counts for today
-    const todayReceived = await getCountByStatus('received', today);
-    const todayVerified = await getCountByStatus('verified', today);
-    const todayStaged = await getCountByStatus('staged', today);
-    const todayShipped = await getCountByStatus('shipped', today);
-    const todayExceptions = await getCountByStatus('exception', today);
-
-    // Get counts for week
-    const weekReceived = await getCountByStatus('received', weekStart);
-    const weekVerified = await getCountByStatus('verified', weekStart);
-    const weekStaged = await getCountByStatus('staged', weekStart);
-    const weekShipped = await getCountByStatus('shipped', weekStart);
-    const weekExceptions = await getCountByStatus('exception', weekStart);
-
-    // Get counts for month
-    const monthReceived = await getCountByStatus('received', monthStart);
-    const monthVerified = await getCountByStatus('verified', monthStart);
-    const monthStaged = await getCountByStatus('staged', monthStart);
-    const monthShipped = await getCountByStatus('shipped', monthStart);
-    const monthExceptions = await getCountByStatus('exception', monthStart);
-
-    // Get pending counts
-    const pendingToVerify = await locals.pb.collection('warehouse_packages').getFullList({
-      filter: 'status = "received"',
-      fields: 'id'
-    }).then(items => items.length).catch(() => 0);
-
-    const pendingToStage = await locals.pb.collection('warehouse_packages').getFullList({
-      filter: 'status = "verified"',
-      fields: 'id'
-    }).then(items => items.length).catch(() => 0);
-
-    const pendingToShip = await locals.pb.collection('warehouse_packages').getFullList({
-      filter: 'status = "staged"',
-      fields: 'id'
-    }).then(items => items.length).catch(() => 0);
-
-    const pendingExceptions = await locals.pb.collection('warehouse_packages').getFullList({
-      filter: 'status = "exception"',
-      fields: 'id'
-    }).then(items => items.length).catch(() => 0);
+    const [
+      todayReceived,
+      todayVerified,
+      todayStaged,
+      todayShipped,
+      todayExceptions,
+      weekReceived,
+      weekVerified,
+      weekStaged,
+      weekShipped,
+      weekExceptions,
+      monthReceived,
+      monthVerified,
+      monthStaged,
+      monthShipped,
+      monthExceptions,
+      pendingToVerify,
+      pendingToStage,
+      pendingToShip,
+      pendingExceptions
+    ] = await Promise.all(Object.values(statusFilters).map((filter) => countByFilter(filter)));
 
     const stats: WarehouseStats = {
       today: {

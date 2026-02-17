@@ -51,6 +51,8 @@
   class="bg-white rounded-lg shadow overflow-hidden transition-all {
     dragOver ? 'ring-2 ring-blue-500 shadow-lg' : ''
   } {isFull ? 'border-2 border-red-300' : ''}"
+  role="region"
+  aria-label={`Drop zone for bay ${bay}`}
   on:dragover={handleDragOver}
   on:dragleave={handleDragLeave}
   on:drop={handleDrop}
@@ -100,6 +102,8 @@
         {#each packages as pkg (pkg.id)}
           <div
             draggable="true"
+            role="listitem"
+            aria-label={`Package ${pkg.trackingNumber}`}
             on:dragstart={(e) => {
               e.dataTransfer?.setData('application/json', JSON.stringify(pkg));
             }}

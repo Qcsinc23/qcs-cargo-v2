@@ -14,8 +14,13 @@
 import PocketBase from 'pocketbase';
 
 const pb = new PocketBase(process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090');
-const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL || process.env.PB_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
-const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD || process.env.PB_ADMIN_PASSWORD || 'Qcsinc@2025*';
+const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL || process.env.PB_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD || process.env.PB_ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('❌ Missing required env vars: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD');
+  process.exit(1);
+}
 
 async function addKindeIdField() {
   try {
@@ -76,4 +81,3 @@ async function addKindeIdField() {
 }
 
 addKindeIdField();
-

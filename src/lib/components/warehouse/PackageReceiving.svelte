@@ -283,6 +283,7 @@
           <button
             on:click={cancel}
             class="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Back to warehouse dashboard"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -305,6 +306,7 @@
           <button
             on:click={startScanning}
             class="inline-flex items-center justify-center w-32 h-32 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors mb-4"
+            aria-label="Start scanning package"
           >
             <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -364,7 +366,7 @@
         <div class="p-6 space-y-6">
           <!-- Package Condition -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">Package Condition</label>
+            <p class="block text-sm font-medium text-gray-700 mb-3">Package Condition</p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
               {#each conditions as condition}
                 <button
@@ -394,10 +396,11 @@
 
           <!-- Weight Verification -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="actual-weight" class="block text-sm font-medium text-gray-700 mb-2">
               Actual Weight (kg)
             </label>
             <NumericInput
+              id="actual-weight"
               bind:value={actualWeight}
               options={{ precision: 1, valueRange: { min: 0 } }}
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -407,13 +410,12 @@
 
           <!-- Dimensions -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Actual Dimensions (cm)
-            </label>
+            <p class="block text-sm font-medium text-gray-700 mb-2">Actual Dimensions (cm)</p>
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs text-gray-500 mb-1">Length</label>
+                <label for="actual-dim-length" class="block text-xs text-gray-500 mb-1">Length</label>
                 <NumericInput
+                  id="actual-dim-length"
                   bind:value={actualDimensions.length}
                   options={{ precision: 1, valueRange: { min: 0 } }}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -421,8 +423,9 @@
                 />
               </div>
               <div>
-                <label class="block text-xs text-gray-500 mb-1">Width</label>
+                <label for="actual-dim-width" class="block text-xs text-gray-500 mb-1">Width</label>
                 <NumericInput
+                  id="actual-dim-width"
                   bind:value={actualDimensions.width}
                   options={{ precision: 1, valueRange: { min: 0 } }}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -430,8 +433,9 @@
                 />
               </div>
               <div>
-                <label class="block text-xs text-gray-500 mb-1">Height</label>
+                <label for="actual-dim-height" class="block text-xs text-gray-500 mb-1">Height</label>
                 <NumericInput
+                  id="actual-dim-height"
                   bind:value={actualDimensions.height}
                   options={{ precision: 1, valueRange: { min: 0 } }}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -443,7 +447,7 @@
 
           <!-- Bay Location -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Bay Location</label>
+            <p class="block text-sm font-medium text-gray-700 mb-2">Bay Location</p>
             <div class="grid grid-cols-3 gap-3">
               <input
                 type="text"
@@ -471,7 +475,7 @@
 
           <!-- Photos -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Photos</label>
+            <p class="block text-sm font-medium text-gray-700 mb-2">Photos</p>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
               <input
                 type="file"
@@ -516,10 +520,11 @@
 
           <!-- Notes -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="package-notes" class="block text-sm font-medium text-gray-700 mb-2">
               Notes
             </label>
             <textarea
+              id="package-notes"
               bind:value={notes}
               rows={3}
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

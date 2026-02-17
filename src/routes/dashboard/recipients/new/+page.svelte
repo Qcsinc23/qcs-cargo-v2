@@ -211,7 +211,7 @@
               rows={3}
               placeholder="Gate code, landmarks, or special instructions..."
               class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-            />
+            ></textarea>
           </div>
 
           <div class="flex items-center gap-3 p-4 bg-primary-50 rounded-lg">
@@ -249,4 +249,3 @@
     </CardContent>
   </Card>
 </div>
-

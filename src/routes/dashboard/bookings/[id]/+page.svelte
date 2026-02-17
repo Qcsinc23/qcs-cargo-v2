@@ -26,16 +26,12 @@
   } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
 
-  export let data: any;
-  // @ts-ignore - data is used by SvelteKit but not directly in script
-  const _unused = data;
-
   $: bookingId = $page.params.id;
 
   interface BookingDetail {
     id: string;
     confirmationNumber: string;
-    status: 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'pending_payment' | 'payment_failed';
+    status: 'draft' | 'pending' | 'confirmed' | 'canceled' | 'cancelled' | 'pending_payment' | 'payment_failed';
     serviceType: string;
     destination: string;
     packages: Array<{
@@ -75,6 +71,10 @@
   $: statusStyle = currentBooking ? (STATUS_COLORS[currentBooking.status] || STATUS_COLORS.pending) : STATUS_COLORS.pending;
   $: hasFailedPayment = currentBooking?.status === 'pending_payment' || (currentBooking?.status === 'payment_failed');
 
+  function isCanceledStatus(status: string | undefined): boolean {
+    return status === 'canceled' || status === 'cancelled';
+  }
+
   let copied = false;
   let isRetryingPayment = false;
 
@@ -111,7 +111,7 @@
       return;
     }
     // API call would go here
-    toast.success('Booking cancelled');
+    toast.success('Booking canceled');
   }
 
   async function retryPayment() {
@@ -394,7 +394,7 @@
                     Payment required to confirm booking
                   </p>
                 </div>
-              {:else if currentBooking.status !== 'cancelled'}
+              {:else if !isCanceledStatus(currentBooking.status)}
                 <p class="text-xs text-amber-600 pt-2">
                   Payment pending
                 </p>
@@ -422,4 +422,3 @@
     </div>
   {/if}
 </div>
-

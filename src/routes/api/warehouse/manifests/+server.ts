@@ -1,10 +1,14 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { ShippingManifest } from '$lib/types/warehouse';
+import { isAdminOrStaff } from '$lib/server/authz';
+import { escapePbFilterValue, sanitizePocketBaseId } from '$lib/server/pb-filter';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
+  }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
   }
 
   const page = parseInt(url.searchParams.get('page') || '1', 10);
@@ -16,11 +20,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     let filter = '1 = 1';
 
     if (status && status !== 'all') {
-      filter += ` && status = "${status}"`;
+      filter += ` && status = "${escapePbFilterValue(status)}"`;
     }
 
     if (carrier) {
-      filter += ` && carrier = "${carrier}"`;
+      filter += ` && carrier = "${escapePbFilterValue(carrier)}"`;
     }
 
     const result = await locals.pb.collection('shipping_manifests').getList(page, perPage, {
@@ -49,17 +53,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
   }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
+  }
 
   const correlationId = locals.correlationId || crypto.randomUUID();
 
   try {
     const body = await request.json();
-    const {
-      carrier,
-      serviceType,
-      destination,
-      packageIds
-    } = body;
+    const { carrier, serviceType, destination, packageIds } = body;
 
     console.log('[warehouse_create_manifest]', {
       correlationId,
@@ -73,11 +75,32 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       throw error(400, { message: 'Missing carrier or package IDs' });
     }
 
+    const normalizedPackageIds = Array.isArray(packageIds)
+      ? Array.from(
+          new Set(
+            packageIds
+              .map((id) => sanitizePocketBaseId(String(id)))
+              .filter((id): id is string => !!id)
+          )
+        )
+      : [];
+    if (normalizedPackageIds.length === 0) {
+      throw error(400, { message: 'No valid package IDs provided' });
+    }
+    if (normalizedPackageIds.length > 200) {
+      throw error(400, { message: 'Too many packages selected. Maximum is 200.' });
+    }
+
+    const safeCarrier = escapePbFilterValue(String(carrier));
+    const safeServiceType = serviceType ? escapePbFilterValue(String(serviceType)) : '';
+    const safeDestination = destination ? escapePbFilterValue(String(destination)) : '';
+
     // Get packages for manifest
-    const packages = await locals.pb.collection('warehouse_packages').getFullList({
-      filter: `id in ("${packageIds.join('","')}")`,
+    const packageResult = await locals.pb.collection('warehouse_packages').getList(1, 200, {
+      filter: `id in ("${normalizedPackageIds.join('","')}")`,
       expand: 'booking'
     });
+    const packages = packageResult.items;
 
     if (packages.length === 0) {
       throw error(404, { message: 'No valid packages found' });
@@ -92,10 +115,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // Create manifest
     const manifest = await locals.pb.collection('shipping_manifests').create({
       manifest_number: manifestNumber,
-      carrier,
-      service_type: serviceType || packages[0].service_type,
-      destination: destination || packages[0].destination,
-      packages: packageIds,
+      carrier: safeCarrier,
+      service_type: safeServiceType || packages[0].service_type,
+      destination: safeDestination || packages[0].destination,
+      packages: normalizedPackageIds,
       total_weight: totalWeight,
       total_packages: packages.length,
       status: 'draft',
@@ -121,7 +144,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       data: {
         manifestId: manifest.id,
         manifestNumber,
-        packageCount: packages.length,
+        packageCount: normalizedPackageIds.length,
         totalWeight,
         status: 'generated'
       }
@@ -140,7 +163,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 async function generateManifestDocuments(
   manifestId: string,
   packages: any[],
-  carrier: string
+  _carrier: string
 ): Promise<any[]> {
   const documents = [];
 

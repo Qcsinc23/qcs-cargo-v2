@@ -1,5 +1,4 @@
 // Service worker for caching static assets, API responses, and offline scanning
-const CACHE_NAME = 'qcs-cargo-v2';
 const STATIC_CACHE = 'qcs-static-v2';
 const API_CACHE = 'qcs-api-v2';
 
@@ -21,6 +20,17 @@ const OFFLINE_ADMIN_ROUTES = [
   '/admin/receiving',
   '/admin/shipments',
   '/admin/search'
+];
+
+// Keep API caching explicitly allowlisted to avoid storing sensitive data in browser caches.
+const CACHEABLE_API_PATHS = new Set(['/api/admin/bookings/today']);
+const NETWORK_ONLY_API_PREFIXES = [
+  '/api/auth/',
+  '/api/payments/',
+  '/api/bookings/',
+  '/api/recipients/',
+  '/api/invoices/',
+  '/api/track/'
 ];
 
 // Install event - cache static assets
@@ -144,31 +154,16 @@ async function handleOfflinePackageReceive(request) {
 
 // Handle API requests with cache
 async function handleApiRequest(request, url) {
-  const cache = await caches.open(API_CACHE);
-  
-  // Check for admin bookings/today endpoint - always try network first
-  const isAdminData = url.pathname.includes('/admin/') || 
-                      url.pathname.includes('/bookings');
-
-  if (isAdminData) {
+  const isNetworkOnly = NETWORK_ONLY_API_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
+  if (isNetworkOnly || !CACHEABLE_API_PATHS.has(url.pathname)) {
     try {
-      const response = await fetch(request);
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    } catch (error) {
-      // Offline - try cache
-      const cached = await cache.match(request);
-      if (cached) {
-        return cached;
-      }
-      
+      return await fetch(request);
+    } catch {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           status: 'error',
-          error: 'Offline - Using cached data',
-          offline: true 
+          error: 'Offline - This endpoint requires a network connection',
+          offline: true
         }),
         {
           status: 503,
@@ -178,27 +173,32 @@ async function handleApiRequest(request, url) {
     }
   }
 
-  // For other API requests, use stale-while-revalidate
-  const cachedResponse = await cache.match(request);
-  
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => {
-      return new Response(
-        JSON.stringify({ error: 'Offline - No cached data available' }),
-        {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    });
+  const cache = await caches.open(API_CACHE);
 
-  return cachedResponse || fetchPromise;
+  // Network-first for allowlisted API routes with cache fallback.
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
+    }
+    return new Response(
+      JSON.stringify({
+        status: 'error',
+        error: 'Offline - No cached data available',
+        offline: true
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
 }
 
 // Handle static requests

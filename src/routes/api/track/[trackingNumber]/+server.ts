@@ -1,24 +1,38 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { escapePbFilterValue, sanitizeTrackingNumber } from '$lib/server/pb-filter';
+import { isAdminOrStaff } from '$lib/server/authz';
+
+function maskRecipientName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Recipient';
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) {
+    return `${parts[0].slice(0, 1)}***`;
+  }
+  const first = parts[0];
+  const lastInitial = parts[parts.length - 1]?.slice(0, 1) || '';
+  return `${first} ${lastInitial}.`;
+}
 
 export const GET: RequestHandler = async ({ params, locals, url }) => {
-  const { trackingNumber } = params;
+  const safeTrackingNumber = sanitizeTrackingNumber(params.trackingNumber || '');
+  if (!safeTrackingNumber) {
+    throw error(400, { message: 'Invalid tracking number format' });
+  }
+
   const correlationId = locals.correlationId || crypto.randomUUID();
 
   // Parse query parameters
-  const includeDetails = url.searchParams.get('details') !== 'false';
+  const includeDetails = url.searchParams.get('details') === 'true';
   const includeTimeline = url.searchParams.get('timeline') !== 'false';
 
   try {
     // Validate tracking number format
-    if (!trackingNumber || trackingNumber.length < 6) {
-      throw error(400, { message: 'Invalid tracking number format' });
-    }
-
     // Find shipment by tracking number
     let shipment;
     try {
-      shipment = await locals.pb.collection('shipments').getFirstListItem(`tracking_number = "${trackingNumber}"`, {
+      shipment = await locals.pb.collection('shipments').getFirstListItem(`tracking_number = "${escapePbFilterValue(safeTrackingNumber)}"`, {
         expand: 'user, booking, package'
       });
     } catch (fetchErr: any) {
@@ -52,11 +66,19 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
     }
 
     // Add recipient information
+    const canViewRecipientDetails =
+      !!locals.user &&
+      (isAdminOrStaff(locals.user) || shipment.user === locals.user.id || shipment.expand?.user?.id === locals.user.id);
+
     response.recipient = {
-      name: shipment.recipient_name,
-      phone: shipment.recipient_phone || null,
-      address: shipment.recipient_address || null,
-      destination: shipment.destination
+      name: canViewRecipientDetails ? shipment.recipient_name : maskRecipientName(String(shipment.recipient_name || '')),
+      destination: shipment.destination,
+      ...(canViewRecipientDetails
+        ? {
+            phone: shipment.recipient_phone || null,
+            address: shipment.recipient_address || null
+          }
+        : {})
     };
 
     // Build timeline of events if requested
@@ -105,12 +127,13 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
     // Log tracking lookup (non-sensitive data only)
     console.log('[public_tracking_lookup]', {
       correlationId,
-      trackingNumber,
+      trackingNumber: safeTrackingNumber,
       status: shipment.status,
       ip: 'unknown' // clientIP not available in Locals
     });
 
     return json({
+      status: 'success',
       success: true,
       data: response
     });
@@ -118,7 +141,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
   } catch (err) {
     console.error('[public_tracking_error]', {
       correlationId,
-      trackingNumber,
+      trackingNumber: safeTrackingNumber,
       error: err
     });
 

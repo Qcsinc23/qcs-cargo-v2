@@ -8,8 +8,8 @@
  * 
  * Environment variables:
  *   - POCKETBASE_URL: PocketBase instance URL (default: http://localhost:8090)
- *   - ADMIN_EMAIL: PocketBase admin email (default: sales@quietcraftsolutions.com)
- *   - ADMIN_PASSWORD: PocketBase admin password (default: Qcsinc@2025*)
+ *   - ADMIN_EMAIL: PocketBase admin email (required)
+ *   - ADMIN_PASSWORD: PocketBase admin password (required)
  */
 
 // Use native fetch (Node 18+)
@@ -20,8 +20,8 @@ if (!globalThis.fetch) {
 
 let BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 let PB_URL = process.env.POCKETBASE_URL || 'http://localhost:8090';
-let ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
-let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Qcsinc@2025*';
+let ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
 // Parse command line args
 const args = process.argv.slice(2);
@@ -52,6 +52,11 @@ function logSection(title) {
 }
 
 async function testBookingAPI() {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    log('✗ Missing required ADMIN_EMAIL / ADMIN_PASSWORD environment variables', 'red');
+    return false;
+  }
+
   logSection('Booking API Test Suite');
 
   // Step 1: Authenticate with PocketBase to create a test user
@@ -296,4 +301,3 @@ testBookingAPI()
     console.error(err);
     process.exit(1);
   });
-

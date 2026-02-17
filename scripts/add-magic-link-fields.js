@@ -8,8 +8,13 @@
 import PocketBase from 'pocketbase';
 
 const POCKETBASE_URL = process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
-const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL || 'admin@qcs-cargo.com';
-const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD || 'WukYard2025#';
+const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('❌ Missing required env vars: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD');
+  process.exit(1);
+}
 
 async function addMagicLinkFields() {
   const pb = new PocketBase(POCKETBASE_URL);

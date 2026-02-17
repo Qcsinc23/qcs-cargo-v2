@@ -240,6 +240,7 @@
           <button
             on:click={() => goto('/warehouse')}
             class="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Back to warehouse dashboard"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -440,8 +441,9 @@
         <div class="p-6 space-y-6">
           <!-- Carrier Selection -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Carrier</label>
+            <label for="manifest-carrier" class="block text-sm font-medium text-gray-700 mb-2">Carrier</label>
             <select
+              id="manifest-carrier"
               bind:value={selectedCarrier}
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -455,8 +457,9 @@
           <!-- Filters -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Service Type (Optional)</label>
+              <label for="manifest-service-type" class="block text-sm font-medium text-gray-700 mb-2">Service Type (Optional)</label>
               <select
+                id="manifest-service-type"
                 bind:value={selectedServiceType}
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
@@ -467,8 +470,9 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Destination (Optional)</label>
+              <label for="manifest-destination" class="block text-sm font-medium text-gray-700 mb-2">Destination (Optional)</label>
               <select
+                id="manifest-destination"
                 bind:value={selectedDestination}
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
@@ -483,7 +487,7 @@
           <!-- Package Selection -->
           <div>
             <div class="flex justify-between items-center mb-2">
-              <label class="block text-sm font-medium text-gray-700">Select Packages</label>
+              <p class="block text-sm font-medium text-gray-700">Select Packages</p>
               <div class="space-x-2">
                 <button
                   on:click={selectAllPackages}
@@ -505,6 +509,14 @@
                 <div
                   class="p-3 border-b border-gray-100 hover:bg-gray-50 flex items-center space-x-3"
                   on:click={() => togglePackageSelection(pkg.id)}
+                  on:keydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      togglePackageSelection(pkg.id);
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
                 >
                   <input
                     type="checkbox"

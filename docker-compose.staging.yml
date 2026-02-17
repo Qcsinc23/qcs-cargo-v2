@@ -77,8 +77,8 @@ services:
       - KINDE_POST_LOGIN_REDIRECT_URL=${KINDE_POST_LOGIN_REDIRECT_URL:-http://82-25-85-157.sslip.io:3001/dashboard}
       - KINDE_SCOPE=${KINDE_SCOPE:-profile email offline openid}
       # PocketBase Admin (for server-side operations)
-      - POCKETBASE_ADMIN_EMAIL=${POCKETBASE_ADMIN_EMAIL:-sales@quietcraftsolutions.com}
-      - POCKETBASE_ADMIN_PASSWORD=${POCKETBASE_ADMIN_PASSWORD:-Qcsinc@2025*}
+      - POCKETBASE_ADMIN_EMAIL=${POCKETBASE_ADMIN_EMAIL}
+      - POCKETBASE_ADMIN_PASSWORD=${POCKETBASE_ADMIN_PASSWORD}
     depends_on:
       qcs_pocketbase:
         condition: service_healthy
@@ -94,5 +94,4 @@ services:
       start_period: 30s
     mem_limit: 512m
     cpus: 1.0
-
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { tick } from 'svelte';
   import { navigationConfig, type NavItem } from '$lib/config/navigation';
   import { cn } from '$lib/utils';
   import { COMPANY } from '$lib/config/constants';
@@ -28,6 +29,11 @@
   let searchOpen = false;
   let searchQuery = '';
   let logoutDialogOpen = false;
+  let searchInput: HTMLInputElement | null = null;
+
+  $: if (searchOpen) {
+    tick().then(() => searchInput?.focus());
+  }
 
   function handleSearch(e: KeyboardEvent) {
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -64,6 +70,7 @@
         <button 
           class="md:hidden p-2 text-slate-400 hover:text-white"
           on:click={() => mobileMenuOpen = !mobileMenuOpen}
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
         >
           {#if mobileMenuOpen}
             <X class="h-5 w-5" />
@@ -103,12 +110,13 @@
         <button 
           class="md:hidden p-2 text-slate-400 hover:text-white"
           on:click={() => searchOpen = true}
+          aria-label="Open search"
         >
           <Search class="h-5 w-5" />
         </button>
         
         <!-- Notifications -->
-        <button class="relative p-2 text-slate-400 hover:text-white">
+        <button class="relative p-2 text-slate-400 hover:text-white" aria-label="Notifications">
           <Bell class="h-5 w-5" />
           <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
@@ -200,7 +208,12 @@
 
     <!-- Mobile Menu Overlay -->
     {#if mobileMenuOpen}
-      <div class="md:hidden fixed inset-0 z-30 bg-black/50" on:click={() => mobileMenuOpen = false}></div>
+      <button
+        type="button"
+        class="md:hidden fixed inset-0 z-30 bg-black/50"
+        on:click={() => mobileMenuOpen = false}
+        aria-label="Close mobile menu"
+      ></button>
       <aside class="md:hidden fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 pt-16">
         <nav class="mt-4 px-3 space-y-1">
           {#each navigationItems as item (item.id)}
@@ -232,18 +245,23 @@
   {#if searchOpen}
     <div class="fixed inset-0 z-50 overflow-y-auto">
       <div class="min-h-screen px-4 text-center">
-        <div class="fixed inset-0 bg-black/60" on:click={() => searchOpen = false}></div>
+        <button
+          type="button"
+          class="fixed inset-0 bg-black/60"
+          on:click={() => searchOpen = false}
+          aria-label="Close search"
+        ></button>
         
         <div class="inline-block w-full max-w-2xl my-16 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl overflow-hidden">
           <div class="flex items-center px-4 border-b">
             <Search class="h-5 w-5 text-slate-400" />
             <input
+              bind:this={searchInput}
               type="text"
               placeholder="Search shipments, users, bookings..."
               class="flex-1 px-4 py-4 text-lg outline-none"
               bind:value={searchQuery}
               on:keydown={(e) => e.key === 'Enter' && performSearch()}
-              autofocus
             />
             <kbd class="px-2 py-1 bg-slate-100 rounded text-xs font-mono text-slate-500">ESC</kbd>
           </div>
@@ -300,4 +318,3 @@
     </DialogFooter>
   </DialogContent>
 </Dialog>
-

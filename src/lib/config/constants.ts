@@ -281,6 +281,7 @@ export const STATUS_COLORS: Record<string, { bg: string; text: string; border: s
   customs: { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-200' },
   out_for_delivery: { bg: 'bg-lime-100', text: 'text-lime-800', border: 'border-lime-200' },
   delivered: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+  canceled: { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' },
   cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' },
   exception: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' }
 };
@@ -294,6 +295,7 @@ export const STATUS_LABELS: Record<string, string> = {
   customs: 'Customs Clearance',
   out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',
+  canceled: 'Cancelled',
   cancelled: 'Cancelled',
   exception: 'Exception'
 };

@@ -23,8 +23,6 @@
   } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
 
-  export let data;
-
   // Shipment type definition
   interface Shipment {
     id: string;
@@ -199,7 +197,7 @@
                         <Icon class="w-4 h-4 {isLast ? 'text-primary-600' : 'text-gray-400'}" />
                       </div>
                       {#if i < currentShipment.timeline.length - 1}
-                        <div class="w-0.5 flex-1 bg-gray-200 mt-2" />
+                        <div class="w-0.5 flex-1 bg-gray-200 mt-2"></div>
                       {/if}
                     </div>
 
@@ -374,4 +372,3 @@
     </div>
   {/if}
 </div>
-

@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
-const BASE_URL = (PUBLIC_SITE_URL || 'https://qcscargo.com').replace(/\/+$/, '');
+const BASE_URL = (PUBLIC_SITE_URL || 'https://qcs-cargo.com').replace(/\/+$/, '');
 
 export const GET: RequestHandler = async () => {
   const robotsTxt = `# QCS Cargo Robots.txt

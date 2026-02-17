@@ -1,12 +1,38 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { isAdminOrStaff } from '$lib/server/authz';
+import { escapePbFilterValue, sanitizePocketBaseId } from '$lib/server/pb-filter';
+
+const PACKAGE_PAGE_SIZE = 100;
+
+async function listBookingPackages(locals: App.Locals, bookingId: string) {
+  const packages: any[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const packagePage = await locals.pb.collection('packages').getList(page, PACKAGE_PAGE_SIZE, {
+      filter: `booking = "${escapePbFilterValue(bookingId)}"`,
+      sort: 'created'
+    });
+
+    packages.push(...packagePage.items);
+    totalPages = packagePage.totalPages;
+    page += 1;
+  }
+
+  return packages;
+}
 
 export const GET: RequestHandler = async ({ params, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
   }
 
-  const { id } = params;
+  const id = sanitizePocketBaseId(params.id || '');
+  if (!id) {
+    throw error(400, { message: 'Invalid booking ID' });
+  }
 
   try {
     const booking = await locals.pb.collection('bookings').getOne(id, {
@@ -14,16 +40,13 @@ export const GET: RequestHandler = async ({ params, locals }) => {
     });
 
     // Verify user owns this booking (unless admin/staff)
-    const isAdmin = locals.user.role === 'admin' || locals.user.role === 'staff';
+    const isAdmin = isAdminOrStaff(locals.user);
     if (booking.user !== locals.user.id && !isAdmin) {
       throw error(403, { message: 'Access denied' });
     }
 
     // Get associated packages
-    const packages = await locals.pb.collection('packages').getFullList({
-      filter: `booking = "${id}"`,
-      sort: 'created'
-    });
+    const packages = await listBookingPackages(locals, id);
 
     return json({
       status: 'success',
@@ -48,13 +71,16 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
-  const { id } = params;
+  const id = sanitizePocketBaseId(params.id || '');
+  if (!id) {
+    throw error(400, { message: 'Invalid booking ID' });
+  }
 
   try {
     // Verify user owns this booking
     const existingBooking = await locals.pb.collection('bookings').getOne(id);
     
-    const isAdmin = locals.user.role === 'admin' || locals.user.role === 'staff';
+    const isAdmin = isAdminOrStaff(locals.user);
     if (existingBooking.user !== locals.user.id && !isAdmin) {
       throw error(403, { message: 'Access denied' });
     }
@@ -118,12 +144,15 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
-  const { id } = params;
+  const id = sanitizePocketBaseId(params.id || '');
+  if (!id) {
+    throw error(400, { message: 'Invalid booking ID' });
+  }
 
   try {
     const booking = await locals.pb.collection('bookings').getOne(id);
     
-    const isAdmin = locals.user.role === 'admin' || locals.user.role === 'staff';
+    const isAdmin = isAdminOrStaff(locals.user);
     if (booking.user !== locals.user.id && !isAdmin) {
       throw error(403, { message: 'Access denied' });
     }
@@ -158,8 +187,6 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(500, { message: 'Failed to cancel booking' });
   }
 };
-
-
 
 
 

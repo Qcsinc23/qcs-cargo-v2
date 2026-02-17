@@ -23,7 +23,7 @@
   
   interface Booking {
     id: string;
-    status: 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'pending_payment' | 'payment_failed';
+    status: 'draft' | 'pending' | 'confirmed' | 'canceled' | 'cancelled' | 'pending_payment' | 'payment_failed';
     destination: string;
     package_count: number;
     total_weight_lbs: number;
@@ -45,7 +45,7 @@
     { value: 'pending', label: 'Pending' },
     { value: 'pending_payment', label: 'Payment Required' },
     { value: 'confirmed', label: 'Confirmed' },
-    { value: 'cancelled', label: 'Cancelled' }
+    { value: 'canceled', label: 'Cancelled' }
   ];
 
   const statusStyles: Record<string, string> = {
@@ -54,12 +54,18 @@
     pending_payment: 'bg-red-100 text-red-700',
     payment_failed: 'bg-red-100 text-red-700',
     confirmed: 'bg-green-100 text-green-700',
+    canceled: 'bg-red-100 text-red-700',
     cancelled: 'bg-red-100 text-red-700'
   };
 
+  function normalizeBookingStatus(status: string): string {
+    return status === 'cancelled' ? 'canceled' : status;
+  }
+
   $: filteredBookings = bookings
     .filter(b => {
-      const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
+      const normalizedStatus = normalizeBookingStatus(b.status);
+      const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter;
       return matchesStatus;
     })
     .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
@@ -272,4 +278,3 @@
     {/if}
   {/if}
 </div>
-

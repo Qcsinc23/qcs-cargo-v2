@@ -1,46 +1,27 @@
-import { json, error } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createPaymentIntent, getOrCreateCustomer } from '$lib/server/stripe';
+import { createPaymentIntent, getOrCreateCustomer, getPaymentIntent } from '$lib/server/stripe';
 import { z } from 'zod';
 import { paymentRateLimit } from '$lib/server/rate-limiter';
+import { sanitizePocketBaseId } from '$lib/server/pb-filter';
 
 const CreateIntentBodySchema = z.object({
-  amount: z.union([z.number(), z.string()]),
-  bookingId: z.string().min(1).max(200),
+  bookingId: z.string().min(1).max(64),
   description: z.string().max(500).optional()
 });
 
-function parseAmountToCents(amount: unknown): { ok: true; cents: number } | { ok: false; message: string } {
-  if (typeof amount === 'string') {
-    const trimmed = amount.trim();
-    // Strict money format: "12" or "12.3" or "12.34"
-    if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
-      return { ok: false, message: 'Invalid amount format' };
-    }
-    const [dollarsPart, centsPart = ''] = trimmed.split('.');
-    const dollars = Number(dollarsPart);
-    const cents = Number((centsPart + '00').slice(0, 2));
-    const total = dollars * 100 + cents;
-    if (!Number.isFinite(total) || total <= 0) return { ok: false, message: 'Invalid amount' };
-    return { ok: true, cents: total };
-  }
+const ACTIVE_INTENT_STATUSES = new Set([
+  'requires_payment_method',
+  'requires_confirmation',
+  'requires_action',
+  'processing'
+]);
 
-  if (typeof amount === 'number') {
-    if (!Number.isFinite(amount) || amount <= 0) return { ok: false, message: 'Invalid amount' };
-    // Reject values that can't be represented to exactly 2 decimal places (prevents float rounding surprises).
-    const scaled = amount * 100;
-    const rounded = Math.round(scaled);
-    if (Math.abs(scaled - rounded) > 1e-6) {
-      return { ok: false, message: 'Amount must have at most 2 decimal places' };
-    }
-    return { ok: true, cents: rounded };
-  }
-
-  return { ok: false, message: 'Invalid amount' };
+function dollarsToCents(amount: number): number {
+  return Math.round(amount * 100);
 }
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  // Require authentication
   if (!locals.user) {
     return json(
       { status: 'error', error_code: 'AUTH_REQUIRED', message: 'Authentication required' },
@@ -48,7 +29,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     );
   }
 
-  // Apply rate limiting
   const rateLimitResult = paymentRateLimit.check(locals.user.id);
   if (!rateLimitResult.allowed) {
     return json(
@@ -56,9 +36,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         status: 'error',
         error_code: 'RATE_LIMIT_EXCEEDED',
         message: 'Too many payment attempts. Please try again later.',
-        data: {
-          resetTime: new Date(rateLimitResult.resetTime).toISOString()
-        }
+        data: { resetTime: new Date(rateLimitResult.resetTime).toISOString() }
       },
       {
         status: 429,
@@ -75,40 +53,111 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const correlationId = locals.correlationId || crypto.randomUUID();
 
   try {
-    const body = await request.json();
-    const parsed = CreateIntentBodySchema.safeParse(body);
+    const parsed = CreateIntentBodySchema.safeParse(await request.json());
     if (!parsed.success) {
       return json(
         {
           status: 'error',
           error_code: 'INVALID_INPUT',
           message: 'Invalid request body',
-          data: { issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) }
+          data: {
+            issues: parsed.error.issues.map((issue) => ({
+              path: issue.path.join('.'),
+              message: issue.message
+            }))
+          }
         },
         { status: 400 }
       );
     }
 
-    const { amount, bookingId, description } = parsed.data;
-    const amountResult = parseAmountToCents(amount);
-    if (!amountResult.ok) {
+    const bookingId = sanitizePocketBaseId(parsed.data.bookingId);
+    if (!bookingId) {
       return json(
-        { status: 'error', error_code: 'INVALID_AMOUNT', message: amountResult.message },
+        { status: 'error', error_code: 'INVALID_BOOKING_ID', message: 'Invalid booking ID' },
         { status: 400 }
       );
     }
-    const amountCents = amountResult.cents;
 
-    // Generate idempotency key for payment intent creation
-    // This prevents duplicate charges if network issues occur
-    // BUG FIX: Removed Date.now() - idempotency key must be stable across retries
-    // so that the same bookingId+amount always produces the same key
-    // SECURITY FIX: Use bookingId directly without hashing to avoid complexity
-    // The bookingId is validated by API before reaching here
-    const idempotencyKey = `payment_intent_${locals.user.id}_${bookingId}_${amountCents}`;
+    const booking = await locals.pb.collection('bookings').getOne(bookingId, {
+      fields: 'id,user,total_cost,status,payment_status,payment_intent_id'
+    });
 
-    
-    // Get or create Stripe customer
+    if (booking.user !== locals.user.id) {
+      return json(
+        { status: 'error', error_code: 'FORBIDDEN', message: 'Booking does not belong to current user' },
+        { status: 403 }
+      );
+    }
+
+    if (!['pending_payment', 'payment_failed'].includes(String(booking.status))) {
+      return json(
+        {
+          status: 'error',
+          error_code: 'BOOKING_NOT_PAYABLE',
+          message: 'Booking is not in a payable state'
+        },
+        { status: 409 }
+      );
+    }
+
+    if (['paid', 'refunded', 'canceled'].includes(String(booking.payment_status))) {
+      return json(
+        {
+          status: 'error',
+          error_code: 'BOOKING_ALREADY_SETTLED',
+          message: 'Booking payment is already settled'
+        },
+        { status: 409 }
+      );
+    }
+
+    const bookingTotal = Number(booking.total_cost);
+    if (!Number.isFinite(bookingTotal) || bookingTotal <= 0) {
+      console.error('[create_payment_intent] Invalid booking total', {
+        correlationId,
+        bookingId: booking.id,
+        bookingTotal: booking.total_cost
+      });
+      return json(
+        {
+          status: 'error',
+          error_code: 'INVALID_BOOKING_TOTAL',
+          message: 'Booking total is invalid. Please contact support.'
+        },
+        { status: 500 }
+      );
+    }
+
+    const amountCents = dollarsToCents(bookingTotal);
+    const existingPaymentIntentId = typeof booking.payment_intent_id === 'string' ? booking.payment_intent_id : '';
+
+    if (existingPaymentIntentId) {
+      try {
+        const existingIntent = await getPaymentIntent(existingPaymentIntentId);
+        if (
+          existingIntent.amount === amountCents &&
+          ACTIVE_INTENT_STATUSES.has(existingIntent.status) &&
+          existingIntent.client_secret
+        ) {
+          return json({
+            status: 'success',
+            data: {
+              clientSecret: existingIntent.client_secret,
+              paymentIntentId: existingIntent.id
+            }
+          });
+        }
+      } catch (existingErr) {
+        console.warn('[create_payment_intent] Existing intent not reusable', {
+          correlationId,
+          bookingId,
+          paymentIntentId: existingPaymentIntentId,
+          error: existingErr instanceof Error ? existingErr.message : String(existingErr)
+        });
+      }
+    }
+
     const stripeCustomerId = await getOrCreateCustomer({
       userId: locals.user.id,
       email: locals.user.email,
@@ -116,8 +165,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       existingStripeCustomerId: locals.user.stripe_customer_id
     });
 
-    
-    // If user doesn't have stripe_customer_id saved, update it (best-effort, reduce races by re-reading)
     if (!locals.user.stripe_customer_id && stripeCustomerId) {
       try {
         const fresh = await locals.pb.collection('users').getOne(locals.user.id, {
@@ -126,27 +173,41 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         if (!fresh?.stripe_customer_id) {
           await locals.pb.collection('users').update(locals.user.id, { stripe_customer_id: stripeCustomerId });
         }
-      } catch (err) {
-        console.error('[create_payment_intent] Failed to save stripe_customer_id:', err);
-        // Non-fatal, continue
+      } catch (saveCustomerErr) {
+        console.error('[create_payment_intent] Failed to persist stripe_customer_id', saveCustomerErr);
       }
     }
 
-    // Create payment intent (amount in cents)
+    const idempotencyKey = `payment_intent_${locals.user.id}_${booking.id}_${amountCents}`;
+
     const paymentIntent = await createPaymentIntent({
       amount: amountCents,
       customerId: stripeCustomerId,
-      bookingId,
-      description: description || `QCS Cargo Booking ${bookingId}`,
+      bookingId: booking.id,
+      description: parsed.data.description || `QCS Cargo Booking ${booking.id}`,
       metadata: {
         user_id: locals.user.id,
         user_email: locals.user.email,
-        correlation_id: correlationId
+        correlation_id: correlationId,
+        booking_total_cents: String(amountCents)
       },
       idempotencyKey
     });
 
-    
+    try {
+      await locals.pb.collection('bookings').update(booking.id, {
+        payment_intent_id: paymentIntent.id,
+        payment_status: 'processing'
+      });
+    } catch (updateErr) {
+      console.error('[create_payment_intent] Failed to persist payment intent id', {
+        correlationId,
+        bookingId: booking.id,
+        paymentIntentId: paymentIntent.id,
+        error: updateErr
+      });
+    }
+
     return json({
       status: 'success',
       data: {
@@ -158,12 +219,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const e = err as any;
     const stripeStatusCode = e?.statusCode;
     const stripeCode = e?.code;
-    const stripeType = e?.type;
     const message = typeof e?.message === 'string' ? e.message : 'Failed to create payment intent';
 
     console.error('[create_payment_intent] Error', { correlationId, error: err });
 
-    const status = typeof stripeStatusCode === 'number' && stripeStatusCode >= 400 && stripeStatusCode < 600 ? stripeStatusCode : 500;
+    const status =
+      typeof stripeStatusCode === 'number' && stripeStatusCode >= 400 && stripeStatusCode < 600
+        ? stripeStatusCode
+        : 500;
+
     return json(
       {
         status: 'error',
@@ -174,12 +238,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         status,
         headers: {
           'X-RateLimit-Limit': '5',
-          // BUG FIX: Use optional chaining to safely access rateLimitResult
-          'X-RateLimit-Remaining': rateLimitResult?.remaining?.toString() || '0',
-          'X-RateLimit-Reset': rateLimitResult?.resetTime?.toString() || Date.now().toString()
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
         }
       }
     );
   }
 };
-

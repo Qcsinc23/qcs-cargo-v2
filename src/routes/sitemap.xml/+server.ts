@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 import { DESTINATIONS } from '$lib/config/destinations';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
-const BASE_URL = (PUBLIC_SITE_URL || 'https://qcscargo.com').replace(/\/+$/, '');
+const BASE_URL = (PUBLIC_SITE_URL || 'https://qcs-cargo.com').replace(/\/+$/, '');
 
 const staticPages = [
   { url: '/', priority: 1.0, changefreq: 'weekly' },

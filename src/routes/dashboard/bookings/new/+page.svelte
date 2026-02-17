@@ -1,16 +1,17 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
+  import { Card, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { NumericInput } from '$lib/components/ui/numeric-input';
   import { Label } from '$lib/components/ui/label';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { DraftBookingDialog, DraftSaveIndicator, DeliveryEstimate } from '$lib/components/booking';
-  import { DESTINATIONS, getDestination, getDestinationLabel } from '$lib/config/destinations';
+  import { DESTINATIONS, getDestinationLabel } from '$lib/config/destinations';
   import { SERVICES_INFO, TIME_SLOTS, SATURDAY_SLOTS } from '$lib/config/constants';
-  import { booking, currentStep, packageCount, hasMultiplePackages, totalWeight, hasUnknownWeight, type BookingPackage, type BookingRecipient, createEmptyPackage } from '$lib/stores/booking';
+  import { booking, currentStep, packageCount, hasMultiplePackages, totalWeight, hasUnknownWeight, type BookingPackage, type BookingRecipient } from '$lib/stores/booking';
   import { toast } from '$lib/stores/toast';
+  import { calculateBookingPricing } from '$lib/pricing/booking-pricing';
 
   type WizardStep = 1 | 2 | 3 | 4 | 5;
   
@@ -35,17 +36,11 @@
     Ruler,
     DollarSign,
     User,
-    MapPin,
-    Phone,
     Calendar,
     CreditCard,
     AlertTriangle,
     HelpCircle
   } from 'lucide-svelte';
-
-  export let data: any;
-  // @ts-ignore - data is used by SvelteKit but not directly in script
-  const _unused = data;
 
   // Get store state
   $: bookingState = $booking;
@@ -120,11 +115,6 @@
   // Form errors
   let errors: Record<string, string> = {};
   let submitting = false;
-
-  // Step validation - uses reactive canProceedValue computed above
-  function canProceed(): boolean {
-    return canProceedValue;
-  }
 
   function nextStep() {
     if (!canProceedValue) return;
@@ -266,60 +256,37 @@
 
   // Step 5: Generate Quote
   function generateQuote() {
-    const dest = getDestination(bookingState.destination || '');
-    if (!dest) return;
+    const destination = bookingState.destination || '';
+    const serviceType = bookingState.serviceType;
+    if (!destination || !serviceType) return;
 
-    const baseRate = dest.baseRate;
-    const packageQuotes = bookingState.packages.map(pkg => {
-      const weight = pkg.weightUnknown ? 5 : (pkg.weight || 0); // Estimate 5 lbs if unknown
-      
-      // Calculate dimensional weight if dimensions provided
-      let dimWeight = 0;
-      if (pkg.length && pkg.width && pkg.height) {
-        dimWeight = (pkg.length * pkg.width * pkg.height) / 166;
-      }
-      
-      const billableWeight = Math.max(weight, dimWeight);
-      const cost = billableWeight * baseRate;
-      
-      return {
-        id: pkg.id,
-        weight,
-        dimWeight: Math.round(dimWeight * 10) / 10,
-        billableWeight: Math.round(billableWeight * 10) / 10,
-        cost: Math.round(cost * 100) / 100
-      };
-    });
+    try {
+      const pricing = calculateBookingPricing({
+        destination,
+        serviceType,
+        packages: bookingState.packages.map((pkg) => ({
+          id: pkg.id,
+          weight: pkg.weight,
+          weightUnknown: pkg.weightUnknown,
+          length: pkg.length,
+          width: pkg.width,
+          height: pkg.height,
+          declaredValue: pkg.declaredValue
+        }))
+      });
 
-    const subtotal = packageQuotes.reduce((sum, p) => sum + p.cost, 0);
-    
-    // Multi-package discount: 5% off for 2+ packages, 10% for 5+
-    let discountPercent = 0;
-    if (packageQuotes.length >= 5) discountPercent = 0.10;
-    else if (packageQuotes.length >= 2) discountPercent = 0.05;
-    
-    const multiPackageDiscount = subtotal * discountPercent;
-    
-    // Insurance estimate (3% of declared value or $5 minimum)
-    const totalDeclaredValue = bookingState.packages.reduce((sum, p) => sum + (p.declaredValue || 0), 0);
-    const insuranceCost = totalDeclaredValue > 0 ? Math.max(totalDeclaredValue * 0.03, 5) : 0;
-    
-    // Express surcharge
-    let surcharge = 0;
-    if (bookingState.serviceType === 'express') {
-      surcharge = subtotal * 0.25;
+      booking.setQuote({
+        packages: pricing.packages,
+        subtotal: pricing.subtotal,
+        multiPackageDiscount: pricing.multiPackageDiscount,
+        insuranceCost: pricing.insuranceCost,
+        totalCost: pricing.totalCost,
+        transitDays: pricing.transitDays
+      });
+    } catch (err) {
+      console.error('Failed to generate quote:', err);
+      toast.error('Unable to generate quote. Please verify package details.');
     }
-    
-    const totalCost = subtotal - multiPackageDiscount + insuranceCost + surcharge;
-
-    booking.setQuote({
-      packages: packageQuotes,
-      subtotal: Math.round(subtotal * 100) / 100,
-      multiPackageDiscount: Math.round(multiPackageDiscount * 100) / 100,
-      insuranceCost: Math.round(insuranceCost * 100) / 100,
-      totalCost: Math.round(totalCost * 100) / 100,
-      transitDays: `${dest.transitDays.min}-${dest.transitDays.max} business days`
-    });
   }
 
   // Submit Booking

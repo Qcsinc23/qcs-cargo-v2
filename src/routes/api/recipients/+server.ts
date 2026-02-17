@@ -1,5 +1,52 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { escapePbFilterValue } from '$lib/server/pb-filter';
+
+const RECIPIENT_PAGE_SIZE = 100;
+
+async function listRecipientsByFilter(
+  locals: App.Locals,
+  filter: string,
+  sort = '-is_default,-created'
+) {
+  const recipients: any[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const recipientPage = await locals.pb.collection('recipients').getList(page, RECIPIENT_PAGE_SIZE, {
+      filter,
+      sort
+    });
+
+    recipients.push(...recipientPage.items);
+    totalPages = recipientPage.totalPages;
+    page += 1;
+  }
+
+  return recipients;
+}
+
+async function unsetDefaultRecipientsForUser(locals: App.Locals, userId: string) {
+  const filter = `user = "${escapePbFilterValue(userId)}" && is_default = true`;
+
+  while (true) {
+    const defaultPage = await locals.pb.collection('recipients').getList(1, RECIPIENT_PAGE_SIZE, {
+      filter,
+      fields: 'id'
+    });
+
+    if (defaultPage.items.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      defaultPage.items.map((existing) =>
+        locals.pb.collection('recipients').update(existing.id, { is_default: false })
+      )
+    );
+  }
+}
 
 export const GET: RequestHandler = async ({ locals }) => {
   if (!locals.user) {
@@ -7,10 +54,10 @@ export const GET: RequestHandler = async ({ locals }) => {
   }
 
   try {
-    const recipients = await locals.pb.collection('recipients').getFullList({
-      filter: `user = "${locals.user.id}"`,
-      sort: '-is_default,-created'
-    });
+    const recipients = await listRecipientsByFilter(
+      locals,
+      `user = "${escapePbFilterValue(locals.user.id)}"`
+    );
 
     return json({
       status: 'success',
@@ -47,13 +94,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     // If setting as default, unset other defaults first
     if (isDefault) {
-      const existingDefaults = await locals.pb.collection('recipients').getFullList({
-        filter: `user = "${locals.user.id}" && is_default = true`
-      });
-
-      for (const existing of existingDefaults) {
-        await locals.pb.collection('recipients').update(existing.id, { is_default: false });
-      }
+      await unsetDefaultRecipientsForUser(locals, locals.user.id);
     }
 
     const recipient = await locals.pb.collection('recipients').create({
@@ -82,8 +123,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     throw error(500, { message: 'Failed to create recipient' });
   }
 };
-
-
 
 
 

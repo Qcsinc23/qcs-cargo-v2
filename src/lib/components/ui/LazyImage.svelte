@@ -72,7 +72,7 @@
   />
 
   {#if !isLoaded && !isError && placeholder}
-    <div class="absolute inset-0 bg-gray-200 animate-pulse" />
+    <div class="absolute inset-0 bg-gray-200 animate-pulse"></div>
   {/if}
 
   {#if isError}

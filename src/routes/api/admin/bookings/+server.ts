@@ -1,75 +1,113 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { pb } from '$lib/server/pocketbase';
+import { z } from 'zod';
+import { escapePbFilterValue, sanitizePocketBaseId, sanitizeSearchTerm } from '$lib/server/pb-filter';
+import { isAdminOrStaff } from '$lib/server/authz';
+
+const VALID_BOOKING_STATUSES = new Set([
+  'draft',
+  'pending_payment',
+  'confirmed',
+  'payment_failed',
+  'in_progress',
+  'completed',
+  'canceled'
+]);
+
+const VALID_PAYMENT_STATUSES = new Set([
+  'pending',
+  'processing',
+  'paid',
+  'failed',
+  'refunded',
+  'canceled'
+]);
+
+const UpdateBookingSchema = z.object({
+  bookingId: z.string().min(1).max(64),
+  status: z.string().optional(),
+  paymentStatus: z.string().optional()
+});
+
+const CancelBookingSchema = z.object({
+  bookingId: z.string().min(1).max(64)
+});
+
+function normalizeBookingStatus(status: string): string {
+  return status === 'cancelled' ? 'canceled' : status;
+}
+
+async function countBookings(locals: App.Locals, filter: string): Promise<number> {
+  return locals.pb
+    .collection('bookings')
+    .getList(1, 1, { filter, fields: 'id' })
+    .then((res) => res.totalItems)
+    .catch(() => 0);
+}
 
 export const GET: RequestHandler = async ({ locals, url }) => {
   try {
-    // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !isAdminOrStaff(locals.user)) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
-    const search = url.searchParams.get('search') || '';
-    const status = url.searchParams.get('status') || 'all';
-    const dateFilter = url.searchParams.get('date') || 'all';
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const perPage = parseInt(url.searchParams.get('perPage') || '10');
+    const search = sanitizeSearchTerm(url.searchParams.get('search') || '');
+    const requestedStatus = normalizeBookingStatus((url.searchParams.get('status') || 'all').trim());
+    const status = requestedStatus === 'all' || VALID_BOOKING_STATUSES.has(requestedStatus) ? requestedStatus : 'all';
+    const dateFilter = (url.searchParams.get('date') || 'all').trim();
+    const pageRaw = Number.parseInt(url.searchParams.get('page') || '1', 10);
+    const perPageRaw = Number.parseInt(url.searchParams.get('perPage') || '10', 10);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const perPage = Number.isFinite(perPageRaw) && perPageRaw > 0 ? Math.min(perPageRaw, 100) : 10;
 
-    // Build filter
-    let filter = '';
-    const filterParts = [];
+    const filterParts: string[] = [];
 
     if (search) {
-      filterParts.push(`(id ~ "${search}" || user.name ~ "${search}" || user.email ~ "${search}")`);
+      filterParts.push(
+        `(id ~ "${search}" || user.name ~ "${search}" || user.email ~ "${search}")`
+      );
     }
 
     if (status !== 'all') {
-      filterParts.push(`status = "${status}"`);
+      filterParts.push(`status = "${escapePbFilterValue(status)}"`);
     }
 
-    if (dateFilter === 'today') {
+    if (dateFilter === 'today' || dateFilter === 'upcoming') {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-      filterParts.push(`scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`);
+
+      if (dateFilter === 'today') {
+        filterParts.push(
+          `scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`
+        );
+      } else {
+        filterParts.push(`scheduled_date >= "${startOfDay.toISOString()}"`);
+      }
     }
 
-    if (dateFilter === 'upcoming') {
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      filterParts.push(`scheduled_date >= "${startOfDay.toISOString()}"`);
-    }
+    const filter = filterParts.join(' && ');
 
-    if (filterParts.length > 0) {
-      filter = filterParts.join(' && ');
-    }
-
-    // Fetch bookings
-    const bookingsList = await pb.collection('bookings').getList(page, perPage, {
-      filter,
+    const bookingsList = await locals.pb.collection('bookings').getList(page, perPage, {
+      ...(filter ? { filter } : {}),
       sort: '-created',
       expand: 'user,recipient'
     });
 
-    // Get stats
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-    const [todayBookings, pendingBookings, failedPayments] = await Promise.all([
-      pb.collection('bookings').getFullList({
-        filter: `scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`
-      }),
-      pb.collection('bookings').getFullList({
-        filter: 'status = "pending"'
-      }),
-      pb.collection('bookings').getFullList({
-        filter: 'status = "payment_failed"'
-      })
+    const [todayCount, pendingCount, failedPaymentCount] = await Promise.all([
+      countBookings(
+        locals,
+        `scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`
+      ),
+      countBookings(locals, 'status = "pending_payment"'),
+      countBookings(locals, 'status = "payment_failed"')
     ]);
 
-    // Format bookings for frontend
-    const formattedBookings = bookingsList.items.map(booking => ({
+    const formattedBookings = bookingsList.items.map((booking) => ({
       id: booking.id,
       customer: booking.expand?.user?.name || 'Unknown',
       customerId: booking.user,
@@ -78,95 +116,143 @@ export const GET: RequestHandler = async ({ locals, url }) => {
       timeSlot: booking.time_slot,
       destination: booking.destination,
       packages: booking.package_count,
-      status: booking.status,
+      status: normalizeBookingStatus(String(booking.status || 'draft')),
       amount: booking.total_cost,
       paymentStatus: booking.payment_status || 'pending',
       serviceType: booking.service_type
     }));
 
-    return json({
+    const payload = {
       bookings: formattedBookings,
       totalItems: bookingsList.totalItems,
       totalPages: bookingsList.totalPages,
       currentPage: page,
       stats: {
-        today: todayBookings.length,
-        pending: pendingBookings.length,
-        paymentFailed: failedPayments.length
+        today: todayCount,
+        pending: pendingCount,
+        paymentFailed: failedPaymentCount
       }
+    };
+
+    return json({
+      status: 'success',
+      data: payload,
+      ...payload
     });
-  } catch (error) {
-    console.error('Bookings fetch error:', error);
-    return json({ error: 'Failed to fetch bookings' }, { status: 500 });
+  } catch (err) {
+    console.error('Bookings fetch error:', err);
+    return json({ status: 'error', message: 'Failed to fetch bookings' }, { status: 500 });
   }
 };
 
-// Update booking status
 export const PATCH: RequestHandler = async ({ locals, request }) => {
   try {
-    // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !isAdminOrStaff(locals.user)) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
-    const { bookingId, status, paymentStatus } = await request.json();
-
-    if (!bookingId) {
-      return json({ error: 'Booking ID required' }, { status: 400 });
+    const parsed = UpdateBookingSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return json({ status: 'error', message: 'Invalid request body' }, { status: 400 });
     }
 
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (paymentStatus) updateData.payment_status = paymentStatus;
+    const normalizedBookingId = sanitizePocketBaseId(parsed.data.bookingId);
+    if (!normalizedBookingId) {
+      return json({ status: 'error', message: 'Invalid booking ID' }, { status: 400 });
+    }
 
-    const updatedBooking = await pb.collection('bookings').update(bookingId, updateData);
+    const updateData: Record<string, string> = {};
+    if (parsed.data.status) {
+      const normalizedStatus = normalizeBookingStatus(parsed.data.status);
+      if (!VALID_BOOKING_STATUSES.has(normalizedStatus)) {
+        return json({ status: 'error', message: 'Invalid booking status' }, { status: 400 });
+      }
+      updateData.status = normalizedStatus;
+    }
 
-    // Log activity
-    await pb.collection('activity_logs').create({
+    if (parsed.data.paymentStatus) {
+      const normalizedPaymentStatus = normalizeBookingStatus(parsed.data.paymentStatus);
+      if (!VALID_PAYMENT_STATUSES.has(normalizedPaymentStatus)) {
+        return json({ status: 'error', message: 'Invalid payment status' }, { status: 400 });
+      }
+      updateData.payment_status = normalizedPaymentStatus;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return json({ status: 'error', message: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const updatedBooking = await locals.pb.collection('bookings').update(normalizedBookingId, updateData);
+
+    await locals.pb.collection('activity_logs').create({
       user: locals.user.id,
-      action: `Updated booking ${bookingId} status to ${status || paymentStatus}`,
+      action: `Updated booking ${normalizedBookingId} status`,
       resource_type: 'booking',
-      resource_id: bookingId,
+      resource_id: normalizedBookingId,
       metadata: updateData
+    }).catch((logErr) => {
+      console.warn('Failed to log booking update activity', logErr);
     });
 
-    return json({ success: true, booking: updatedBooking });
-  } catch (error) {
-    console.error('Booking update error:', error);
-    return json({ error: 'Failed to update booking' }, { status: 500 });
+    return json({
+      status: 'success',
+      data: { booking: updatedBooking },
+      success: true,
+      booking: updatedBooking
+    });
+  } catch (err) {
+    console.error('Booking update error:', err);
+    return json({ status: 'error', message: 'Failed to update booking' }, { status: 500 });
   }
 };
 
-// Cancel booking
 export const DELETE: RequestHandler = async ({ locals, request }) => {
   try {
-    // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !isAdminOrStaff(locals.user)) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
-    const { bookingId } = await request.json();
+    const parsed = CancelBookingSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return json({ status: 'error', message: 'Invalid request body' }, { status: 400 });
+    }
 
+    const bookingId = sanitizePocketBaseId(parsed.data.bookingId);
     if (!bookingId) {
-      return json({ error: 'Booking ID required' }, { status: 400 });
+      return json({ status: 'error', message: 'Invalid booking ID' }, { status: 400 });
     }
 
-    // Update status to cancelled
-    const cancelledBooking = await pb.collection('bookings').update(bookingId, {
-      status: 'cancelled'
+    const booking = await locals.pb.collection('bookings').getOne(bookingId, {
+      fields: 'id,payment_status'
     });
 
-    // Log activity
-    await pb.collection('activity_logs').create({
+    const nextPaymentStatus =
+      booking.payment_status === 'paid' || booking.payment_status === 'refunded'
+        ? booking.payment_status
+        : 'canceled';
+
+    const canceledBooking = await locals.pb.collection('bookings').update(bookingId, {
+      status: 'canceled',
+      payment_status: nextPaymentStatus
+    });
+
+    await locals.pb.collection('activity_logs').create({
       user: locals.user.id,
-      action: `Cancelled booking ${bookingId}`,
+      action: `Canceled booking ${bookingId}`,
       resource_type: 'booking',
       resource_id: bookingId
+    }).catch((logErr) => {
+      console.warn('Failed to log booking cancellation activity', logErr);
     });
 
-    return json({ success: true, booking: cancelledBooking });
-  } catch (error) {
-    console.error('Booking cancellation error:', error);
-    return json({ error: 'Failed to cancel booking' }, { status: 500 });
+    return json({
+      status: 'success',
+      data: { booking: canceledBooking },
+      success: true,
+      booking: canceledBooking
+    });
+  } catch (err) {
+    console.error('Booking cancellation error:', err);
+    return json({ status: 'error', message: 'Failed to cancel booking' }, { status: 500 });
   }
 };

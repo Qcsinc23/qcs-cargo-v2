@@ -1,10 +1,17 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { WarehouseBay } from '$lib/types/warehouse';
+import { isAdminOrStaff } from '$lib/server/authz';
+import { escapePbFilterValue, sanitizePocketBaseId } from '$lib/server/pb-filter';
+
+const WAREHOUSE_PAGE_SIZE = 200;
 
 export const GET: RequestHandler = async ({ url, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
+  }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
   }
 
   const zone = url.searchParams.get('zone');
@@ -14,35 +21,53 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     let filter = 'status = "active"';
 
     if (zone) {
-      filter += ` && zone = "${zone}"`;
+      filter += ` && zone = "${escapePbFilterValue(zone)}"`;
     }
 
     if (type) {
-      filter += ` && type = "${type}"`;
+      filter += ` && type = "${escapePbFilterValue(type)}"`;
     }
 
-    const bays = await locals.pb.collection('warehouse_bays').getFullList({
-      filter,
-      sort: 'zone, code'
-    });
+    const bays: any[] = [];
+    let bayPage = 1;
+    let bayTotalPages = 1;
+    while (bayPage <= bayTotalPages) {
+      const pageResult = await locals.pb.collection('warehouse_bays').getList(bayPage, WAREHOUSE_PAGE_SIZE, {
+        filter,
+        sort: 'zone, code'
+      });
+      bays.push(...pageResult.items);
+      bayTotalPages = pageResult.totalPages;
+      bayPage += 1;
+    }
 
-    // Get package counts for each bay
-    const baysWithCounts = await Promise.all(
-      bays.map(async (bay) => {
-        const count = await locals.pb.collection('warehouse_packages').getFirstListItem(
-          `location_bay = "${bay.code}" && status != "shipped"`,
-          { fields: 'id' }
-        ).then(() => locals.pb.collection('warehouse_packages').getList(1, 1, {
-          filter: `location_bay = "${bay.code}" && status != "shipped"`,
-          fields: 'id'
-        })).then(res => res.totalItems).catch(() => 0);
+    const countsByBay = new Map<string, number>();
+    let packagePage = 1;
+    let packageTotalPages = 1;
+    while (packagePage <= packageTotalPages) {
+      const pageResult = await locals.pb.collection('warehouse_packages').getList(
+        packagePage,
+        WAREHOUSE_PAGE_SIZE,
+        {
+          filter: 'status != "shipped"',
+          fields: 'location_bay'
+        }
+      );
 
-        return {
-          ...bay,
-          currentCount: count
-        } as unknown as WarehouseBay;
-      })
-    );
+      for (const pkg of pageResult.items) {
+        const bayCode = String(pkg.location_bay || '');
+        if (!bayCode) continue;
+        countsByBay.set(bayCode, (countsByBay.get(bayCode) || 0) + 1);
+      }
+
+      packageTotalPages = pageResult.totalPages;
+      packagePage += 1;
+    }
+
+    const baysWithCounts = bays.map((bay) => ({
+      ...bay,
+      currentCount: countsByBay.get(String(bay.code)) || 0
+    })) as unknown as WarehouseBay[];
 
     return json({
       status: 'success',
@@ -58,6 +83,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
   }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
+  }
 
   try {
     const body = await request.json();
@@ -67,14 +95,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       throw error(400, { message: 'Missing package IDs or target bay' });
     }
 
+    const normalizedTargetBayId = sanitizePocketBaseId(String(targetBayId || ''));
+    if (!normalizedTargetBayId) {
+      throw error(400, { message: 'Invalid target bay ID' });
+    }
+
     // Verify bay exists
-    const bay = await locals.pb.collection('warehouse_bays').getOne(targetBayId);
+    const bay = await locals.pb.collection('warehouse_bays').getOne(normalizedTargetBayId);
     if (!bay) {
       throw error(404, { message: 'Target bay not found' });
     }
 
+    const normalizedPackageIds = Array.isArray(packageIds)
+      ? packageIds.map((id: string) => sanitizePocketBaseId(String(id))).filter((id): id is string => !!id)
+      : [];
+    if (normalizedPackageIds.length === 0) {
+      throw error(400, { message: 'No valid package IDs provided' });
+    }
+
     // Move packages to new bay
-    const updates = packageIds.map((pkgId: string) =>
+    const updates = normalizedPackageIds.map((pkgId: string) =>
       locals.pb.collection('warehouse_packages').update(pkgId, {
         location_bay: bay.code,
         location_zone: bay.zone,
@@ -87,7 +127,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     return json({
       status: 'success',
       data: {
-        movedCount: packageIds.length,
+        movedCount: normalizedPackageIds.length,
         targetBay: bay.code
       }
     });

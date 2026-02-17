@@ -16,8 +16,6 @@
     EyeOff
   } from 'lucide-svelte';
 
-  export let data;
-
   // Password change form
   let currentPassword = '';
   let newPassword = '';
@@ -182,7 +180,7 @@
             <div class="space-y-1">
               <div class="flex gap-1">
                 {#each [1, 2, 3] as level}
-                  <div class="h-1 flex-1 rounded {level <= passwordStrength.score ? passwordStrength.color : 'bg-gray-200'}" />
+                  <div class="h-1 flex-1 rounded {level <= passwordStrength.score ? passwordStrength.color : 'bg-gray-200'}"></div>
                 {/each}
               </div>
               <p class="text-xs text-gray-500">Password strength: {passwordStrength.label}</p>
@@ -297,4 +295,3 @@
     </CardContent>
   </Card>
 </div>
-

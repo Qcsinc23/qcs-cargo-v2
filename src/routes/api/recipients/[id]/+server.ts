@@ -1,12 +1,43 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { escapePbFilterValue, sanitizePocketBaseId } from '$lib/server/pb-filter';
+
+const RECIPIENT_PAGE_SIZE = 100;
+
+async function unsetDefaultRecipientsForUser(
+  locals: App.Locals,
+  userId: string,
+  excludeRecipientId: string
+) {
+  const filter = `user = "${escapePbFilterValue(userId)}" && is_default = true && id != "${escapePbFilterValue(excludeRecipientId)}"`;
+
+  while (true) {
+    const defaultPage = await locals.pb.collection('recipients').getList(1, RECIPIENT_PAGE_SIZE, {
+      filter,
+      fields: 'id'
+    });
+
+    if (defaultPage.items.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      defaultPage.items.map((recipient) =>
+        locals.pb.collection('recipients').update(recipient.id, { is_default: false })
+      )
+    );
+  }
+}
 
 export const GET: RequestHandler = async ({ params, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
   }
 
-  const { id } = params;
+  const id = sanitizePocketBaseId(params.id || '');
+  if (!id) {
+    throw error(400, { message: 'Invalid recipient ID' });
+  }
 
   try {
     const recipient = await locals.pb.collection('recipients').getOne(id);
@@ -33,7 +64,10 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
-  const { id } = params;
+  const id = sanitizePocketBaseId(params.id || '');
+  if (!id) {
+    throw error(400, { message: 'Invalid recipient ID' });
+  }
 
   try {
     const existing = await locals.pb.collection('recipients').getOne(id);
@@ -77,13 +111,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 
     // If setting as default, unset other defaults first
     if (updateData.is_default === true) {
-      const existingDefaults = await locals.pb.collection('recipients').getFullList({
-        filter: `user = "${locals.user.id}" && is_default = true && id != "${id}"`
-      });
-
-      for (const def of existingDefaults) {
-        await locals.pb.collection('recipients').update(def.id, { is_default: false });
-      }
+      await unsetDefaultRecipientsForUser(locals, locals.user.id, id);
     }
 
     const updated = await locals.pb.collection('recipients').update(id, updateData);
@@ -105,7 +133,10 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
-  const { id } = params;
+  const id = sanitizePocketBaseId(params.id || '');
+  if (!id) {
+    throw error(400, { message: 'Invalid recipient ID' });
+  }
 
   try {
     const recipient = await locals.pb.collection('recipients').getOne(id);
@@ -127,8 +158,6 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(500, { message: 'Failed to delete recipient' });
   }
 };
-
-
 
 
 

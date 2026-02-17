@@ -210,13 +210,18 @@
 
 <!-- Mobile Menu Overlay -->
 {#if mobileMenuOpen}
-  <div class="fixed inset-0 z-50 md:hidden" on:click={handleMobileMenuClick}>
+  <div class="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Mobile menu">
+    <button
+      type="button"
+      class="fixed inset-0 bg-black bg-opacity-50"
+      on:click={handleMobileMenuClick}
+      aria-label="Close mobile menu"
+    ></button>
     <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
       <div class="p-4">
         <h2 class="text-lg font-semibold mb-4">Menu</h2>
         <!-- Mobile menu items will be handled by the Sidebar component -->
       </div>
     </div>
-    <div class="fixed inset-0 bg-black bg-opacity-50" />
   </div>
 {/if}

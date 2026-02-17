@@ -47,7 +47,8 @@
     payment_failed: { label: 'Payment Failed', bg: 'bg-red-100', text: 'text-red-800' },
     in_progress: { label: 'In Progress', bg: 'bg-purple-100', text: 'text-purple-800' },
     completed: { label: 'Completed', bg: 'bg-green-100', text: 'text-green-800' },
-    canceled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-800' }
+    canceled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-800' },
+    cancelled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-800' }
   };
 
   async function loadBookings() {
@@ -64,10 +65,11 @@
       const response = await fetch(`/api/admin/bookings?${params}`);
       if (response.ok) {
         const data = await response.json();
-        bookings = data.bookings;
-        totalItems = data.totalItems;
-        totalPages = data.totalPages;
-        stats = data.stats;
+        const payload = data?.data || data;
+        bookings = payload.bookings || [];
+        totalItems = payload.totalItems || 0;
+        totalPages = payload.totalPages || 1;
+        stats = payload.stats || { today: 0, pending: 0, paymentFailed: 0 };
       }
     } catch (error) {
       console.error('Failed to load bookings:', error);
@@ -384,4 +386,3 @@
     {/if}
   </Card>
 </div>
-

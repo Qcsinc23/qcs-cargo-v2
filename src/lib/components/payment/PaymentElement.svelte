@@ -122,7 +122,7 @@
   <CardContent>
     <form on:submit={handleSubmit} class="space-y-4">
       <div class="space-y-4">
-        <div id="payment-element" class="min-h-[100px]" />
+        <div id="payment-element" class="min-h-[100px]"></div>
       </div>
 
       {#if error}
@@ -159,7 +159,7 @@
 <style>
   /* Customize Stripe Elements appearance */
   :global(#payment-element) {
-    /* Stripe will inject the form here */
+    min-height: 100px;
   }
 
   :global(.StripeElement) {

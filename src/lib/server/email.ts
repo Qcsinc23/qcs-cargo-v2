@@ -462,7 +462,7 @@ export async function sendStatusUpdateEmail(
     </div>
     
     <div class="button-container">
-      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track your shipment</a>
+      <a href="${PUBLIC_SITE_URL}/track?number=${encodeURIComponent(shipment.trackingNumber)}" class="button">Track your shipment</a>
     </div>
     
     <p class="secondary-text">Need help? Reply to this email or visit our help center.</p>
@@ -495,7 +495,7 @@ export async function sendAccountDeletionEmail(to: string, name: string) {
     <p>If you didn't request this or would like to keep your account, you can cancel the deletion by signing in now:</p>
 
     <div class="button-container">
-      <a href="${PUBLIC_SITE_URL}/api/auth/login" class="button">Recover my account</a>
+      <a href="${PUBLIC_SITE_URL}/login" class="button">Recover my account</a>
     </div>
 
     <p class="secondary-text">If you intended to delete your account, no further action is required.</p>
@@ -532,7 +532,7 @@ export async function sendLocationUpdateEmail(
     </div>
 
     <div class="button-container">
-      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">Track package</a>
+      <a href="${PUBLIC_SITE_URL}/track?number=${encodeURIComponent(shipment.trackingNumber)}" class="button">Track package</a>
     </div>
 
     <p class="secondary-text">Thank you for shipping with ${PUBLIC_COMPANY_NAME}.</p>
@@ -604,7 +604,7 @@ export async function sendTrackingEventEmail(
     </div>
 
     <div class="button-container">
-      <a href="${PUBLIC_SITE_URL}/tracking/${shipment.trackingNumber}" class="button">View full timeline</a>
+      <a href="${PUBLIC_SITE_URL}/track?number=${encodeURIComponent(shipment.trackingNumber)}" class="button">View full timeline</a>
     </div>
   `);
 

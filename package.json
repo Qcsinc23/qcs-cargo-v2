@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "kill-servers": "./kill-servers.sh",
+    "stripe:listen": "stripe listen --forward-to http://localhost:5173/api/webhooks/stripe --events payment_intent.succeeded,payment_intent.payment_failed,payment_intent.canceled,payment_intent.requires_action,charge.dispute.created",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",

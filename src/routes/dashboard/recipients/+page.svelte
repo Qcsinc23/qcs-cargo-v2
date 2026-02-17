@@ -17,8 +17,6 @@
     User
   } from 'lucide-svelte';
 
-  export let data;
-
   interface Recipient {
     id: string;
     name: string;
@@ -171,13 +169,12 @@
                 </Button>
 
                 {#if menuOpenId === recipient.id}
-                  <!-- svelte-ignore a11y-click-events-have-key-events -->
-                  <div
+                  <button
+                    type="button"
                     class="fixed inset-0 z-10"
-                    role="button"
-                    tabindex="-1"
+                    aria-label="Close recipient actions menu"
                     on:click={() => menuOpenId = null}
-                  />
+                  ></button>
                   <div class="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border z-20">
                     <a
                       href="/dashboard/recipients/{recipient.id}"
@@ -251,4 +248,3 @@
   on:confirm={handleDelete}
   on:cancel={() => { showDeleteConfirm = false; deleteTarget = null; }}
 />
-

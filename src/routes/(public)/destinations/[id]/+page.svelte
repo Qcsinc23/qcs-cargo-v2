@@ -199,13 +199,3 @@
     </div>
   </section>
 </main>
-
-<style>
-  .ghost-cta {
-    transition: all 0.3s ease;
-  }
-</style>
-
-
-
-

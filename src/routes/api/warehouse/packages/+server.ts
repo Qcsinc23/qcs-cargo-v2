@@ -1,10 +1,15 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { WarehousePackage, WarehousePackageStatus } from '$lib/types/warehouse';
+import type { WarehousePackageStatus } from '$lib/types/warehouse';
+import { isAdminOrStaff } from '$lib/server/authz';
+import { escapePbFilterValue, sanitizeSearchTerm, sanitizeTrackingNumber } from '$lib/server/pb-filter';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
+  }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
   }
 
   const page = parseInt(url.searchParams.get('page') || '1', 10);
@@ -17,31 +22,44 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   const search = url.searchParams.get('search');
 
   try {
-    // Build filter
     let filter = '1 = 1';
+    const validStatuses: Array<WarehousePackageStatus | 'all'> = [
+      'all',
+      'incoming',
+      'received',
+      'verified',
+      'staged',
+      'picked',
+      'manifested',
+      'shipped',
+      'exception'
+    ];
 
-    if (status && status !== 'all') {
-      filter += ` && status = "${status}"`;
+    if (status && status !== 'all' && validStatuses.includes(status)) {
+      filter += ` && status = "${escapePbFilterValue(status)}"`;
     }
 
     if (zone) {
-      filter += ` && location_zone = "${zone}"`;
+      filter += ` && location_zone = "${escapePbFilterValue(zone)}"`;
     }
 
     if (bay) {
-      filter += ` && location_bay = "${bay}"`;
+      filter += ` && location_bay = "${escapePbFilterValue(bay)}"`;
     }
 
     if (serviceType) {
-      filter += ` && service_type = "${serviceType}"`;
+      filter += ` && service_type = "${escapePbFilterValue(serviceType)}"`;
     }
 
     if (destination) {
-      filter += ` && destination = "${destination}"`;
+      filter += ` && destination = "${escapePbFilterValue(destination)}"`;
     }
 
     if (search) {
-      filter += ` && (tracking_number ~ "${search}" || id ~ "${search}")`;
+      const safeSearch = sanitizeSearchTerm(search);
+      if (safeSearch) {
+        filter += ` && (tracking_number ~ "${safeSearch}" || id ~ "${safeSearch}")`;
+      }
     }
 
     const result = await locals.pb.collection('warehouse_packages').getList(page, perPage, {
@@ -70,31 +88,30 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
   }
+  if (!isAdminOrStaff(locals.user)) {
+    throw error(403, { message: 'Admin or staff role required' });
+  }
 
   const correlationId = locals.correlationId || crypto.randomUUID();
 
   try {
     const body = await request.json();
-    const {
-      trackingNumber,
-      condition,
-      actualWeight,
-      actualDimensions,
-      photos,
-      notes,
-      bayLocation
-    } = body;
+    const { trackingNumber, condition, actualWeight, actualDimensions, photos, notes, bayLocation } = body;
+    const safeTrackingNumber = sanitizeTrackingNumber(String(trackingNumber || ''));
+    if (!safeTrackingNumber) {
+      throw error(400, { message: 'Invalid tracking number format' });
+    }
 
     console.log('[warehouse_receive_package]', {
       correlationId,
-      trackingNumber,
+      trackingNumber: safeTrackingNumber,
       condition,
       receivedBy: locals.user.id
     });
 
     // Find the package
     const packages = await locals.pb.collection('packages').getFirstListItem(
-      `tracking_number = "${trackingNumber}"`,
+      `tracking_number = "${escapePbFilterValue(safeTrackingNumber)}"`,
       { expand: 'booking' }
     );
 
@@ -104,7 +121,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     // Check if already received
     const existingWarehousePackage = await locals.pb.collection('warehouse_packages').getFirstListItem(
-      `tracking_number = "${trackingNumber}"`
+      `tracking_number = "${escapePbFilterValue(safeTrackingNumber)}"`
     ).catch(() => null);
 
     if (existingWarehousePackage) {
@@ -118,7 +135,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     const warehousePackage = await locals.pb.collection('warehouse_packages').create({
-      tracking_number: trackingNumber,
+      tracking_number: safeTrackingNumber,
       qr_code: packages.qr_code,
       booking: bookingId,
       recipient: packages.expand?.booking?.recipient || null,
@@ -157,7 +174,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       status: 'success',
       data: {
         warehousePackageId: warehousePackage.id,
-        trackingNumber,
+        trackingNumber: safeTrackingNumber,
         status: 'received'
       }
     });

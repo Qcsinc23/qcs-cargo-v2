@@ -3,7 +3,18 @@ export interface Booking {
   userId: string;
   trackingNumber: string;
   destination: string;
-  status: 'pending' | 'confirmed' | 'received' | 'processing' | 'in_transit' | 'customs' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'exception';
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'received'
+    | 'processing'
+    | 'in_transit'
+    | 'customs'
+    | 'out_for_delivery'
+    | 'delivered'
+    | 'canceled'
+    | 'cancelled'
+    | 'exception';
   createdAt: string;
   updatedAt: string;
 }

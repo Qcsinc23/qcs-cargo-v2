@@ -41,7 +41,18 @@
   let loading = true;
 
   const destinations = ['Guyana', 'Trinidad', 'Jamaica', 'Barbados', 'Suriname'];
-  const statuses = Object.keys(STATUS_LABELS);
+  const shipmentStatuses = [
+    'pending',
+    'received',
+    'processing',
+    'in_transit',
+    'customs',
+    'out_for_delivery',
+    'delivered',
+    'returned',
+    'exception',
+    'canceled'
+  ];
 
   // Selected shipments for bulk actions
   let selectedIds: string[] = [];
@@ -197,7 +208,7 @@
           bind:value={statusFilter}
         >
           <option value="all">All Statuses</option>
-          {#each statuses as status}
+          {#each shipmentStatuses as status}
             <option value={status}>{STATUS_LABELS[status]}</option>
           {/each}
         </select>
@@ -239,7 +250,7 @@
               {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
-              {#each statuses as status}
+              {#each shipmentStatuses as status}
                 <DropdownMenu.Item onSelect={() => bulkUpdateStatus(status)}>
                   {STATUS_LABELS[status]}
                 </DropdownMenu.Item>
@@ -427,4 +438,3 @@
     {/if}
   </Card>
 </div>
-

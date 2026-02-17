@@ -235,6 +235,7 @@
           <button
             on:click={() => goto('/warehouse')}
             class="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Back to warehouse dashboard"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -351,6 +352,14 @@
                   getPackageColor(pkg)
                 } {selectedPackages.includes(pkg.id) ? 'ring-2 ring-blue-600' : ''}"
                 on:click={() => togglePackageSelection(pkg.id)}
+                on:keydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    togglePackageSelection(pkg.id);
+                  }
+                }}
+                role="button"
+                tabindex="0"
               >
                 <div class="flex items-start justify-between mb-2">
                   <span class="text-lg">{getServiceTypeIcon(pkg.serviceType)}</span>
@@ -392,6 +401,8 @@
               on:dragover={(e) => handleDragOver(e, bay.code)}
               on:dragleave={handleDragLeave}
               on:drop={(e) => handleDrop(e, bay)}
+              role="region"
+              aria-label={`Staging bay ${bay.code}`}
             >
               <div class="px-4 py-3 bg-gray-50 border-b">
                 <div class="flex justify-between items-center">
@@ -420,6 +431,14 @@
                         getPackageColor(pkg)
                       } hover:shadow-md transition-all"
                       on:click={() => togglePackageSelection(pkg.id)}
+                      on:keydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          togglePackageSelection(pkg.id);
+                        }
+                      }}
+                      role="button"
+                      tabindex="0"
                     >
                       <p class="font-mono truncate">{pkg.trackingNumber}</p>
                       <p class="text-gray-500">{pkg.destination}</p>
@@ -465,8 +484,9 @@
 
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Target Bay</label>
+            <label for="batch-target-bay" class="block text-sm font-medium text-gray-700 mb-2">Target Bay</label>
             <select
+              id="batch-target-bay"
               bind:value={selectedTargetBay}
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >

@@ -3,10 +3,12 @@ import type { RequestHandler } from './$types';
 import { createRefund, getPaymentIntent } from '$lib/server/stripe';
 import { z } from 'zod';
 import { paymentRateLimit } from '$lib/server/rate-limiter';
+import { hasRole } from '$lib/server/authz';
+import { escapePbFilterValue, sanitizePocketBaseId } from '$lib/server/pb-filter';
 
 const RefundBodySchema = z.object({
   paymentIntentId: z.string().min(1),
-  amount: z.number().optional().refine(n => !n || n > 0, 'Amount must be positive'),
+  amount: z.number().optional().refine((n) => n === undefined || n > 0, 'Amount must be positive'),
   reason: z.enum(['duplicate', 'fraudulent', 'requested_by_customer']).optional()
 });
 
@@ -20,7 +22,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
 
   // Check for admin privileges (in production, implement proper role-based access)
-  if (locals.user.role !== 'admin') {
+  if (!hasRole(locals.user, ['admin'])) {
     return json(
       { status: 'error', error_code: 'INSUFFICIENT_PERMISSIONS', message: 'Admin access required' },
       { status: 403 }
@@ -73,16 +75,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       );
     }
 
-    // Check if there's already a refund for this payment intent using latest_charge
-    const latestCharge = paymentIntent.latest_charge;
-    // Note: In the new Stripe API, we need to expand charges separately or check latest_charge
-    // For now, we'll check using the payment intent ID pattern - refunds use the same ID format
-    const existingRefunds = await locals.pb.collection('refunds').getFullList({
-      filter: `payment_intent_id = "${paymentIntentId}" && status = "succeeded"`,
-      limit: 1
+    // Check if there's already a successful refund for this payment intent.
+    const existingRefunds = await locals.pb.collection('refunds').getList(1, 1, {
+      filter: `payment_intent_id = "${escapePbFilterValue(paymentIntentId)}" && status = "succeeded"`,
+      fields: 'id,refund_id'
     });
-    if (existingRefunds.length > 0) {
-      const existingRefund = existingRefunds[0];
+    if (existingRefunds.totalItems > 0) {
+      const existingRefund = existingRefunds.items[0];
       return json(
         {
           status: 'error',
@@ -180,32 +179,43 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     throw error(401, { message: 'Authentication required' });
   }
 
-  // Users can only view their own refunds, admins can view all
-  const userId = locals.user.role === 'admin' ? url.searchParams.get('userId') || locals.user.id : locals.user.id;
+  const requestedUserId = sanitizePocketBaseId(url.searchParams.get('userId') || '');
+  const userId =
+    locals.user.role === 'admin'
+      ? requestedUserId || locals.user.id
+      : locals.user.id;
+  const pageRaw = Number.parseInt(url.searchParams.get('page') || '1', 10);
+  const perPageRaw = Number.parseInt(url.searchParams.get('perPage') || '25', 10);
+  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+  const perPage = Number.isFinite(perPageRaw) && perPageRaw > 0 ? Math.min(perPageRaw, 100) : 25;
 
   try {
-    const refunds = await locals.pb.collection('refunds').getFullList({
-      filter: locals.user.role === 'admin'
-        ? (userId ? `user_id = "${userId}"` : '')
-        : `user_id = "${locals.user.id}"`,
+    const refunds = await locals.pb.collection('refunds').getList(page, perPage, {
+      filter: `user_id = "${escapePbFilterValue(userId)}"`,
       sort: '-created',
       expand: 'booking_id'
     });
 
+    const mappedRefunds = refunds.items.map((refund) => ({
+      id: refund.id,
+      paymentIntentId: refund.payment_intent_id,
+      refundId: refund.refund_id,
+      amount: refund.amount,
+      currency: refund.currency,
+      status: refund.status,
+      reason: refund.reason,
+      bookingId: refund.booking_id,
+      createdAt: refund.created,
+      booking: refund.expand?.booking_id
+    }));
+
     return json({
       status: 'success',
-      data: refunds.map(refund => ({
-        id: refund.id,
-        paymentIntentId: refund.payment_intent_id,
-        refundId: refund.refund_id,
-        amount: refund.amount,
-        currency: refund.currency,
-        status: refund.status,
-        reason: refund.reason,
-        bookingId: refund.booking_id,
-        createdAt: refund.created,
-        booking: refund.expand?.booking_id
-      }))
+      data: mappedRefunds,
+      page: refunds.page,
+      perPage: refunds.perPage,
+      totalItems: refunds.totalItems,
+      totalPages: refunds.totalPages
     });
 
   } catch (err) {

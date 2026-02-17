@@ -157,13 +157,13 @@ export const handle = sequence(correlationHook, pbAuthHook, securityHook);
 // Use Sentry's error handler
 const sentryErrorHandler = Sentry.handleErrorWithSentry();
 
-export const handleError: import('@sveltejs/kit').HandleServerError = ({ error, event }) => {
-  const message = error instanceof Error ? error.message : String(error);
+export const handleError: import('@sveltejs/kit').HandleServerError = ({ error, event, status, message }) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
   const stack = error instanceof Error ? error.stack : '';
   
-  const errorMsg = `[error] 500 at ${event.url.pathname} - ${message}\n${stack}`;
+  const errorMsg = `[error] ${status} at ${event.url.pathname} - ${errorMessage}\n${stack}`;
   console.error(errorMsg);
   logToFile(errorMsg);
   
-  return sentryErrorHandler({ error, event });
+  return sentryErrorHandler({ error, event, status, message: errorMessage || message });
 };

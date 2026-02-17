@@ -1,75 +1,97 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { pb } from '$lib/server/pocketbase';
+import { hasRole } from '$lib/server/authz';
+
+async function countByFilter(
+  locals: App.Locals,
+  collection: string,
+  filter: string
+): Promise<number> {
+  return locals.pb
+    .collection(collection)
+    .getList(1, 1, { filter, fields: 'id' })
+    .then((res) => res.totalItems)
+    .catch(() => 0);
+}
+
+async function sumInvoiceAmounts(locals: App.Locals, filter: string): Promise<number> {
+  let page = 1;
+  let totalPages = 1;
+  let total = 0;
+
+  while (page <= totalPages) {
+    const invoicePage = await locals.pb.collection('invoices').getList(page, 200, {
+      filter,
+      fields: 'amount'
+    });
+
+    for (const invoice of invoicePage.items) {
+      total += Number(invoice.amount || 0);
+    }
+
+    totalPages = invoicePage.totalPages;
+    page += 1;
+  }
+
+  return total;
+}
 
 export const GET: RequestHandler = async ({ locals }) => {
   try {
     // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !hasRole(locals.user, ['admin'])) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-    // Get today's bookings
-    const todayBookings = await pb.collection('bookings').getList(1, 50, {
-      filter: `scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`,
-      sort: '-created',
-      expand: 'user,recipient'
-    });
-
-    // Get pending bookings (awaiting approval)
-    const pendingBookings = await pb.collection('bookings').getFullList({
-      filter: 'status = "confirmed" && payment_status = "pending"',
-      expand: 'user,recipient'
-    });
-
-    // Get active shipments
-    const activeShipments = await pb.collection('shipments').getFullList({
-      filter: 'status != "delivered" && status != "returned" && status != "exception"',
-      sort: '-created',
-      expand: 'user,booking,package'
-    });
-
-    // Get recent shipments
-    const recentShipments = await pb.collection('shipments').getList(1, 10, {
-      sort: '-created',
-      expand: 'user,booking,package'
-    });
-
-    // Get active customers (customers with bookings in last 30 days)
-    const thirtyDaysAgo = new Date();
+    const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const activeCustomers = await pb.collection('users').getList(1, 1, {
-      filter: `role = "customer" && created >= "${thirtyDaysAgo.toISOString()}"`
-    });
-
-    // Get MTD revenue
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const paidInvoices = await pb.collection('invoices').getFullList({
-      filter: `status = "paid" && paid_at >= "${firstDayOfMonth.toISOString()}"`
-    });
 
-    const revenueMTD = paidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const [todayBookings, pendingBookings, activeShipments, recentShipments, activeCustomers, revenueMTD, recentActivity] = await Promise.all([
+      // Get today's bookings
+      locals.pb.collection('bookings').getList(1, 50, {
+        filter: `scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`,
+        sort: '-created',
+        expand: 'user,recipient'
+      }),
+      // Get pending bookings for action cards
+      locals.pb.collection('bookings').getList(1, 20, {
+        filter: 'status = "confirmed" && payment_status = "pending"',
+        sort: '-created',
+        expand: 'user,recipient'
+      }),
+      // Count active shipments
+      countByFilter(locals, 'shipments', 'status != "delivered" && status != "returned" && status != "exception"'),
+      // Get recent shipments
+      locals.pb.collection('shipments').getList(1, 10, {
+        sort: '-created',
+        expand: 'user,booking,package'
+      }),
+      // "Active customers" currently represented as customers created in the last 30 days
+      locals.pb.collection('users').getList(1, 1, {
+        filter: `role = "customer" && created >= "${thirtyDaysAgo.toISOString()}"`
+      }),
+      // Get MTD revenue without loading all invoice fields
+      sumInvoiceAmounts(locals, `status = "paid" && paid_at >= "${firstDayOfMonth.toISOString()}"`),
+      // Get recent activity logs
+      locals.pb.collection('activity_logs').getList(1, 20, {
+        sort: '-created',
+        expand: 'user'
+      })
+    ]);
 
-    // Get recent activity logs
-    const recentActivity = await pb.collection('activity_logs').getList(1, 20, {
-      sort: '-created',
-      expand: 'user'
-    });
-
-    return json({
+    const payload = {
       kpis: {
-        activeShipments: activeShipments.length,
-        pendingBookings: pendingBookings.length,
+        activeShipments,
+        pendingBookings: pendingBookings.totalItems,
         activeCustomers: activeCustomers.totalItems,
-        revenueMTD: revenueMTD
+        revenueMTD
       },
       todayBookings: todayBookings.items,
-      pendingActions: pendingBookings.map(booking => ({
+      pendingActions: pendingBookings.items.map((booking) => ({
         id: booking.id,
         type: 'booking',
         message: `New booking from ${booking.expand?.user?.name || 'Unknown'} awaiting confirmation`,
@@ -91,10 +113,16 @@ export const GET: RequestHandler = async ({ locals }) => {
         packages: booking.package_count || 0
       })),
       recentActivity: recentActivity.items
+    };
+
+    return json({
+      status: 'success',
+      data: payload,
+      ...payload
     });
   } catch (error) {
     console.error('Dashboard data fetch error:', error);
-    return json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
+    return json({ status: 'error', message: 'Failed to fetch dashboard data' }, { status: 500 });
   }
 };
 

@@ -52,11 +52,10 @@
         disabled={loading}
       >
         {#if loading}
-          <span class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <span class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
         {/if}
         {confirmText}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
-

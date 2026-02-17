@@ -1,49 +1,82 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { pb } from '$lib/server/pocketbase';
+import { z } from 'zod';
+import { hasRole } from '$lib/server/authz';
+import { escapePbFilterValue, sanitizePocketBaseId, sanitizeSearchTerm } from '$lib/server/pb-filter';
+
+const SHIPMENT_STATUSES = new Set([
+  'pending',
+  'received',
+  'processing',
+  'in_transit',
+  'customs',
+  'out_for_delivery',
+  'delivered',
+  'returned',
+  'exception',
+  'canceled'
+]);
+
+const UpdateShipmentSchema = z.object({
+  shipmentId: z.string().min(1).max(64),
+  status: z.string().min(1).max(64),
+  note: z.string().max(2000).optional().nullable(),
+  photos: z.unknown().optional(),
+  exceptionReason: z.string().max(500).optional().nullable()
+});
+
+const AddShipmentNoteSchema = z.object({
+  shipmentId: z.string().min(1).max(64),
+  note: z.string().min(1).max(2000)
+});
+
+function normalizeShipmentStatus(status: string): string {
+  return status.trim().toLowerCase() === 'cancelled' ? 'canceled' : status.trim().toLowerCase();
+}
 
 export const GET: RequestHandler = async ({ locals, url }) => {
   try {
     // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !hasRole(locals.user, ['admin'])) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
-    const search = url.searchParams.get('search') || '';
-    const status = url.searchParams.get('status') || 'all';
-    const destination = url.searchParams.get('destination') || 'all';
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const perPage = parseInt(url.searchParams.get('perPage') || '10');
+    const search = sanitizeSearchTerm(url.searchParams.get('search') || '');
+    const rawStatus = normalizeShipmentStatus(url.searchParams.get('status') || 'all');
+    const status = rawStatus === 'all' || SHIPMENT_STATUSES.has(rawStatus) ? rawStatus : 'all';
+    const destination = sanitizeSearchTerm(url.searchParams.get('destination') || '', 60);
+    const pageRaw = Number.parseInt(url.searchParams.get('page') || '1', 10);
+    const perPageRaw = Number.parseInt(url.searchParams.get('perPage') || '10', 10);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const perPage = Number.isFinite(perPageRaw) && perPageRaw > 0 ? Math.min(perPageRaw, 100) : 10;
 
-    // Build filter
-    let filter = '';
-    const filterParts = [];
+    const filterParts: string[] = [];
 
     if (search) {
-      filterParts.push(`(tracking_number ~ "${search}" || user.name ~ "${search}" || user.email ~ "${search}")`);
+      filterParts.push(
+        `(tracking_number ~ "${search}" || user.name ~ "${search}" || user.email ~ "${search}")`
+      );
     }
 
     if (status !== 'all') {
-      filterParts.push(`status = "${status}"`);
+      filterParts.push(`status = "${escapePbFilterValue(status)}"`);
     }
 
-    if (destination !== 'all') {
+    if (destination) {
       filterParts.push(`destination ~ "${destination}"`);
     }
 
-    if (filterParts.length > 0) {
-      filter = filterParts.join(' && ');
-    }
+    const filter = filterParts.join(' && ');
 
     // Fetch shipments
-    const shipmentsList = await pb.collection('shipments').getList(page, perPage, {
-      filter,
+    const shipmentsList = await locals.pb.collection('shipments').getList(page, perPage, {
+      ...(filter ? { filter } : {}),
       sort: '-created',
       expand: 'user,booking,package'
     });
 
     // Format shipments for frontend
-    const formattedShipments = shipmentsList.items.map(shipment => ({
+    const formattedShipments = shipmentsList.items.map((shipment) => ({
       id: shipment.tracking_number,
       shipmentId: shipment.id,
       customer: shipment.expand?.user?.name || 'Unknown',
@@ -61,15 +94,21 @@ export const GET: RequestHandler = async ({ locals, url }) => {
       exceptionReason: shipment.exception_reason
     }));
 
-    return json({
+    const payload = {
       shipments: formattedShipments,
       totalItems: shipmentsList.totalItems,
       totalPages: shipmentsList.totalPages,
       currentPage: page
+    };
+
+    return json({
+      status: 'success',
+      data: payload,
+      ...payload
     });
-  } catch (error) {
-    console.error('Shipments fetch error:', error);
-    return json({ error: 'Failed to fetch shipments' }, { status: 500 });
+  } catch (err) {
+    console.error('Shipments fetch error:', err);
+    return json({ status: 'error', message: 'Failed to fetch shipments' }, { status: 500 });
   }
 };
 
@@ -77,56 +116,76 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 export const PATCH: RequestHandler = async ({ locals, request }) => {
   try {
     // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !hasRole(locals.user, ['admin'])) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
-    const { shipmentId, status, note, photos, exceptionReason } = await request.json();
+    const parsed = UpdateShipmentSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return json({ status: 'error', message: 'Invalid request body' }, { status: 400 });
+    }
 
+    const shipmentId = sanitizePocketBaseId(parsed.data.shipmentId);
     if (!shipmentId) {
-      return json({ error: 'Shipment ID required' }, { status: 400 });
+      return json({ status: 'error', message: 'Invalid shipment ID' }, { status: 400 });
+    }
+
+    const status = normalizeShipmentStatus(parsed.data.status);
+    if (!SHIPMENT_STATUSES.has(status)) {
+      return json({ status: 'error', message: 'Invalid shipment status' }, { status: 400 });
     }
 
     // Get current shipment to update status history
-    const currentShipment = await pb.collection('shipments').getOne(shipmentId);
-    const statusHistory = currentShipment.status_history || [];
+    const currentShipment = await locals.pb.collection('shipments').getOne(shipmentId);
+    const statusHistory = Array.isArray(currentShipment.status_history) ? [...currentShipment.status_history] : [];
+    const note = typeof parsed.data.note === 'string' ? parsed.data.note.trim() : '';
+    const exceptionReason =
+      typeof parsed.data.exceptionReason === 'string' ? parsed.data.exceptionReason.trim() : '';
 
     // Add new status to history
     statusHistory.push({
       status,
       timestamp: new Date().toISOString(),
       updated_by: locals.user.id,
-      note: note || ''
+      note
     });
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status,
       status_history: statusHistory
     };
 
     if (note) updateData.notes = note;
     if (exceptionReason) updateData.exception_reason = exceptionReason;
+    if (parsed.data.photos !== undefined) updateData.photos = parsed.data.photos;
 
     // Handle delivered timestamp
     if (status === 'delivered') {
       updateData.delivered_at = new Date().toISOString();
     }
 
-    const updatedShipment = await pb.collection('shipments').update(shipmentId, updateData);
+    const updatedShipment = await locals.pb.collection('shipments').update(shipmentId, updateData);
 
     // Log activity
-    await pb.collection('activity_logs').create({
+    await locals.pb.collection('activity_logs').create({
       user: locals.user.id,
       action: `Updated shipment ${currentShipment.tracking_number} status to ${status}`,
       resource_type: 'shipment',
       resource_id: shipmentId,
       metadata: { status, note }
+    }).catch((logErr) => {
+      console.warn('Failed to log shipment status update activity', logErr);
     });
 
-    return json({ success: true, shipment: updatedShipment });
-  } catch (error) {
-    console.error('Shipment update error:', error);
-    return json({ error: 'Failed to update shipment' }, { status: 500 });
+    return json({
+      status: 'success',
+      data: { shipment: updatedShipment },
+      success: true,
+      shipment: updatedShipment
+    });
+  } catch (err) {
+    console.error('Shipment update error:', err);
+    return json({ status: 'error', message: 'Failed to update shipment' }, { status: 500 });
   }
 };
 
@@ -134,30 +193,43 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 export const POST: RequestHandler = async ({ locals, request }) => {
   try {
     // Ensure user is admin
-    if (!locals.user || locals.user.role !== 'admin') {
-      return json({ error: 'Unauthorized' }, { status: 403 });
+    if (!locals.user || !hasRole(locals.user, ['admin'])) {
+      return json({ status: 'error', message: 'Unauthorized' }, { status: 403 });
     }
 
-    const { shipmentId, note } = await request.json();
+    const parsed = AddShipmentNoteSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return json({ status: 'error', message: 'Invalid request body' }, { status: 400 });
+    }
 
-    if (!shipmentId || !note) {
-      return json({ error: 'Shipment ID and note required' }, { status: 400 });
+    const shipmentId = sanitizePocketBaseId(parsed.data.shipmentId);
+    if (!shipmentId) {
+      return json({ status: 'error', message: 'Invalid shipment ID' }, { status: 400 });
     }
 
     // Get current shipment
-    const currentShipment = await pb.collection('shipments').getOne(shipmentId);
+    const currentShipment = await locals.pb.collection('shipments').getOne(shipmentId);
+    const authorName =
+      typeof locals.user.name === 'string' && locals.user.name.trim().length > 0
+        ? locals.user.name.trim()
+        : 'Admin';
 
     // Append note to existing notes
     const existingNotes = currentShipment.notes || '';
-    const newNote = `${existingNotes ? existingNotes + '\n\n' : ''}[${new Date().toLocaleDateString()} - ${locals.user.name}]: ${note}`;
+    const newNote = `${existingNotes ? `${existingNotes}\n\n` : ''}[${new Date().toISOString()} - ${authorName}]: ${parsed.data.note.trim()}`;
 
-    const updatedShipment = await pb.collection('shipments').update(shipmentId, {
+    const updatedShipment = await locals.pb.collection('shipments').update(shipmentId, {
       notes: newNote
     });
 
-    return json({ success: true, shipment: updatedShipment });
-  } catch (error) {
-    console.error('Add note error:', error);
-    return json({ error: 'Failed to add note' }, { status: 500 });
+    return json({
+      status: 'success',
+      data: { shipment: updatedShipment },
+      success: true,
+      shipment: updatedShipment
+    });
+  } catch (err) {
+    console.error('Add note error:', err);
+    return json({ status: 'error', message: 'Failed to add note' }, { status: 500 });
   }
 };

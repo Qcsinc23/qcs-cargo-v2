@@ -1,6 +1,6 @@
 // Service worker for caching static assets, API responses, and offline scanning
-const STATIC_CACHE = 'qcs-static-v2';
-const API_CACHE = 'qcs-api-v2';
+const STATIC_CACHE = 'qcs-static-v3';
+const API_CACHE = 'qcs-api-v3';
 
 // Assets to cache on install
 const STATIC_ASSETS = [

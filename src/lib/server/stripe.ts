@@ -57,13 +57,8 @@ export async function createPaymentIntent(params: {
       booking_id: bookingId,
       ...metadata
     },
-    automatic_payment_methods: {
-      enabled: true,
-      allow_redirects: 'never' // Disable redirects for better security
-    },
-    // Add payment method configuration for better UX
-    payment_method_types: ['card', 'us_bank_account'], // Support cards and ACH
-    setup_future_usage: 'off_session' // Allow saving cards for future use
+    payment_method_types: ['card'],
+    setup_future_usage: 'off_session'
   };
 
   if (customerId) {

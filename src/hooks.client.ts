@@ -4,12 +4,12 @@ Sentry.init({
   dsn: import.meta.env.VITE_PUBLIC_SENTRY_DSN,
   environment: import.meta.env.VITE_PUBLIC_SENTRY_ENVIRONMENT || 'development',
   
-  // Performance Monitoring
-  tracesSampleRate: 1.0, // Capture 100% of transactions in dev, adjust for prod
+  // Performance Monitoring -- 100% in dev, 10% in production
+  tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.1,
   
-  // Session Replay
-  replaysSessionSampleRate: 0.1, // 10% of sessions
-  replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
+  // Session Replay -- only capture on errors to avoid DOM observer overhead
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 1.0,
   
   integrations: [
     Sentry.replayIntegration({

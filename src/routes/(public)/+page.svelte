@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import {
     ArrowRight,
@@ -13,6 +14,24 @@
   } from 'lucide-svelte';
 
   let y = 0;
+  let ticking = false;
+  let scrollCleanup: (() => void) | null = null;
+
+  onMount(() => {
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          y = window.scrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    scrollCleanup = () => window.removeEventListener('scroll', onScroll);
+  });
+
+  onDestroy(() => scrollCleanup?.());
 
   // Scroll to calculator section
   function scrollToCalculator() {
@@ -87,8 +106,6 @@
   />
 </svelte:head>
 
-<svelte:window bind:scrollY={y} />
-
 <main class="bg-background text-foreground">
   <!-- HERO -->
   <section
@@ -101,13 +118,13 @@
 
       <!-- Warm neutral haze (subtle, to soften the ocean) -->
       <div class="absolute inset-0 opacity-35" aria-hidden="true">
-        <div class="absolute -left-40 top-[-8rem] h-[34rem] w-[34rem] rounded-full bg-[#F3DDD4]/35 blur-3xl motion-slow ocean-float"></div>
-        <div class="absolute -right-44 bottom-[-10rem] h-[40rem] w-[40rem] rounded-full bg-[#DDE8DF]/35 blur-3xl motion-slow ocean-drift"></div>
+        <div class="absolute -left-40 top-[-8rem] h-[24rem] w-[24rem] rounded-full bg-[#F3DDD4]/35 blur-2xl motion-slow ocean-float"></div>
+        <div class="absolute -right-44 bottom-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[#DDE8DF]/35 blur-2xl motion-slow ocean-drift"></div>
       </div>
 
       <!-- Parallax layers (outer wrapper translates, inner element animates) -->
       <div
-        class="absolute -top-48 left-[-12rem] h-[38rem] w-[38rem] opacity-70 blur-3xl"
+        class="absolute -top-48 left-[-12rem] h-[28rem] w-[28rem] opacity-70 blur-2xl"
         style={`transform: translate3d(0, ${y * 0.06}px, 0);`}
         aria-hidden="true"
       >
@@ -115,7 +132,7 @@
       </div>
 
       <div
-        class="absolute top-[-18rem] right-[-14rem] h-[42rem] w-[42rem] opacity-60 blur-3xl"
+        class="absolute top-[-18rem] right-[-14rem] h-[30rem] w-[30rem] opacity-60 blur-2xl"
         style={`transform: translate3d(0, ${y * 0.04}px, 0);`}
         aria-hidden="true"
       >
@@ -123,7 +140,7 @@
       </div>
 
       <div
-        class="absolute bottom-[-22rem] left-1/2 h-[48rem] w-[48rem] -translate-x-1/2 opacity-70 blur-3xl"
+        class="absolute bottom-[-22rem] left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 opacity-70 blur-2xl"
         style={`transform: translate3d(-50%, ${y * -0.02}px, 0);`}
         aria-hidden="true"
       >
@@ -333,8 +350,8 @@
   <!-- TESTIMONIALS (editorial / magazine) -->
   <section class="relative overflow-hidden bg-gradient-to-b from-[#FBF8F2] via-white to-[#F3DDD4]/45 py-32 sm:py-40">
     <div class="pointer-events-none absolute inset-0 opacity-45" aria-hidden="true">
-      <div class="absolute -left-24 top-12 h-[28rem] w-[28rem] rounded-full bg-[#DDE8DF]/55 blur-3xl motion-slow ocean-float"></div>
-      <div class="absolute -right-28 bottom-0 h-[34rem] w-[34rem] rounded-full bg-[#F3DDD4]/55 blur-3xl motion-slow ocean-drift"></div>
+      <div class="absolute -left-24 top-12 h-[20rem] w-[20rem] rounded-full bg-[#DDE8DF]/55 blur-2xl motion-slow ocean-float"></div>
+      <div class="absolute -right-28 bottom-0 h-[24rem] w-[24rem] rounded-full bg-[#F3DDD4]/55 blur-2xl motion-slow ocean-drift"></div>
     </div>
 
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -394,11 +411,11 @@
   >
     <div class="pointer-events-none absolute inset-0" aria-hidden="true">
       <div class="absolute inset-0 opacity-35 ocean-grid"></div>
-      <div class="absolute -top-28 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#90E0EF]/25 blur-3xl motion-slow ocean-pulse"></div>
-      <div class="absolute -bottom-40 right-[-10rem] h-[38rem] w-[38rem] rounded-full bg-[#CAF0F8]/20 blur-3xl motion-slow ocean-drift"></div>
-      <div class="absolute -bottom-36 left-[-12rem] h-[30rem] w-[30rem] rounded-full bg-[#0077B6]/10 blur-3xl motion-slow ocean-float"></div>
-      <div class="absolute -top-24 right-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#F3DDD4]/18 blur-3xl motion-slow ocean-drift"></div>
-      <div class="absolute -bottom-44 left-[10%] h-[26rem] w-[26rem] rounded-full bg-[#DDE8DF]/18 blur-3xl motion-slow ocean-float"></div>
+      <div class="absolute -top-28 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-[#90E0EF]/25 blur-2xl motion-slow ocean-pulse"></div>
+      <div class="absolute -bottom-40 right-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[#CAF0F8]/20 blur-2xl motion-slow ocean-drift"></div>
+      <div class="absolute -bottom-36 left-[-12rem] h-[22rem] w-[22rem] rounded-full bg-[#0077B6]/10 blur-2xl motion-slow ocean-float"></div>
+      <div class="absolute -top-24 right-[-12rem] h-[20rem] w-[20rem] rounded-full bg-[#F3DDD4]/18 blur-2xl motion-slow ocean-drift"></div>
+      <div class="absolute -bottom-44 left-[10%] h-[20rem] w-[20rem] rounded-full bg-[#DDE8DF]/18 blur-2xl motion-slow ocean-float"></div>
     </div>
 
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -494,10 +511,7 @@
     display: none; /* Chrome/Safari */
   }
 
-  /* Motion helpers */
-  .motion-slow {
-    will-change: transform, opacity;
-  }
+  /* Motion helpers -- browser auto-promotes animated elements; no will-change needed */
 
   .ocean-float {
     animation: float 18s ease-in-out infinite;

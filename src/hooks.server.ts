@@ -6,27 +6,14 @@ import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import * as Sentry from '@sentry/sveltekit';
 import { getCurrentUser } from '$lib/server/magic-link';
-import { appendFileSync } from 'fs';
-
-const logFile = '/app/app.log';
-
-function logToFile(msg: string) {
-  try {
-    const timestamp = new Date().toISOString();
-    appendFileSync(logFile, `[${timestamp}] ${msg}\n`);
-  } catch (err) {
-    console.error('Failed to write to log file:', err);
-  }
-}
 
 console.log('[hooks] Server hooks initializing...');
-logToFile('Server hooks initializing...');
 
 // Initialize Sentry for server-side error tracking
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.SENTRY_ENVIRONMENT || 'development',
-  tracesSampleRate: 1.0,
+  tracesSampleRate: dev ? 1.0 : 0.1,
   
   // Server-side filtering
   beforeSend(event) {
@@ -53,30 +40,49 @@ const correlationHook: Handle = async ({ event, resolve }) => {
   const duration = Date.now() - start;
   const logMsg = `[request] ${event.request.method} ${event.url.pathname} - ${response.status} (${duration}ms) [${correlationId}]`;
   console.log(logMsg);
-  logToFile(logMsg);
 
   return response;
 };
 
-// PocketBase Authentication hook
-const pbAuthHook: Handle = async ({ event, resolve }) => {
-  // Initialize PocketBase for data operations
-  event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
-  event.locals.user = null; // Default to no user
-  
-  // Authenticate PocketBase with admin credentials for server-side operations
+// Cached admin PocketBase instance -- avoids re-authenticating on every request
+let cachedAdminPb: PocketBase | null = null;
+
+async function getAdminPb(): Promise<PocketBase> {
+  if (cachedAdminPb && cachedAdminPb.authStore.isValid) {
+    return cachedAdminPb;
+  }
+
+  const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
   const adminEmail = env.POCKETBASE_ADMIN_EMAIL;
   const adminPassword = env.POCKETBASE_ADMIN_PASSWORD;
+
   if (adminEmail && adminPassword) {
     try {
-      await event.locals.pb.admins.authWithPassword(adminEmail, adminPassword);
+      await pb.admins.authWithPassword(adminEmail, adminPassword);
+      cachedAdminPb = pb;
     } catch (err: any) {
       console.error('[hooks] Failed to authenticate PocketBase admin:', err?.message || err);
-      // Continue anyway - some routes might not need admin access
     }
   } else {
     console.warn('[hooks] PocketBase admin credentials not configured; admin auth skipped');
   }
+
+  return pb;
+}
+
+// PocketBase Authentication hook
+const pbAuthHook: Handle = async ({ event, resolve }) => {
+  // Get (or create) admin-authenticated PocketBase instance
+  const adminPb = await getAdminPb();
+
+  // Each request gets its own PocketBase instance that shares the admin auth token
+  const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+  if (adminPb.authStore.isValid) {
+    pb.authStore.save(adminPb.authStore.token, adminPb.authStore.model);
+  }
+
+  event.locals.pb = pb;
+  event.locals.user = null;
   
   // Get auth token from cookie
   const authToken = event.cookies.get('pb_auth');
@@ -163,7 +169,6 @@ export const handleError: import('@sveltejs/kit').HandleServerError = ({ error, 
   
   const errorMsg = `[error] ${status} at ${event.url.pathname} - ${errorMessage}\n${stack}`;
   console.error(errorMsg);
-  logToFile(errorMsg);
   
   return sentryErrorHandler({ error, event, status, message: errorMessage || message });
 };

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { toast } from '$lib/stores/toast';
@@ -50,10 +49,8 @@
       verificationStatus = 'success';
       toast.success('Successfully signed in!');
       
-      // Redirect to dashboard or redirectTo after a brief delay
-      setTimeout(() => {
-        goto(redirectTo || '/dashboard');
-      }, 1500);
+      // Full page navigation ensures hooks.server.ts reads the fresh pb_auth cookie
+      window.location.href = redirectTo || '/dashboard';
     } catch (error: any) {
       errorMessage = error.message || 'Failed to verify magic link';
       verificationStatus = 'error';

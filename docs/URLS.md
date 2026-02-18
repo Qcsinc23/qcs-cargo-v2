@@ -1,62 +1,71 @@
-# Required URLs for QCS Cargo (production)
+# Production URL Reference (Hostinger VPS)
 
-**Base URL:** `https://qcs-cargo.com` (no trailing slash)
+This document is the source of truth for external URLs used by QCS Cargo in production.
 
-Set `PUBLIC_SITE_URL=https://qcs-cargo.com` in production so all links, webhooks, and redirects use this base.
+## Environment Context
 
----
-
-## 1. Webhook endpoints (configure in each service)
-
-| Service   | URL | Where to set |
-|-----------|-----|--------------|
-| **Stripe** | `https://qcs-cargo.com/api/webhooks/stripe` | [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → your endpoint → Update URL |
-| **Twilio (SMS status)** | `https://qcs-cargo.com/api/webhooks/sms/status` | Uses `PUBLIC_SITE_URL` in code (per-message `statusCallback`); no Twilio dashboard URL needed if env is set |
-| **Carrier tracking** | `https://qcs-cargo.com/api/webhooks/carrier-tracking` | Only if a carrier is configured to POST here |
+- Production hosting: **Hostinger VPS**
+- Deployment model: Docker Compose (`docker-compose.prod.yml`) behind Traefik / Dokploy
+- Primary site URL is controlled by `PUBLIC_SITE_URL`
 
 ---
 
-## 2. Kinde (auth) — set in Kinde Dashboard and in `.env`
+## 1. Canonical Base URLs
 
-In [Kinde Dashboard](https://qcsinc.kinde.com) → Application → URLs, set:
+Set these in production:
 
-| Kinde setting | Production URL |
-|---------------|-----------------|
-| **Allowed redirect URL** | `https://qcs-cargo.com/api/auth/kinde_callback` |
-| **Allowed logout redirect URL** | `https://qcs-cargo.com` |
-| **Post login redirect** (if configurable) | `https://qcs-cargo.com/dashboard` |
+- `PUBLIC_SITE_URL=https://qcs-cargo.com`
+- `PUBLIC_POCKETBASE_URL=https://api.qcs-cargo.com` (or your API domain)
 
-In production `.env`:
+Derived app URLs:
 
-```env
-PUBLIC_SITE_URL=https://qcs-cargo.com
-KINDE_REDIRECT_URL=https://qcs-cargo.com/api/auth/kinde_callback
-KINDE_POST_LOGOUT_REDIRECT_URL=https://qcs-cargo.com
-KINDE_POST_LOGIN_REDIRECT_URL=https://qcs-cargo.com/dashboard
-```
-
----
-
-## 3. App URLs derived from `PUBLIC_SITE_URL`
-
-These are built in code from `PUBLIC_SITE_URL`; no extra config if that env is set.
-
-- **Site home:** `https://qcs-cargo.com`
-- **Dashboard:** `https://qcs-cargo.com/dashboard`
-- **Login:** `https://qcs-cargo.com/login`
-- **Verify (magic link):** `https://qcs-cargo.com/verify?token=...`
-- **Booking confirmation (Stripe return):** `https://qcs-cargo.com/dashboard/bookings/{id}/confirmation`
-- **Track:** `https://qcs-cargo.com/track?number=...`
-- **Legal:** `https://qcs-cargo.com/legal/privacy`, etc.
-- **Sitemap:** `https://qcs-cargo.com/sitemap.xml`
-- **Robots:** `https://qcs-cargo.com/robots.txt`
+- Home: `https://qcs-cargo.com/`
+- Login: `https://qcs-cargo.com/login`
+- Verify magic link: `https://qcs-cargo.com/verify?token=...`
+- Dashboard: `https://qcs-cargo.com/dashboard`
+- Tracking: `https://qcs-cargo.com/track?number=...`
+- Health: `https://qcs-cargo.com/api/health`
+- Sitemap: `https://qcs-cargo.com/sitemap.xml`
+- Robots: `https://qcs-cargo.com/robots.txt`
 
 ---
 
-## 4. Stripe webhook (production)
+## 2. Webhook Endpoints
 
-Ensure the Stripe webhook endpoint URL is set to:
+| Service | URL | Configuration Location |
+|---|---|---|
+| Stripe | `https://qcs-cargo.com/api/webhooks/stripe` | Stripe Dashboard > Developers > Webhooks |
+| Twilio status callback | `https://qcs-cargo.com/api/webhooks/sms/status` | Generated from app env (`PUBLIC_SITE_URL`) |
+| Carrier tracking (optional) | `https://qcs-cargo.com/api/webhooks/carrier-tracking` | Carrier integration settings |
 
-**`https://qcs-cargo.com/api/webhooks/stripe`**
+---
 
-Update it in [Stripe Dashboard → Developers → Webhooks](https://dashboard.stripe.com/webhooks) → select your endpoint → **Update details** → set **Endpoint URL** to the value above.
+## 3. Auth URLs (Magic Link)
+
+QCS Cargo uses magic-link authentication (no OAuth callback URL required).
+
+Required auth route URLs:
+
+- Request link API: `https://qcs-cargo.com/api/auth/magic-link/request`
+- Verify link API: `https://qcs-cargo.com/api/auth/magic-link/verify`
+- Verify page: `https://qcs-cargo.com/verify?token=...`
+
+---
+
+## 4. Stripe Return URLs
+
+Stripe flows ultimately return users into dashboard routes. Ensure `PUBLIC_SITE_URL` is correct in production so all generated links are valid.
+
+Typical destination:
+
+- `https://qcs-cargo.com/dashboard/bookings/{bookingId}/confirmation`
+
+---
+
+## 5. Validation Checklist
+
+1. Confirm `PUBLIC_SITE_URL` in production env matches the real HTTPS domain.
+2. Confirm Stripe webhook endpoint points to production domain.
+3. Hit `https://qcs-cargo.com/api/health` and verify `status: healthy`.
+4. Send a test magic-link email and verify URL opens production `/verify`.
+5. Trigger a Twilio message and verify callback hits `/api/webhooks/sms/status`.

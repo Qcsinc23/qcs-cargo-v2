@@ -1,5 +1,8 @@
 # Authentication Migration Plan: Kinde to PocketBase Magic Links
 
+> Status (2026-02-18): Historical reference only.  
+> The migration to PocketBase magic-link auth is already complete in the live codebase.
+
 ## Overview
 
 This document outlines the comprehensive migration from Kinde authentication to PocketBase-native authentication with magic link functionality, integrated with Resend for email delivery.

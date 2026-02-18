@@ -134,12 +134,7 @@ export async function saveScan(scan: Omit<OfflineScan, 'id' | 'synced' | 'syncAt
     request.onsuccess = () => {
       console.log('[OfflineScanner] Scan saved:', fullScan.id);
       loadPendingScans();
-      
-      // Try to sync immediately if online
-      if (get(isOnline)) {
-        syncPendingScans();
-      }
-      
+
       resolve(fullScan);
     };
 
@@ -159,11 +154,10 @@ export async function loadPendingScans(): Promise<OfflineScan[]> {
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([SCANS_STORE], 'readonly');
     const store = transaction.objectStore(SCANS_STORE);
-    const index = store.index('synced');
-    const request = index.getAll(IDBKeyRange.only(false));
+    const request = store.getAll();
 
     request.onsuccess = () => {
-      const scans = request.result as OfflineScan[];
+      const scans = (request.result as OfflineScan[]).filter((scan) => scan.synced !== true);
       pendingScans.set(scans);
       console.log(`[OfflineScanner] Loaded ${scans.length} pending scans`);
       resolve(scans);
@@ -468,32 +462,75 @@ export function initConnectivityMonitor(): () => void {
 
 let successSound: HTMLAudioElement | null = null;
 let errorSound: HTMLAudioElement | null = null;
+let audioContext: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+
+  const AudioContextCtor =
+    window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+  if (!AudioContextCtor) return null;
+
+  if (!audioContext) {
+    audioContext = new AudioContextCtor();
+  }
+
+  return audioContext;
+}
+
+function playTone(
+  frequency: number,
+  durationMs: number,
+  type: OscillatorType = 'sine',
+  volume = 0.045
+): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  const now = ctx.currentTime;
+  const duration = durationMs / 1000;
+
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, now);
+
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.02);
+}
 
 /**
  * Initialize audio feedback
  */
 export function initAudioFeedback(): void {
-  if (typeof Audio === 'undefined') return;
-
-  try {
-    successSound = new Audio('/sounds/scan-success.mp3');
-    errorSound = new Audio('/sounds/scan-error.mp3');
-    
-    // Preload sounds
-    successSound.load();
-    errorSound.load();
-  } catch (error) {
-    console.warn('[OfflineScanner] Could not initialize audio feedback:', error);
-  }
+  // Keep as no-op initializer. Tones are generated via Web Audio API on demand.
+  if (typeof window === 'undefined') return;
 }
 
 /**
  * Play success sound
  */
 export function playSuccessSound(): void {
-  if (successSound) {
-    successSound.currentTime = 0;
-    successSound.play().catch(() => {});
+  // Fallback chain: generated tone first; HTMLAudio fallback if configured elsewhere.
+  try {
+    playTone(880, 90, 'sine', 0.04);
+    setTimeout(() => playTone(1175, 120, 'sine', 0.04), 90);
+  } catch {
+    if (successSound) {
+      successSound.currentTime = 0;
+      successSound.play().catch(() => {});
+    }
   }
 }
 
@@ -501,9 +538,14 @@ export function playSuccessSound(): void {
  * Play error sound
  */
 export function playErrorSound(): void {
-  if (errorSound) {
-    errorSound.currentTime = 0;
-    errorSound.play().catch(() => {});
+  try {
+    playTone(220, 180, 'sawtooth', 0.05);
+    setTimeout(() => playTone(165, 220, 'sawtooth', 0.05), 160);
+  } catch {
+    if (errorSound) {
+      errorSound.currentTime = 0;
+      errorSound.play().catch(() => {});
+    }
   }
 }
 
@@ -624,7 +666,6 @@ export default {
   getBillableWeight,
   getSyncStatusMessage
 };
-
 
 
 

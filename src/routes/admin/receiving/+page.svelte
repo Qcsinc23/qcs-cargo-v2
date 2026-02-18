@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { page } from '$app/stores';
   import { Card } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -32,6 +33,7 @@
     initConnectivityMonitor,
     initAudioFeedback,
     saveScan,
+    loadPendingScans,
     syncPendingScans,
     playSuccessSound,
     playErrorSound,
@@ -108,16 +110,20 @@
     try {
       if ($isOnline) {
         const response = await fetch('/api/admin/bookings/today');
-        if (response.ok) {
-          const result = await response.json();
-          if (result.status === 'success') {
-            todayBookings = result.data.items || [];
-            // Cache for offline use
-            await cacheBookings(todayBookings.map(b => ({
-              ...b,
-              cachedAt: new Date().toISOString()
-            })));
-          }
+        if (!response.ok) {
+          throw new Error(`Failed to load bookings (${response.status})`);
+        }
+
+        const result = await response.json();
+        if (result.status === 'success') {
+          todayBookings = result.data.items || [];
+          // Cache for offline use
+          await cacheBookings(todayBookings.map(b => ({
+            ...b,
+            cachedAt: new Date().toISOString()
+          })));
+        } else {
+          throw new Error('Unexpected bookings response');
         }
       } else {
         // Load from cache
@@ -132,19 +138,11 @@
       // Try to load from cache
       const cached = await getCachedBookings();
       todayBookings = cached;
+      if ($isOnline && cached.length === 0) {
+        toast.error('Unable to load today bookings right now');
+      }
     } finally {
       isLoading = false;
-    }
-
-    // If no data from API, use mock data for demo
-    if (todayBookings.length === 0) {
-      todayBookings = [
-        { id: 'BK-2024-0095', customer: 'Maria G.', time: '10:00 AM', packages: 3, status: 'checked_in', destination: 'Guyana' },
-        { id: 'BK-2024-0094', customer: 'Devon T.', time: '11:30 AM', packages: 1, status: 'pending', destination: 'Jamaica' },
-        { id: 'BK-2024-0093', customer: 'Patricia W.', time: '02:00 PM', packages: 2, status: 'pending', destination: 'Trinidad' },
-        { id: 'BK-2024-0092', customer: 'James R.', time: '03:00 PM', packages: 1, status: 'pending', destination: 'Barbados' },
-        { id: 'BK-2024-0091', customer: 'Lisa M.', time: '03:30 PM', packages: 4, status: 'pending', destination: 'Trinidad' }
-      ];
     }
   }
 
@@ -176,6 +174,11 @@
   }
 
   function startReceiving(booking: Booking) {
+    if (!['pending', 'checked_in'].includes(booking.status)) {
+      toast.error(`Booking ${booking.id} is not available for receiving`);
+      return;
+    }
+
     selectedBooking = booking;
     receivingPackage = {
       trackingNumber: generateTrackingNumber(),
@@ -219,18 +222,40 @@
         condition: receivingPackage.condition,
         notes: receivingPackage.notes || undefined,
         scannedAt: new Date().toISOString(),
-        scannedBy: 'current-user' // Would come from auth context
+        scannedBy: typeof $page.data?.user?.id === 'string' ? $page.data.user.id : 'unknown-user'
       });
 
-      // Success feedback
-      playSuccessSound();
-      triggerHaptic('success');
+      let syncedThisScan = false;
 
       if ($isOnline) {
+        await syncPendingScans();
+        const pendingAfterSync = await loadPendingScans();
+        syncedThisScan = !pendingAfterSync.some((pending) => pending.id === scan.id);
+      }
+
+      // Feedback
+      if (syncedThisScan || !$isOnline) {
+        playSuccessSound();
+        triggerHaptic('success');
+      } else {
+        playErrorSound();
+        triggerHaptic('warning');
+      }
+
+      if (syncedThisScan) {
         toast.success(`Package ${receivingPackage.trackingNumber} received!`);
+      } else if ($isOnline) {
+        toast.warning(`Package ${receivingPackage.trackingNumber} saved locally but not synced`, {
+          description: 'It will retry automatically. You can also use "Sync" from this page.'
+        });
       } else {
         toast.info(`Package saved offline - will sync when connected`);
       }
+
+      // Mark booking as checked-in after first successful receive attempt.
+      todayBookings = todayBookings.map((booking) =>
+        booking.id === selectedBooking?.id ? { ...booking, status: 'checked_in' } : booking
+      );
 
       // Update local state
       recentlyReceived = [
@@ -244,7 +269,7 @@
             minute: '2-digit',
             hour12: true 
           }),
-          synced: scan.synced
+          synced: syncedThisScan
         },
         ...recentlyReceived.slice(0, 9)
       ];
@@ -270,9 +295,9 @@
 
   async function handleManualSync() {
     const result = await syncPendingScans();
+    await loadRecentScans();
     if (result.synced > 0) {
       toast.success(`${result.synced} scan(s) synced successfully`);
-      await loadRecentScans();
     }
     if (result.failed > 0) {
       toast.error(`${result.failed} scan(s) failed to sync`);
@@ -486,7 +511,7 @@
                 Saving...
               {:else}
                 <CheckCircle2 class="h-4 w-4 mr-2" />
-                Complete & Print Label
+                Complete Receiving
               {/if}
             </Button>
             <Button variant="outline" on:click={cancelReceiving} disabled={isSubmitting}>

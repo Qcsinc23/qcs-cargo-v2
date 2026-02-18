@@ -15,9 +15,7 @@ const STATIC_ASSETS = Array.from(new Set([
   '/pricing',
   '/admin/receiving',
   '/dashboard',
-  '/manifest.json',
-  '/sounds/scan-success.mp3',
-  '/sounds/scan-error.mp3'
+  '/manifest.json'
 ]));
 
 // Offline-capable admin routes
@@ -122,6 +120,12 @@ self.addEventListener('fetch', (event) => {
 
   // Skip other non-GET requests
   if (request.method !== 'GET') return;
+
+  // Let byte-range media requests bypass cache logic to avoid 416 range issues.
+  if (request.headers.has('range')) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // HTML navigations should be network-first to avoid stale app shells referencing deleted chunks.
   if (request.mode === 'navigate') {

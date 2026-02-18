@@ -227,12 +227,12 @@
               <!-- Actions -->
               <div class="flex items-center gap-2 sm:flex-col sm:items-end">
                 {#if booking.status === 'draft'}
-                  <Button href="/dashboard/bookings/{booking.id}/modify" size="sm">
+                  <Button href={`/dashboard/bookings/${booking.id}/modify`} size="sm">
                     <Edit class="w-4 h-4 mr-1" />
                     Continue
                   </Button>
                 {:else}
-                  <Button variant="outline" href="/dashboard/bookings/{booking.id}" size="sm">
+                  <Button variant="outline" href={`/dashboard/bookings/${booking.id}`} size="sm">
                     <Eye class="w-4 h-4 mr-1" />
                     View Details
                   </Button>

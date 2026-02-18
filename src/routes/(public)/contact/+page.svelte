@@ -150,8 +150,8 @@
                 <div>
                   <p class="font-medium">Phone</p>
                   <a
-                    href="tel:{COMPANY.phone}"
-                    class="text-sm text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide"
+                    href={`tel:${COMPANY.phone}`}
+                    class="text-sm text-[#0077B6] hover:text-[#023E8A] transition-colors font-medium tracking-wide"
                   >
                     {COMPANY.phone}
                   </a>
@@ -162,8 +162,8 @@
                 <div>
                   <p class="font-medium">Email</p>
                   <a
-                    href="mailto:{COMPANY.email}"
-                    class="text-sm text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide"
+                    href={`mailto:${COMPANY.email}`}
+                    class="text-sm text-[#0077B6] hover:text-[#023E8A] transition-colors font-medium tracking-wide"
                   >
                     {COMPANY.email}
                   </a>
@@ -174,10 +174,10 @@
                 <div>
                   <p class="font-medium">WhatsApp</p>
                   <a 
-                    href="https://wa.me/{COMPANY.social.whatsapp.replace(/[^0-9]/g, '')}" 
+                    href={`https://wa.me/${COMPANY.social.whatsapp.replace(/[^0-9]/g, '')}`} 
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-sm text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide"
+                    class="text-sm text-[#0077B6] hover:text-[#023E8A] transition-colors font-medium tracking-wide"
                   >
                     {COMPANY.social.whatsapp}
                   </a>
@@ -333,4 +333,3 @@
     </div>
   </section>
 </main>
-

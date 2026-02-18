@@ -177,7 +177,7 @@
                   ></button>
                   <div class="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border z-20">
                     <a
-                      href="/dashboard/recipients/{recipient.id}"
+                      href={`/dashboard/recipients/${recipient.id}`}
                       class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <Pencil class="w-4 h-4" />
@@ -225,7 +225,7 @@
             <div class="mt-4 pt-4 border-t flex items-center justify-between text-xs text-gray-400">
               <span>Used {recipient.usage_count} time{recipient.usage_count !== 1 ? 's' : ''}</span>
               <a
-                href="/dashboard/bookings/new?recipient={recipient.id}"
+                href={`/dashboard/bookings/new?recipient=${recipient.id}`}
                 class="text-primary-600 hover:underline font-medium"
               >
                 Ship to this address →

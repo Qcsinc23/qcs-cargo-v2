@@ -38,7 +38,7 @@
     /* Soft neutrals */
     --muted: 35 39% 90%; /* #F0E8DD (sand) */
     /* Tuned so text-muted-foreground/80 still meets WCAG AA (4.5:1) on white */
-    --muted-foreground: 214 18% 34%;
+    --muted-foreground: 214 18% 32%;
 
     /* Earth-tone accents (used sparingly) */
     --accent: 131 19% 89%; /* #DDE8DF (sage) */

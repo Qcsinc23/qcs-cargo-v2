@@ -52,14 +52,14 @@
             
             <div class="mt-4 pt-4 border-t flex items-center justify-between">
               <a 
-                href="/destinations/{dest.id}" 
+                href={`/destinations/${dest.id}`} 
                 class="text-[#023E8A] hover:text-[#0077B6] text-sm font-medium inline-flex items-center gap-1 group-hover:gap-2 transition-all"
               >
                 View Details
                 <ArrowRight class="w-4 h-4" />
               </a>
               <a 
-                href="/shipping-calculator?destination={dest.id}" 
+                href={`/shipping-calculator?destination=${dest.id}`} 
                 class="text-muted-foreground hover:text-[#023E8A] text-xs font-medium inline-flex items-center gap-1 transition-all"
               >
                 <Calculator class="w-3.5 h-3.5" />

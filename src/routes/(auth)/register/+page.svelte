@@ -162,13 +162,18 @@
       </form>
 
       <div class="text-center text-sm text-muted-foreground mt-6">
-        <p>Already have an account? <a href="/login" class="text-primary-600 hover:underline">Sign in</a></p>
+        <p>
+          Already have an account?
+          <a href="/login" class="text-primary-700 underline underline-offset-2 hover:text-primary-800">
+            Sign in
+          </a>
+        </p>
       </div>
 
       <p class="text-xs text-muted-foreground text-center mt-4">
         By creating an account, you agree to our 
-        <a href="/legal/terms" class="text-primary-600 hover:underline">Terms of Service</a> and 
-        <a href="/legal/privacy" class="text-primary-600 hover:underline">Privacy Policy</a>
+        <a href="/legal/terms" class="text-primary-700 underline underline-offset-2 hover:text-primary-800">Terms of Service</a> and 
+        <a href="/legal/privacy" class="text-primary-700 underline underline-offset-2 hover:text-primary-800">Privacy Policy</a>
       </p>
     </CardContent>
   </Card>

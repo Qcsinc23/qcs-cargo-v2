@@ -51,7 +51,7 @@
             <div class="text-center mb-6">
               <div class="text-3xl font-bold text-foreground">
                 ${(baseRate * service.rate_multiplier).toFixed(2)}
-                <span class="text-base font-normal text-muted-foreground/70">/lb</span>
+                <span class="text-base font-normal text-muted-foreground/80">/lb</span>
               </div>
               <p class="text-sm text-muted-foreground/75 mt-1">
                 {service.delivery_days}-{service.delivery_days + 2} business days
@@ -99,7 +99,7 @@
                     <span class="text-2xl">{dest.flag}</span>
                     <div>
                       <p class="font-medium text-foreground">{dest.name}</p>
-                      <p class="text-sm text-muted-foreground/70 tracking-[0.2em] uppercase">{dest.code}</p>
+                      <p class="text-sm text-muted-foreground/80 tracking-[0.2em] uppercase">{dest.code}</p>
                     </div>
                   </div>
                 </td>
@@ -193,7 +193,6 @@
     </div>
   </div>
 </section>
-
 
 
 

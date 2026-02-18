@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
+  import { Card, CardContent, CardHeader, CardDescription } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
@@ -45,6 +46,27 @@
   let specialInstructions = '';
   let availableSlots: string[] = [];
 
+  function formatDateForInput(date: Date): string {
+    const tzAdjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return tzAdjusted.toISOString().slice(0, 10);
+  }
+
+  function toDateInputValue(value: string | null | undefined): string {
+    if (!value) return '';
+
+    const directDateMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (directDateMatch) {
+      return directDateMatch[1];
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
+
+    return formatDateForInput(parsed);
+  }
+
   // Load booking data
   async function loadBooking() {
     isLoading = true;
@@ -53,11 +75,12 @@
       const result = await response.json();
 
       if (result.status === 'success' && result.data) {
-        booking = result.data;
-        const b = result.data as BookingModifyData;
+        const bookingData = (result.data.booking ?? result.data) as BookingModifyData;
+        booking = bookingData;
+        const b = bookingData;
         
         // Initialize form fields
-        scheduledDate = b.scheduled_date.split('T')[0];
+        scheduledDate = toDateInputValue(b.scheduled_date);
         timeSlot = b.time_slot;
         specialInstructions = b.special_instructions || '';
 
@@ -95,7 +118,14 @@
 
     // Check 24-hour window before scheduled date
     const b = booking as BookingModifyData;
-    const scheduledDateTime = new Date(b.scheduled_date);
+    const scheduledDateValue = toDateInputValue(b.scheduled_date);
+    if (!scheduledDateValue) {
+      canModify = false;
+      modifyRestrictionReason = 'This booking has an invalid scheduled date and cannot be modified online.';
+      return;
+    }
+
+    const scheduledDateTime = new Date(`${scheduledDateValue}T00:00:00`);
     const now = new Date();
     const hoursUntilAppointment = (scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
@@ -116,12 +146,15 @@
       const result = await response.json();
 
       if (result.status === 'success') {
-        availableSlots = result.data.slots || [];
+        const rawSlots = result.data.slots || [];
+        availableSlots = rawSlots
+          .map((slot: any) => (typeof slot === 'string' ? slot : slot?.value))
+          .filter((slot: string) => Boolean(slot));
       }
     } catch (error) {
       console.error('Error loading time slots:', error);
       // Fallback to default slots
-      const selectedDate = new Date(date);
+      const selectedDate = new Date(`${date}T00:00:00`);
       const isSaturday = selectedDate.getDay() === 6;
       availableSlots = isSaturday ? SATURDAY_SLOTS : TIME_SLOTS;
     }
@@ -131,7 +164,7 @@
     if (!scheduledDate) return;
 
     // Validate date is at least 24 hours in the future
-    const selectedDate = new Date(scheduledDate);
+    const selectedDate = new Date(`${scheduledDate}T00:00:00`);
     const now = new Date();
     const hoursUntilSelected = (selectedDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
@@ -165,8 +198,9 @@
     }
 
     // Check if anything changed
+    const originalScheduledDate = toDateInputValue(booking.scheduled_date);
     const hasChanges = 
-      scheduledDate !== booking.scheduled_date.split('T')[0] ||
+      scheduledDate !== originalScheduledDate ||
       timeSlot !== booking.time_slot ||
       specialInstructions !== (booking.special_instructions || '');
 
@@ -214,20 +248,22 @@
   function getMinDate(): string {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return formatDateForInput(tomorrow);
   }
 
   // Get maximum date (30 days from now)
   function getMaxDate(): string {
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 30);
-    return maxDate.toISOString().split('T')[0];
+    return formatDateForInput(maxDate);
   }
 
-  // Load booking on mount
-  $: if (bookingId) {
-    loadBooking();
-  }
+  // Load booking only on the client to avoid SSR fetch/goto errors.
+  onMount(() => {
+    if (bookingId) {
+      loadBooking();
+    }
+  });
 </script>
 
 <svelte:head>
@@ -237,7 +273,7 @@
 <div class="space-y-6">
   <!-- Back Link -->
   <a
-    href="/dashboard/bookings/{bookingId}"
+    href={`/dashboard/bookings/${bookingId}`}
     class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
   >
     <ArrowLeft class="w-4 h-4 mr-1" />
@@ -271,7 +307,7 @@
         <p class="text-gray-600 mb-6">{modifyRestrictionReason}</p>
         <div class="flex gap-3 justify-center">
           <Button variant="outline" href="/dashboard/bookings">View All Bookings</Button>
-          <Button href="/dashboard/bookings/{bookingId}">View Details</Button>
+          <Button href={`/dashboard/bookings/${bookingId}`}>View Details</Button>
         </div>
       </CardContent>
     </Card>
@@ -281,10 +317,10 @@
       <CardHeader>
         <div class="flex items-start justify-between">
           <div>
-            <CardTitle class="flex items-center gap-2">
+            <h2 class="flex items-center gap-2 text-xl font-semibold leading-none tracking-tight">
               <Calendar class="w-5 h-5" />
               Modify Booking
-            </CardTitle>
+            </h2>
             <CardDescription class="mt-2">
               Update your drop-off schedule or special instructions
             </CardDescription>

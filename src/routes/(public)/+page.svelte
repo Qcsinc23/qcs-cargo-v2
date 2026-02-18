@@ -292,7 +292,13 @@
       </div>
 
       <div class="mt-16">
-        <div class="hide-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6">
+        <div
+          class="hide-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6"
+          aria-label="Featured destination cards"
+        >
+          <a href="/destinations" class="sr-only focus:not-sr-only focus:mr-4">
+            Browse all destinations
+          </a>
           {#each destinations as d}
             <div class="snap-center">
               <div

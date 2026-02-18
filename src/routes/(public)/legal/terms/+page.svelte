@@ -211,8 +211,8 @@
   <h2>13. Contact Information</h2>
   <p>For questions about these Terms of Service, please contact us:</p>
   <ul>
-    <li><strong>Email:</strong> <a href="mailto:{COMPANY.email}">{COMPANY.email}</a></li>
-    <li><strong>Phone:</strong> <a href="tel:{COMPANY.phone}">{COMPANY.phone}</a></li>
+    <li><strong>Email:</strong> <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></li>
+    <li><strong>Phone:</strong> <a href={`tel:${COMPANY.phone}`}>{COMPANY.phone}</a></li>
     <li><strong>Address:</strong> {COMPANY.fullAddress}</li>
   </ul>
 </section>

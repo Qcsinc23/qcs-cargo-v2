@@ -53,7 +53,7 @@
           <p class="text-sm text-muted-foreground/80 mb-4 font-light leading-relaxed tracking-wide">
             Speak with our shipping experts
           </p>
-          <a href="tel:+12012490929" class="text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide">
+          <a href="tel:+12012490929" class="text-[#0077B6] hover:text-[#023E8A] transition-colors font-medium tracking-wide">
             201-249-0929
           </a>
         </CardContent>
@@ -68,7 +68,7 @@
           <p class="text-sm text-muted-foreground/80 mb-4 font-light leading-relaxed tracking-wide">
             Get a detailed quote via email
           </p>
-          <a href={`mailto:${COMPANY.email}`} class="text-[#90E0EF] hover:text-[#CAF0F8] transition-colors font-medium tracking-wide">
+          <a href={`mailto:${COMPANY.email}`} class="text-[#0077B6] hover:text-[#023E8A] transition-colors font-medium tracking-wide">
             {COMPANY.email}
           </a>
         </CardContent>
@@ -83,7 +83,7 @@
           <p class="text-sm text-muted-foreground/80 mb-4 font-light leading-relaxed tracking-wide">
             Chat with us in real-time
           </p>
-          <Button variant="link" class="text-[#90E0EF] hover:text-[#CAF0F8]">
+          <Button variant="link" class="text-[#0077B6] hover:text-[#023E8A]">
             Start Chat
           </Button>
         </CardContent>
@@ -103,23 +103,23 @@
           <h3 class="font-display text-xl mb-6 text-foreground">What We Ship</h3>
           <ul class="space-y-3 text-sm text-muted-foreground/80 font-light leading-relaxed tracking-wide">
             <li class="flex items-start gap-2">
-              <span class="text-[#90E0EF] font-bold">✓</span>
+              <span class="text-[#0077B6] font-bold">✓</span>
               <span>Personal effects and household items</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="text-[#90E0EF] font-bold">✓</span>
+              <span class="text-[#0077B6] font-bold">✓</span>
               <span>Electronics and appliances</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="text-[#90E0EF] font-bold">✓</span>
+              <span class="text-[#0077B6] font-bold">✓</span>
               <span>Non-perishable food items</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="text-[#90E0EF] font-bold">✓</span>
+              <span class="text-[#0077B6] font-bold">✓</span>
               <span>Books, documents, and gifts</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="text-[#90E0EF] font-bold">✓</span>
+              <span class="text-[#0077B6] font-bold">✓</span>
               <span>Auto parts and tools</span>
             </li>
           </ul>
@@ -193,5 +193,4 @@
     </div>
   </section>
 </main>
-
 

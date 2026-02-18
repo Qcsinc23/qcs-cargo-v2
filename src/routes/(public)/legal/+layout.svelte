@@ -66,7 +66,7 @@
       <p>
         Questions about our policies? 
         <a href="/contact" class="text-primary-600 hover:underline">Contact us</a> or call 
-        <a href="tel:{COMPANY.phone}" class="text-primary-600 hover:underline">{COMPANY.phone}</a>
+        <a href={`tel:${COMPANY.phone}`} class="text-primary-600 hover:underline">{COMPANY.phone}</a>
       </p>
     </div>
   </div>

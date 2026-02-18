@@ -202,7 +202,7 @@
       <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
         {#each DESTINATIONS as destination}
           <a 
-            href="/destinations/{destination.id}"
+            href={`/destinations/${destination.id}`}
             class="group p-6 rounded-2xl bg-card border border-border/30 shadow-sm hover:border-[#0077B6]/25 transition-colors text-center"
           >
             <div class="text-4xl mb-3">{destination.flag}</div>
@@ -278,7 +278,7 @@
               <Phone class="w-6 h-6 text-[#023E8A]" />
             </div>
             <h3 class="font-display text-lg text-foreground mb-3">Phone</h3>
-            <a href="tel:{COMPANY.phone}" class="text-sm text-[#023E8A] hover:text-[#0077B6] transition-colors font-medium tracking-wide">{COMPANY.phone}</a>
+            <a href={`tel:${COMPANY.phone}`} class="text-sm text-[#023E8A] hover:text-[#0077B6] transition-colors font-medium tracking-wide">{COMPANY.phone}</a>
           </div>
           <div class="p-6">
             <div class="inline-flex items-center justify-center w-12 h-12 bg-muted/60 border border-border/30 rounded-full mb-6">

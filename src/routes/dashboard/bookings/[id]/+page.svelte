@@ -197,12 +197,12 @@
 
       <div class="flex gap-2">
         {#if currentBooking.status === 'draft'}
-          <Button href="/dashboard/bookings/{currentBooking.id}/modify">
+          <Button href={`/dashboard/bookings/${currentBooking.id}/modify`}>
             <Edit class="w-4 h-4 mr-2" />
             Continue Booking
           </Button>
         {:else if currentBooking.status === 'pending_payment' || currentBooking.status === 'confirmed'}
-          <Button variant="outline" href="/dashboard/bookings/{currentBooking.id}/modify">
+          <Button variant="outline" href={`/dashboard/bookings/${currentBooking.id}/modify`}>
             <Edit class="w-4 h-4 mr-2" />
             Modify Booking
           </Button>
@@ -219,7 +219,7 @@
       <Alert class="bg-amber-50 border-amber-200">
         <AlertTriangle class="w-4 h-4 text-amber-600" />
         <AlertDescription class="text-amber-800">
-          This booking is incomplete. <a href="/dashboard/bookings/{currentBooking.id}/modify" class="underline font-medium">Continue your booking</a> to confirm.
+          This booking is incomplete. <a href={`/dashboard/bookings/${currentBooking.id}/modify`} class="underline font-medium">Continue your booking</a> to confirm.
         </AlertDescription>
       </Alert>
     {:else if hasFailedPayment}

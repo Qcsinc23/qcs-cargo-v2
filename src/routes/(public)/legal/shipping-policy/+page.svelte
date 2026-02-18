@@ -297,8 +297,8 @@
     For questions about our shipping policy or to make a booking:
   </p>
   <ul>
-    <li><strong>Phone:</strong> <a href="tel:{COMPANY.phone}">{COMPANY.phone}</a></li>
-    <li><strong>Email:</strong> <a href="mailto:{COMPANY.email}">{COMPANY.email}</a></li>
+    <li><strong>Phone:</strong> <a href={`tel:${COMPANY.phone}`}>{COMPANY.phone}</a></li>
+    <li><strong>Email:</strong> <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></li>
     <li><strong>Address:</strong> {COMPANY.fullAddress}</li>
   </ul>
 </section>

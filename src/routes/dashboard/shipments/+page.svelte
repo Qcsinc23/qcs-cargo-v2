@@ -211,7 +211,7 @@
                   <td class="p-4 text-gray-600">{shipment.weight_lbs} lbs</td>
                   <td class="p-4 text-gray-600">{formatDate(shipment.created)}</td>
                   <td class="p-4 text-right">
-                    <Button variant="ghost" size="sm" href="/dashboard/shipments/{shipment.id}">
+                    <Button variant="ghost" size="sm" href={`/dashboard/shipments/${shipment.id}`}>
                       <Eye class="w-4 h-4 mr-1" />
                       View
                     </Button>
@@ -257,7 +257,7 @@
             </div>
 
             <div class="mt-4 pt-4 border-t">
-              <Button variant="outline" size="sm" href="/dashboard/shipments/{shipment.id}" class="w-full">
+              <Button variant="outline" size="sm" href={`/dashboard/shipments/${shipment.id}`} class="w-full">
                 <Eye class="w-4 h-4 mr-2" />
                 View Details
               </Button>

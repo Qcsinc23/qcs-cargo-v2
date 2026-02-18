@@ -120,7 +120,12 @@
       </form>
 
       <div class="text-center text-sm text-muted-foreground mt-6">
-        <p>Don't have an account? <a href="/register" class="text-primary-600 hover:underline">Sign up</a></p>
+        <p>
+          Don't have an account?
+          <a href="/register" class="text-primary-700 underline underline-offset-2 hover:text-primary-800">
+            Sign up
+          </a>
+        </p>
       </div>
     </CardContent>
   </Card>

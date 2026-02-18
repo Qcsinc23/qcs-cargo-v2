@@ -52,7 +52,7 @@
       <!-- Company Info -->
       <div class="space-y-8 xl:col-span-1">
         <a href="/" class="flex items-center space-x-2">
-          <Logo class="h-10 w-auto" />
+          <Logo class="h-10 w-auto" iconClass="text-[#90E0EF]" textClass="text-[#F0F9FF]" />
         </a>
         <p class="text-sm text-[#CAF0F8]/70 max-w-xs leading-relaxed tracking-wide font-light">
           Trusted air freight to the Caribbean from our New Jersey warehouse.
@@ -150,6 +150,5 @@
     </div>
   </div>
 </footer>
-
 
 

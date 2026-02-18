@@ -170,7 +170,7 @@
         </div>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" href="/tracking?q={currentShipment.tracking_number}">
+        <Button variant="outline" href={`/tracking?q=${currentShipment.tracking_number}`}>
           Public Tracking
         </Button>
       </div>

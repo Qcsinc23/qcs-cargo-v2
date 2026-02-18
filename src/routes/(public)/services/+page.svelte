@@ -99,7 +99,7 @@
         {#each TRUST_SIGNALS as signal}
           <div>
             <div class="font-display text-2xl md:text-3xl text-foreground">{signal.value}</div>
-            <div class="text-xs uppercase tracking-[0.22em] text-muted-foreground/75 mt-2">{signal.label}</div>
+            <div class="text-xs uppercase tracking-[0.22em] text-muted-foreground/85 mt-2">{signal.label}</div>
           </div>
         {/each}
       </div>
@@ -139,7 +139,7 @@
                     {formatPrice(service)}
                   </div>
                   {#if service.priceNote && service.startingPrice}
-                    <div class="text-xs text-muted-foreground/70">{service.priceNote}</div>
+                    <div class="text-xs text-muted-foreground/80">{service.priceNote}</div>
                   {/if}
                 </div>
               </div>
@@ -165,7 +165,7 @@
               {#if service.transitTime !== 'N/A' && service.transitTime !== 'Varies'}
                 <div class="pt-5 border-t border-border/30">
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-muted-foreground/70 uppercase tracking-[0.22em] text-xs">Transit Time</span>
+                    <span class="text-muted-foreground/80 uppercase tracking-[0.22em] text-xs">Transit Time</span>
                     <span class="font-semibold text-foreground">{service.transitTime}</span>
                   </div>
                 </div>
@@ -238,7 +238,7 @@
           Calculate Shipping Cost
         </Button>
         <Button
-          href="tel:{COMPANY.phone}"
+          href={`tel:${COMPANY.phone}`}
           variant="outline"
           size="lg"
           class="h-14 px-10 bg-transparent border border-white/20 text-[#FFF1D6] hover:bg-white/5 hover:border-[#D6B15E]/55 tracking-[0.3em] uppercase text-xs font-semibold"

@@ -378,7 +378,7 @@
       <Printer class="w-4 h-4 mr-2" />
       Print
     </Button>
-    <Button variant="outline" href="/dashboard/bookings/{booking.id}">
+    <Button variant="outline" href={`/dashboard/bookings/${booking.id}`}>
       <Package class="w-4 h-4 mr-2" />
       View Booking
     </Button>
@@ -398,7 +398,7 @@
         <div>
           <h3 class="font-medium text-gray-900">Need Help?</h3>
           <p class="text-sm text-gray-600 mt-1">
-            Contact us at <a href="mailto:{COMPANY.email}" class="text-primary-600 hover:underline">{COMPANY.email}</a> or call <a href="tel:{COMPANY.phone}" class="text-primary-600 hover:underline">{COMPANY.phone}</a>
+            Contact us at <a href={`mailto:${COMPANY.email}`} class="text-primary-600 hover:underline">{COMPANY.email}</a> or call <a href={`tel:${COMPANY.phone}`} class="text-primary-600 hover:underline">{COMPANY.phone}</a>
           </p>
         </div>
       </div>

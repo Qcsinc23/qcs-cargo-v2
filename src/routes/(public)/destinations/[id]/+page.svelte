@@ -46,7 +46,7 @@
         <div class="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Button
             size="lg"
-            href="/shipping-calculator?destination={destination.id}"
+            href={`/shipping-calculator?destination=${destination.id}`}
             class="ghost-cta h-14 px-10 bg-transparent border border-[#90E0EF]/50 text-[#F0F9FF] hover:bg-white/5 hover:border-[#CAF0F8]/60 tracking-[0.3em] uppercase text-xs font-semibold"
           >
             Get Instant Quote
@@ -187,7 +187,7 @@
     <div class="container mx-auto px-4 text-center">
       <h2 class="font-display text-4xl md:text-5xl mb-8">Ready to ship to {destination.name}?</h2>
       <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-        <Button size="lg" href="/shipping-calculator?destination={destination.id}" class="h-14 px-10 bg-ocean-blue text-white hover:bg-ocean-blue/90 tracking-widest uppercase text-xs">
+        <Button size="lg" href={`/shipping-calculator?destination=${destination.id}`} class="h-14 px-10 bg-ocean-blue text-white hover:bg-ocean-blue/90 tracking-widest uppercase text-xs">
           <Calculator class="mr-2 h-4 w-4" />
           Calculate Rates
         </Button>

@@ -224,8 +224,8 @@
     personal data, please contact us:
   </p>
   <ul>
-    <li><strong>Email:</strong> <a href="mailto:{COMPANY.supportEmail}">{COMPANY.supportEmail}</a></li>
-    <li><strong>Phone:</strong> <a href="tel:{COMPANY.phone}">{COMPANY.phone}</a></li>
+    <li><strong>Email:</strong> <a href={`mailto:${COMPANY.supportEmail}`}>{COMPANY.supportEmail}</a></li>
+    <li><strong>Phone:</strong> <a href={`tel:${COMPANY.phone}`}>{COMPANY.phone}</a></li>
     <li><strong>Mail:</strong> {COMPANY.name}, Attn: Privacy, {COMPANY.fullAddress}</li>
   </ul>
   <p>

@@ -17,7 +17,8 @@
     ChevronLeft,
     ChevronRight,
     DollarSign,
-    RefreshCw
+    RefreshCw,
+    Plus
   } from 'lucide-svelte';
   import { cn } from '$lib/utils';
   import { goto } from '$app/navigation';
@@ -158,6 +159,10 @@
       <Button variant="outline" size="sm">
         <Calendar class="h-4 w-4 mr-2" />
         Calendar View
+      </Button>
+      <Button size="sm" href="/admin/bookings/new">
+        <Plus class="h-4 w-4 mr-2" />
+        New Booking
       </Button>
     </div>
   </div>

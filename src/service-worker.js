@@ -1,9 +1,14 @@
-// Service worker for caching static assets, API responses, and offline scanning
-const STATIC_CACHE = 'qcs-static-v3';
-const API_CACHE = 'qcs-api-v3';
+import { build, files, version } from '$service-worker';
+
+// Service worker for caching static assets, API responses, and offline scanning.
+// `version` changes on each build, which prevents stale chunk/html mismatches after deploy.
+const STATIC_CACHE = `qcs-static-${version}`;
+const API_CACHE = `qcs-api-${version}`;
 
 // Assets to cache on install
-const STATIC_ASSETS = [
+const STATIC_ASSETS = Array.from(new Set([
+  ...build,
+  ...files,
   '/',
   '/shipping-calculator',
   '/track',
@@ -13,7 +18,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/sounds/scan-success.mp3',
   '/sounds/scan-error.mp3'
-];
+]));
 
 // Offline-capable admin routes
 const OFFLINE_ADMIN_ROUTES = [
@@ -42,7 +47,7 @@ self.addEventListener('install', (event) => {
         // This prevents a single failed resource from breaking the entire cache installation
         const cachePromises = STATIC_ASSETS.map(async (url) => {
           try {
-            const response = await fetch(url);
+            const response = await fetch(url, { cache: 'no-cache' });
             if (response.ok) {
               await cache.put(url, response);
               console.log(`[ServiceWorker] Cached: ${url}`);
@@ -90,6 +95,7 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) =>
+              cacheName.startsWith('qcs-') &&
               cacheName !== STATIC_CACHE &&
               cacheName !== API_CACHE
             )
@@ -116,6 +122,12 @@ self.addEventListener('fetch', (event) => {
 
   // Skip other non-GET requests
   if (request.method !== 'GET') return;
+
+  // HTML navigations should be network-first to avoid stale app shells referencing deleted chunks.
+  if (request.mode === 'navigate') {
+    event.respondWith(handleNavigationRequest(request, url));
+    return;
+  }
 
   // Handle API requests with stale-while-revalidate for admin routes
   if (url.pathname.startsWith('/api/')) {
@@ -147,6 +159,38 @@ async function handleOfflinePackageReceive(request) {
       {
         status: 202,
         headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+// Handle HTML navigations with network-first strategy to avoid stale chunk references.
+async function handleNavigationRequest(request, url) {
+  const cache = await caches.open(STATIC_CACHE);
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cachedPage = await cache.match(request);
+    if (cachedPage) {
+      return cachedPage;
+    }
+
+    const isOfflineRoute = OFFLINE_ADMIN_ROUTES.some((route) => url.pathname.startsWith(route));
+    const fallbackPage = await cache.match(isOfflineRoute ? '/admin/receiving' : '/');
+    if (fallbackPage) {
+      return fallbackPage;
+    }
+
+    return new Response(
+      '<html><body><h1>Offline</h1><p>This page is not available offline.</p></body></html>',
+      {
+        status: 503,
+        headers: { 'Content-Type': 'text/html' }
       }
     );
   }
@@ -204,49 +248,38 @@ async function handleApiRequest(request, url) {
 // Handle static requests
 async function handleStaticRequest(request, url) {
   const cache = await caches.open(STATIC_CACHE);
-  const cachedResponse = await cache.match(request);
+  const isImmutableAsset = url.pathname.startsWith('/_app/immutable/');
 
-  if (cachedResponse) {
-    // Return cached, but update in background
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          cache.put(request, response.clone());
-        }
-      })
-      .catch(() => {});
-    return cachedResponse;
+  if (isImmutableAsset) {
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await fetch(request);
+      if (response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    } catch {
+      return new Response('', { status: 503, statusText: 'Offline' });
+    }
   }
 
-  // Not in cache - try network
   try {
     const response = await fetch(request);
     if (response.ok) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch (error) {
-    // Check if this is an admin route that should work offline
-    const isOfflineRoute = OFFLINE_ADMIN_ROUTES.some(route => 
-      url.pathname.startsWith(route)
-    );
-
-    if (isOfflineRoute) {
-      // Return offline page if we have one cached
-      const offlinePage = await cache.match('/admin/receiving');
-      if (offlinePage) {
-        return offlinePage;
-      }
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
     }
 
-    // Return a generic offline response
-    return new Response(
-      '<html><body><h1>Offline</h1><p>This page is not available offline.</p></body></html>',
-      {
-        status: 503,
-        headers: { 'Content-Type': 'text/html' }
-      }
-    );
+    return new Response('', { status: 503, statusText: 'Offline' });
   }
 }
 

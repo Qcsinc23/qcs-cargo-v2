@@ -141,7 +141,9 @@
             {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="w-56" align="end">
-            <DropdownMenu.Label>My Account</DropdownMenu.Label>
+            <DropdownMenu.Group>
+              <DropdownMenu.Label>My Account</DropdownMenu.Label>
+            </DropdownMenu.Group>
             <DropdownMenu.Separator />
             <DropdownMenu.Item>
               <a href="/admin/settings" class="flex items-center w-full">Settings</a>

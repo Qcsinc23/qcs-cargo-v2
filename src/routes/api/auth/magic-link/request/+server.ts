@@ -3,7 +3,8 @@ import { requestMagicLink } from '$lib/server/magic-link';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const { email, name, redirectTo } = await request.json();
+    const { email: rawEmail, name, redirectTo } = await request.json();
+    const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
 
     if (!email) {
       return json({ message: 'Email is required' }, { status: 400 });

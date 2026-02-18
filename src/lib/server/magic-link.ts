@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto';
 import { PUBLIC_POCKETBASE_URL, PUBLIC_SITE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { sendMagicLinkEmail } from './email';
+import { escapePbFilterValue } from '$lib/server/pb-filter';
 
 /**
  * Magic Link Service
@@ -27,6 +28,10 @@ interface UserRecord extends RecordModel {
 }
 
 const POCKETBASE_URL = PUBLIC_POCKETBASE_URL;
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
 
 // Helper to get an authenticated admin PocketBase instance
 async function getAdminPB() {
@@ -54,25 +59,61 @@ export function generateMagicLinkToken(): string {
   return randomBytes(32).toString('hex');
 }
 
+async function findUserByEmailCaseInsensitive(
+  pb: PocketBase,
+  normalizedEmail: string
+): Promise<UserRecord | null> {
+  const escapedEmail = escapePbFilterValue(normalizedEmail);
+
+  const exactMatch = await pb
+    .collection('users')
+    .getFirstListItem<UserRecord>(`email = "${escapedEmail}"`)
+    .catch(() => null);
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const users = await pb.collection('users').getFullList<UserRecord>({
+    fields:
+      'id,email,name,role,avatar,email_verified,phone,stripe_customer_id,magic_link_token,magic_link_expires'
+  });
+
+  return (
+    users.find((candidate) => normalizeEmail(String(candidate.email || '')) === normalizedEmail) ||
+    null
+  );
+}
+
 /**
  * Request a magic link for login/signup
  * Creates or updates user with magic link token and sends email
  */
 export async function requestMagicLink(email: string, name?: string, redirectTo?: string) {
   const pb = await getAdminPB();
+  const normalizedEmail = normalizeEmail(email);
   
   try {
-    console.log(`[magic-link] Requesting magic link for ${email}`);
+    console.log(`[magic-link] Requesting magic link for ${normalizedEmail}`);
     
-    // Check if user exists
-    let user: UserRecord | null;
-    try {
-      user = await pb.collection('users').getFirstListItem<UserRecord>(`email = "${email}"`);
+    // Check if user exists (case-insensitive to prevent duplicate accounts)
+    let user = await findUserByEmailCaseInsensitive(pb, normalizedEmail);
+    if (user) {
       console.log(`[magic-link] Found existing user: ${user.id}`);
-    } catch (err: any) {
+      if (user.email !== normalizedEmail) {
+        try {
+          await pb.collection('users').update(user.id, { email: normalizedEmail });
+          user = { ...user, email: normalizedEmail };
+        } catch (canonicalizeErr) {
+          console.warn(
+            `[magic-link] Failed to canonicalize user email for ${user.id}:`,
+            canonicalizeErr
+          );
+        }
+      }
+    } else {
       // User doesn't exist, will create new one
-      console.log(`[magic-link] User ${email} not found, will create new one`);
-      user = null;
+      console.log(`[magic-link] User ${normalizedEmail} not found, will create new one`);
     }
     
     const token = generateMagicLinkToken();
@@ -98,11 +139,11 @@ export async function requestMagicLink(email: string, name?: string, redirectTo?
       // Create new user with magic link
       const randomPassword = generateMagicLinkToken(); // Random password (user won't use it)
       const newUser = await pb.collection('users').create({
-        email,
+        email: normalizedEmail,
         emailVisibility: true,
         password: randomPassword,
         passwordConfirm: randomPassword,
-        name: name || email.split('@')[0],
+        name: name || normalizedEmail.split('@')[0],
         role: 'customer',
         email_verified: false,
         magic_link_token: token,
@@ -112,10 +153,10 @@ export async function requestMagicLink(email: string, name?: string, redirectTo?
     }
     
     // Send magic link email
-    console.log(`[magic-link] Sending email to ${email}`);
+    console.log(`[magic-link] Sending email to ${normalizedEmail}`);
     const emailResult = await sendMagicLinkEmail({
-      to: email,
-      name: name || user?.name || email.split('@')[0],
+      to: normalizedEmail,
+      name: name || user?.name || normalizedEmail.split('@')[0],
       magicLinkUrl,
       expiresIn: '10 minutes'
     });
@@ -124,7 +165,7 @@ export async function requestMagicLink(email: string, name?: string, redirectTo?
       throw new Error('Failed to send magic link email');
     }
     
-    console.log(`[magic-link] Magic link sent successfully to ${email}`);
+    console.log(`[magic-link] Magic link sent successfully to ${normalizedEmail}`);
     
     return {
       success: true,

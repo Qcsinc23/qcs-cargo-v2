@@ -25,6 +25,24 @@ async function listBookingPackages(locals: App.Locals, bookingId: string) {
   return packages;
 }
 
+async function isBookingOwner(locals: App.Locals, bookingUserId: string): Promise<boolean> {
+  if (!locals.user) return false;
+  if (bookingUserId === locals.user.id) return true;
+
+  const currentEmail = String(locals.user.email || '').trim().toLowerCase();
+  if (!currentEmail) return false;
+
+  const ownerId = sanitizePocketBaseId(bookingUserId);
+  if (!ownerId) return false;
+
+  try {
+    const owner = await locals.pb.collection('users').getOne(ownerId, { fields: 'id,email' });
+    return String(owner.email || '').trim().toLowerCase() === currentEmail;
+  } catch {
+    return false;
+  }
+}
+
 export const GET: RequestHandler = async ({ params, locals }) => {
   if (!locals.user) {
     throw error(401, { message: 'Authentication required' });
@@ -42,7 +60,8 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
     // Verify user owns this booking (unless admin/staff)
     const isAdmin = isAdminOrStaff(locals.user);
-    if (booking.user !== locals.user.id && !isAdmin) {
+    const ownsBooking = await isBookingOwner(locals, booking.user);
+    if (!ownsBooking && !isAdmin) {
       throw error(403, { message: 'Access denied' });
     }
 
@@ -82,7 +101,8 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     const existingBooking = await locals.pb.collection('bookings').getOne(id);
     
     const isAdmin = isAdminOrStaff(locals.user);
-    if (existingBooking.user !== locals.user.id && !isAdmin) {
+    const ownsBooking = await isBookingOwner(locals, existingBooking.user);
+    if (!ownsBooking && !isAdmin) {
       throw error(403, { message: 'Access denied' });
     }
 
@@ -154,7 +174,8 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     const booking = await locals.pb.collection('bookings').getOne(id);
     
     const isAdmin = isAdminOrStaff(locals.user);
-    if (booking.user !== locals.user.id && !isAdmin) {
+    const ownsBooking = await isBookingOwner(locals, booking.user);
+    if (!ownsBooking && !isAdmin) {
       throw error(403, { message: 'Access denied' });
     }
 
@@ -207,7 +228,6 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(500, { message: 'Failed to cancel booking' });
   }
 };
-
 
 
 

@@ -193,7 +193,7 @@ export async function verifyMagicLink(token: string) {
         id: authData.record.id,
         email: authData.record.email,
         name: authData.record.name,
-        role: (authData.record as UserRecord).role,
+        role: (authData.record as UserRecord).role || 'customer',
         avatar: (authData.record as UserRecord).avatar,
         verified: (authData.record as UserRecord).email_verified
       },
@@ -236,7 +236,7 @@ export async function getCurrentUser(token: string) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: user.role || 'customer',
         avatar: user.avatar,
         verified: user.email_verified,
         phone: user.phone,

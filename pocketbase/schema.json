@@ -22,7 +22,7 @@
     ],
     "indexes": [
       "CREATE INDEX idx_users_role ON users(role)",
-      "CREATE UNIQUE INDEX idx_users_mailbox ON users(mailbox_number) WHERE mailbox_number IS NOT NULL"
+      "CREATE UNIQUE INDEX idx_users_mailbox ON users(mailbox_number) WHERE mailbox_number IS NOT NULL AND mailbox_number != ''"
     ]
   },
   {
@@ -226,7 +226,6 @@
     ]
   }
 ]
-
 
 
 

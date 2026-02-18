@@ -1,0 +1,9 @@
+{
+  "name": "QCS Cargo",
+  "short_name": "QCS Cargo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf8f2",
+  "theme_color": "#023e8a",
+  "icons": []
+}

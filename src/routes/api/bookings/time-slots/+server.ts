@@ -14,7 +14,24 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     throw error(400, { message: 'Date parameter is required' });
   }
 
-  const date = new Date(dateParam);
+  const dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateParam);
+  if (!dateParts) {
+    throw error(400, { message: 'Invalid date format. Expected YYYY-MM-DD' });
+  }
+
+  const year = Number(dateParts[1]);
+  const month = Number(dateParts[2]);
+  const day = Number(dateParts[3]);
+  const date = new Date(year, month - 1, day);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    throw error(400, { message: 'Invalid date value' });
+  }
+
   const now = new Date();
 
   // Validate date is not in the past
@@ -103,7 +120,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     }
   });
 };
-
 
 
 

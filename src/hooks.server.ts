@@ -101,7 +101,7 @@ const pbAuthHook: Handle = async ({ event, resolve }) => {
           email: pbUser.email,
           name: pbUser.name || pbUser.email.split('@')[0],
           phone: pbUser.phone || undefined,
-          role: pbUser.role as 'customer' | 'staff' | 'admin',
+          role: (pbUser.role || 'customer') as 'customer' | 'staff' | 'admin',
           verified: pbUser.verified || false,
           avatar: pbUser.avatar || undefined,
           stripe_customer_id: pbUser.stripe_customer_id || undefined,

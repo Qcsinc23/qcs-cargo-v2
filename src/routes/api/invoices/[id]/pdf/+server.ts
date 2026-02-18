@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { pb } from '$lib/server/pocketbase';
+import { isAdminOrStaff } from '$lib/server/authz';
+import { sanitizePocketBaseId } from '$lib/server/pb-filter';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
   try {
@@ -8,18 +9,20 @@ export const GET: RequestHandler = async ({ params, locals }) => {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const invoiceId = params.id;
+    const invoiceId = sanitizePocketBaseId(params.id || '');
+    if (!invoiceId) {
+      return json({ error: 'Invalid invoice ID' }, { status: 400 });
+    }
 
     // Fetch invoice with expanded relations
-    const invoice = await pb.collection('invoices').getOne(invoiceId, {
+    const invoice = await locals.pb.collection('invoices').getOne(invoiceId, {
       expand: 'user,booking'
     });
 
     // Check authorization - only invoice owner or admins can view
     if (
       invoice.user !== locals.user.id &&
-      locals.user.role !== 'admin' &&
-      locals.user.role !== 'staff'
+      !isAdminOrStaff(locals.user)
     ) {
       return json({ error: 'Forbidden' }, { status: 403 });
     }

@@ -14,7 +14,8 @@ function getEnvVar(name: string, fallback?: string): string {
 
 // Get env vars with fallbacks
 const RESEND_API_KEY = getEnvVar('RESEND_API_KEY');
-const RESEND_FROM_EMAIL = getEnvVar('RESEND_FROM_EMAIL');
+// Optional; falls back to FROM_EMAIL when unset.
+const RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL || '';
 const FROM_EMAIL = getEnvVar('FROM_EMAIL', 'noreply@qcs-cargo.com');
 const REPLY_TO_EMAIL = getEnvVar('REPLY_TO_EMAIL', getEnvVar('ADMIN_EMAIL', 'support@qcs-cargo.com'));
 const FROM_ADDRESS = RESEND_FROM_EMAIL || `${PUBLIC_COMPANY_NAME} <${FROM_EMAIL}>`;

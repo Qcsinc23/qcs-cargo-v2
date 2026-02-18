@@ -2,11 +2,17 @@ import PocketBase from 'pocketbase';
 import fs from 'fs';
 
 const pb = new PocketBase(process.env.PUBLIC_POCKETBASE_URL || 'http://localhost:8090');
-const ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL || 'sales@quietcraftsolutions.com';
-const ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD || 'Qcsinc@2025*';
+const ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD;
 
 async function setup() {
   try {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      throw new Error(
+        'Missing admin credentials. Set PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD.'
+      );
+    }
+
     await pb.admins.authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD);
     console.log('✅ Authenticated');
 
@@ -50,34 +56,28 @@ async function setup() {
 
     for (const col of schema) {
       console.log(`Processing ${col.name}...`);
-      
-    // Skip users (auth) - leave default schema intact
-    if (col.name === 'users') {
-      console.log('Skipping users (already provisioned by PocketBase)');
-      continue;
-    }
 
-    // Ensure collection options exists
+      // Ensure collection options exists
       if (!col.options) col.options = {};
-    if (col.type === 'auth') {
-      col.options = {
-        allowEmailAuth: true,
-        allowOAuth2Auth: true,
-        allowUsernameAuth: false,
-        minPasswordLength: 8,
-        requireEmail: true,
-        exceptEmailDomains: null,
-        onlyVerified: false,
-        manageRule: null,
-        createRule: null,
-        deleteRule: null,
-        updateRule: null,
-        listRule: null,
-        viewRule: null,
-        authRule: null,
-        passwordDictionary: null
-      };
-    }
+      if (col.type === 'auth') {
+        col.options = {
+          allowEmailAuth: true,
+          allowOAuth2Auth: true,
+          allowUsernameAuth: false,
+          minPasswordLength: 8,
+          requireEmail: true,
+          exceptEmailDomains: null,
+          onlyVerified: false,
+          manageRule: null,
+          createRule: null,
+          deleteRule: null,
+          updateRule: null,
+          listRule: null,
+          viewRule: null,
+          authRule: null,
+          passwordDictionary: null
+        };
+      }
 
       // Fix schema fields
       if (col.schema) {

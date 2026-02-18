@@ -3,8 +3,8 @@ import PocketBase from 'pocketbase';
 import { loginAsTestUser as loginByCookie } from './helpers/auth';
 
 const PB_URL = process.env.PB_URL || 'http://localhost:8090';
-const TEST_ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL;
-const TEST_ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD;
+const TEST_ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL;
+const TEST_ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD;
 const TEST_USER = {
   email: `test-modify-${Date.now()}@example.com`,
   password: 'Test123!@#',
@@ -12,6 +12,35 @@ const TEST_USER = {
   name: 'Test User',
   role: 'customer'
 };
+
+function formatDateForInput(date: Date): string {
+  const tzAdjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return tzAdjusted.toISOString().slice(0, 10);
+}
+
+function getNextOpenDate(minDaysAhead = 1): string {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + minDaysAhead);
+
+  while (date.getDay() === 0) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  return formatDateForInput(date);
+}
+
+function getNextWeekday(minDaysAhead = 1): string {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + minDaysAhead);
+
+  while (date.getDay() === 0 || date.getDay() === 6) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  return formatDateForInput(date);
+}
 
 let testData: {
   userId: string;
@@ -28,7 +57,9 @@ test.beforeAll(async () => {
   try {
     // Authenticate as admin
     if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
-      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+      throw new Error(
+        'Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+      );
     }
     await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
     console.log('✅ Admin authenticated');
@@ -53,9 +84,7 @@ test.beforeAll(async () => {
     console.log(`✅ Recipient created: ${recipient.id}`);
 
     // Create a confirmed booking scheduled 3 days from now (within modification window)
-    const scheduledDate = new Date();
-    scheduledDate.setDate(scheduledDate.getDate() + 3); // 3 days from now
-    const scheduledDateStr = scheduledDate.toISOString().split('T')[0];
+    const scheduledDateStr = getNextWeekday(3);
 
     const booking = await pb.collection('bookings').create({
       user: user.id,
@@ -101,7 +130,9 @@ test.afterAll(async () => {
 
   try {
     if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
-      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+      throw new Error(
+        'Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+      );
     }
     await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
 
@@ -189,16 +220,15 @@ test.describe('Booking Modification Feature', () => {
     await page.waitForSelector('input[type="date"]');
     
     // Change date to 5 days from now
-    const newDate = new Date();
-    newDate.setDate(newDate.getDate() + 5);
-    const newDateStr = newDate.toISOString().split('T')[0];
+    const newDateStr = getNextWeekday(5);
     
     await page.fill('input[type="date"]', newDateStr);
-    
-    // Wait for time slots to load
-    await page.waitForTimeout(500);
-    
+
+    // Wait for time slots to load and become selectable
+    await expect(page.locator('select#timeSlot')).toBeEnabled({ timeout: 10000 });
+
     // Change time slot
+    await expect(page.locator('select#timeSlot option[value="14:00-15:00"]')).toBeAttached();
     await page.selectOption('select#timeSlot', '14:00-15:00');
     
     // Verify selections
@@ -225,12 +255,10 @@ test.describe('Booking Modification Feature', () => {
     await page.waitForSelector('input[type="date"]');
     
     // Change date
-    const newDate = new Date();
-    newDate.setDate(newDate.getDate() + 6);
-    const newDateStr = newDate.toISOString().split('T')[0];
+    const newDateStr = getNextWeekday(6);
     
     await page.fill('input[type="date"]', newDateStr);
-    await page.waitForTimeout(500);
+    await expect(page.locator('select#timeSlot')).toBeEnabled({ timeout: 10000 });
     
     // Change time slot
     await page.selectOption('select#timeSlot', '15:00-16:00');
@@ -266,7 +294,7 @@ test.describe('Booking Modification Feature', () => {
     
     await expect(page.locator('text=Need to make other changes?')).toBeVisible();
     await expect(page.locator('a[href="tel:201-249-0929"]')).toBeVisible();
-    await expect(page.locator('a[href="mailto:support@quietcraftsolutions.com"]')).toBeVisible();
+    await expect(page.locator('a[href="mailto:support@qcs-cargo.com"]')).toBeVisible();
   });
 
   test('should validate date is at least 24 hours in future', async ({ page }) => {
@@ -309,19 +337,26 @@ test.describe('Booking Modification Feature', () => {
     await page.waitForSelector('input[type="date"]');
     
     // Make a change
-    const newDate = new Date();
-    newDate.setDate(newDate.getDate() + 7);
-    const newDateStr = newDate.toISOString().split('T')[0];
+    const newDateStr = getNextOpenDate(7);
     await page.fill('input[type="date"]', newDateStr);
     await page.waitForTimeout(500);
+
+    // Force a visible saving state by delaying the API response
+    await page.route(`**/api/bookings/${testData.bookingId}`, async (route) => {
+      if (route.request().method() === 'PATCH') {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+      await route.continue();
+    });
     
     // Start saving and check for loading state
     const submitPromise = page.click('button[type="submit"]:has-text("Save Changes")');
     
     // Should show "Saving..." text briefly
-    await expect(page.locator('button:has-text("Saving...")')).toBeVisible({ timeout: 1000 });
+    await expect(page.locator('button:has-text("Saving...")')).toBeVisible({ timeout: 3000 });
     
     await submitPromise;
+    await page.unroute(`**/api/bookings/${testData.bookingId}`);
   });
 });
 
@@ -332,23 +367,22 @@ test.describe('Booking Modification Restrictions', () => {
     // Create a booking that's less than 24 hours away (cannot be modified)
     const pb = new PocketBase(PB_URL);
     if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
-      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+      throw new Error(
+        'Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+      );
     }
     await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
 
     if (!testData) throw new Error('Test data not initialized');
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(tomorrow.getHours() + 12); // 12 hours from now
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const restrictedDateStr = formatDateForInput(new Date());
 
     const restrictedBooking = await pb.collection('bookings').create({
       user: testData.userId,
       recipient: testData.recipientId,
       service_type: 'express',
       destination: 'guyana',
-      scheduled_date: tomorrowStr,
+      scheduled_date: restrictedDateStr,
       time_slot: '09:00-10:00',
       package_count: 1,
       total_weight: 10,
@@ -370,7 +404,9 @@ test.describe('Booking Modification Restrictions', () => {
     const pb = new PocketBase(PB_URL);
     try {
       if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
-        throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+        throw new Error(
+          'Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+        );
       }
       await pb.admins.authWithPassword(TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD);
       await pb.collection('bookings').delete(restrictedBookingId);
@@ -384,16 +420,10 @@ test.describe('Booking Modification Restrictions', () => {
     await loginByCookie(page, TEST_USER.email, TEST_USER.password, TEST_USER.name);
 
     await page.goto(`/dashboard/bookings/${restrictedBookingId}/modify`);
-    
-    // Should show some kind of restriction message
-    const content = await page.textContent('body');
-    const hasRestrictionContent = 
-      content?.includes('Cannot Modify') ||
-      content?.includes('24 hours') ||
-      content?.includes('cannot be modified') ||
-      content?.includes('modification');
-    
-    expect(hasRestrictionContent).toBeTruthy();
+
+    // Wait for loading state to finish, then assert restriction UI
+    await expect(page.locator('text=Loading booking details...')).toHaveCount(0, { timeout: 10000 });
+    await expect(page.locator('h2:has-text("Cannot Modify Booking")')).toBeVisible();
+    await expect(page.locator('text=24 hours')).toBeVisible();
   });
 });
-

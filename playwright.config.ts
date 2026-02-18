@@ -1,4 +1,14 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
+import { loadEnv } from 'vite';
+
+const mode = process.env.NODE_ENV || 'test';
+const env = loadEnv(mode, process.cwd(), '');
+
+for (const [key, value] of Object.entries(env)) {
+  if (process.env[key] === undefined) {
+    process.env[key] = value;
+  }
+}
 
 const config: PlaywrightTestConfig = {
   webServer: {

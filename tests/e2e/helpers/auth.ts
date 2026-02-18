@@ -15,8 +15,8 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:5179';
 const PB_URL = process.env.PB_URL || 'http://localhost:8090';
 
 // Admin credentials for PocketBase (for test data setup)
-const PB_ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL;
-const PB_ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD;
+const PB_ADMIN_EMAIL = process.env.PB_ADMIN_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL;
+const PB_ADMIN_PASSWORD = process.env.PB_ADMIN_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD;
 
 let pb: PocketBase | null = null;
 
@@ -29,7 +29,9 @@ export async function initPocketBaseAdmin(): Promise<PocketBase> {
   }
 
   if (!PB_ADMIN_EMAIL || !PB_ADMIN_PASSWORD) {
-    throw new Error('Missing PocketBase admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+    throw new Error(
+      'Missing PocketBase admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+    );
   }
 
   pb = new PocketBase(PB_URL);
@@ -44,7 +46,6 @@ async function setAuthCookie(page: Page, token: string): Promise<void> {
       name: 'pb_auth',
       value: token,
       url: BASE_URL,
-      path: '/',
       httpOnly: true,
       sameSite: 'Lax'
     }
@@ -190,4 +191,3 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
   const url = page.url();
   return url.includes('/dashboard') || url.includes('/admin');
 }
-

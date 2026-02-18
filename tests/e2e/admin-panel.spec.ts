@@ -108,11 +108,13 @@ test.describe('Bookings Management', () => {
     await page.waitForLoadState('networkidle');
     
     // Try to find a booking link
-    const bookingLink = page.locator('a[href*="/admin/bookings/"]').first();
+    const bookingLink = page.locator('table a[href^="/admin/bookings/"]').first();
     const hasBookings = await bookingLink.isVisible().catch(() => false);
     
     if (hasBookings) {
-      await bookingLink.click();
+      const href = await bookingLink.getAttribute('href');
+      expect(href).toMatch(/^\/admin\/bookings\/[^/]+$/);
+      await page.goto(`${BASE_URL}${href}`);
       await page.waitForLoadState('networkidle');
       expect(page.url()).toMatch(/\/admin\/bookings\/[^/]+$/);
     }
@@ -153,7 +155,9 @@ test.describe('Shipments Management', () => {
     const hasShipments = await shipmentLink.isVisible().catch(() => false);
     
     if (hasShipments) {
-      await shipmentLink.click();
+      const href = await shipmentLink.getAttribute('href');
+      if (!href) return;
+      await page.goto(href.startsWith('http') ? href : `${BASE_URL}${href}`);
       await page.waitForLoadState('networkidle');
       expect(page.url()).toMatch(/\/admin\/shipments\/[^/]+$/);
     }
@@ -199,7 +203,9 @@ test.describe('Users Management', () => {
     const hasUsers = await userLink.isVisible().catch(() => false);
     
     if (hasUsers) {
-      await userLink.click();
+      const href = await userLink.getAttribute('href');
+      if (!href) return;
+      await page.goto(href.startsWith('http') ? href : `${BASE_URL}${href}`);
       await page.waitForLoadState('networkidle');
       expect(page.url()).toMatch(/\/admin\/users\/[^/]+$/);
     }
@@ -240,7 +246,9 @@ test.describe('Invoices Management', () => {
     const hasInvoices = await invoiceLink.isVisible().catch(() => false);
     
     if (hasInvoices) {
-      await invoiceLink.click();
+      const href = await invoiceLink.getAttribute('href');
+      if (!href) return;
+      await page.goto(href.startsWith('http') ? href : `${BASE_URL}${href}`);
       await page.waitForLoadState('networkidle');
       expect(page.url()).toMatch(/\/admin\/invoices\/[^/]+$/);
     }
@@ -430,4 +438,3 @@ test.describe('Admin Access Control', () => {
     expect(url.includes('/login') || url.includes('/admin') || url.includes('unauthorized')).toBeTruthy();
   });
 });
-

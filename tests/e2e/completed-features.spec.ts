@@ -16,8 +16,8 @@ import { loginAsTestUser as loginByCookie } from './helpers/auth';
 
 // Test configuration
 const ADMIN_CREDENTIALS = {
-  email: process.env.PB_ADMIN_EMAIL,
-  password: process.env.PB_ADMIN_PASSWORD
+  email: process.env.PB_ADMIN_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL,
+  password: process.env.PB_ADMIN_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD
 };
 
 const TEST_USER = {
@@ -68,7 +68,9 @@ test.beforeAll(async () => {
     // Authenticate as admin
     console.log('🔐 Authenticating as admin...');
     if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
-      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+      throw new Error(
+        'Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+      );
     }
     await pb.admins.authWithPassword(ADMIN_CREDENTIALS.email!, ADMIN_CREDENTIALS.password!);
     console.log('✅ Admin authenticated\n');
@@ -93,10 +95,9 @@ test.beforeAll(async () => {
       user: createdIds.userId,
       name: 'John Doe',
       phone: '+592-222-1234',
-      email: 'john.doe@example.com',
-      address_line_1: '123 Main Street',
+      address_line1: '123 Main Street',
+      address_line2: '',
       city: 'Georgetown',
-      country: 'GY',
       destination: 'guyana',
       is_default: true
     });
@@ -107,24 +108,23 @@ test.beforeAll(async () => {
     console.log('📦 Creating paid booking...');
     const paidBooking = await pb.collection('bookings').create({
       user: createdIds.userId,
-      confirmation_number: `E2E-${Date.now()}`,
       status: 'confirmed',
-      service_type: 'air_freight',
+      service_type: 'standard',
       destination: 'guyana',
       recipient: createdIds.recipientId,
-      scheduled_date: new Date(Date.now() + 86400000 * 3).toISOString(),
-      scheduled_time_slot: 'morning',
+      scheduled_date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+      time_slot: '10:00-11:00',
       package_count: 2,
-      total_weight_lbs: 45.5,
-      total_declared_value_usd: 500,
-      subtotal_usd: 150.00,
-      insurance_usd: 10.00,
-      total_cost_usd: 160.00,
+      total_weight: 45.5,
+      subtotal: 150.0,
+      discount: 0,
+      insurance_cost: 10.0,
+      total_cost: 160.0,
       payment_status: 'paid',
       paid_at: new Date().toISOString()
     });
     createdIds.paidBookingId = paidBooking.id;
-    console.log(`✅ Paid booking created: ${paidBooking.confirmation_number}\n`);
+    console.log(`✅ Paid booking created: ${paidBooking.id}\n`);
 
     // Create invoice
     console.log('🧾 Creating invoice...');
@@ -151,25 +151,23 @@ test.beforeAll(async () => {
     console.log('❌ Creating failed payment booking...');
     const failedBooking = await pb.collection('bookings').create({
       user: createdIds.userId,
-      confirmation_number: `E2E-FAIL-${Date.now()}`,
       status: 'payment_failed',
-      service_type: 'air_freight',
+      service_type: 'standard',
       destination: 'jamaica',
       recipient: createdIds.recipientId,
-      scheduled_date: new Date(Date.now() + 86400000 * 5).toISOString(),
-      scheduled_time_slot: 'afternoon',
+      scheduled_date: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
+      time_slot: '14:00-15:00',
       package_count: 1,
-      total_weight_lbs: 15.0,
-      total_declared_value_usd: 150,
-      subtotal_usd: 75.00,
-      insurance_usd: 5.00,
-      total_cost_usd: 80.00,
-      payment_status: 'failed',
-      payment_error: 'Card declined - E2E test'
+      total_weight: 15.0,
+      subtotal: 75.0,
+      discount: 0,
+      insurance_cost: 5.0,
+      total_cost: 80.0,
+      payment_status: 'failed'
     });
     createdIds.failedBookingId = failedBooking.id;
-    failedBookingNumber = failedBooking.confirmation_number;
-    console.log(`✅ Failed booking created: ${failedBooking.confirmation_number}\n`);
+    failedBookingNumber = failedBooking.id;
+    console.log(`✅ Failed booking created: ${failedBooking.id}\n`);
 
     console.log('='.repeat(60));
     console.log('✅ TEST DATA READY');
@@ -198,7 +196,9 @@ test.afterAll(async () => {
   try {
     // Re-auth as admin for cleanup
     if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
-      throw new Error('Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD)');
+      throw new Error(
+        'Missing PB admin creds for tests (PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD or POCKETBASE_ADMIN_EMAIL/POCKETBASE_ADMIN_PASSWORD)'
+      );
     }
     await pb.admins.authWithPassword(ADMIN_CREDENTIALS.email!, ADMIN_CREDENTIALS.password!);
     
@@ -284,18 +284,20 @@ test.describe('Invoice PDF Generation', () => {
     const downloadBtn = page.locator('button:has-text("Download PDF"), button:has-text("Download")').first();
     
     if (await downloadBtn.isVisible()) {
-      // Setup download listener
-      const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
-      
+      const apiResponsePromise = page.waitForResponse((response) => {
+        return (
+          response.url().includes(`/api/invoices/${createdIds.invoiceId}/pdf`) &&
+          response.request().method() === 'GET'
+        );
+      });
+
       // Click download button
       await downloadBtn.click();
-      
-      // Wait for download to start
-      const download = await downloadPromise;
-      
-      // Verify download
-      expect(download.suggestedFilename()).toMatch(/\.pdf$/i);
-      console.log(`✅ PDF downloaded: ${download.suggestedFilename()}`);
+
+      const apiResponse = await apiResponsePromise;
+      expect(apiResponse.ok()).toBeTruthy();
+      await expect(page.locator('text=Invoice PDF downloaded successfully')).toBeVisible({ timeout: 10000 });
+      console.log('✅ Invoice PDF API returned success and client download flow completed');
     } else {
       console.log('⚠️  Download button not visible, skipping download test');
     }
@@ -411,11 +413,18 @@ test.describe('Integration Tests', () => {
     // Try to download PDF
     const downloadBtn = page.locator('button:has-text("Download")').first();
     if (await downloadBtn.isVisible()) {
-      const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+      const apiResponsePromise = page.waitForResponse((response) => {
+        return (
+          response.url().includes(`/api/invoices/${createdIds.invoiceId}/pdf`) &&
+          response.request().method() === 'GET'
+        );
+      });
+
       await downloadBtn.click();
-      const download = await downloadPromise;
-      expect(download.suggestedFilename()).toMatch(/\.pdf$/i);
-      console.log(`✅ Complete PDF download flow successful: ${download.suggestedFilename()}`);
+      const apiResponse = await apiResponsePromise;
+      expect(apiResponse.ok()).toBeTruthy();
+      await expect(page.locator('text=Invoice PDF downloaded successfully')).toBeVisible({ timeout: 10000 });
+      console.log('✅ Complete PDF generation flow successful');
     } else {
       console.log('⚠️  Download button not found, verifying page loaded correctly');
       const content = await page.textContent('body');

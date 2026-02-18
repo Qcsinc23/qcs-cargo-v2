@@ -7,7 +7,7 @@ test('home page has expected title', async ({ page }) => {
 
 test('home page has main heading', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /QCS Cargo/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /White‑Glove Caribbean Air Freight/i })).toBeVisible();
 });
 
 test('skip link is focusable', async ({ page }) => {

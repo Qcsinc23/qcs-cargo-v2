@@ -323,7 +323,7 @@
                 {@const statusColor = STATUS_COLORS[shipment.status] || STATUS_COLORS.pending}
                 <tr class="hover:bg-slate-50">
                   <td class="px-4 py-3">
-                    <a href="/admin/shipments/{shipment.id}" class="text-sm font-medium text-blue-600 hover:underline">
+                    <a href={`/admin/shipments/${shipment.id}`} class="text-sm font-medium text-blue-600 hover:underline">
                       {shipment.id}
                     </a>
                   </td>
@@ -339,7 +339,7 @@
                     </span>
                   </td>
                   <td class="px-4 py-3 text-right">
-                    <Button variant="ghost" size="sm" href="/admin/shipments/{shipment.id}">
+                    <Button variant="ghost" size="sm" href={`/admin/shipments/${shipment.id}`}>
                       View
                     </Button>
                   </td>

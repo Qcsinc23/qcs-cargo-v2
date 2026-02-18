@@ -192,20 +192,20 @@
             {@const statusStyle = getStatusStyle(invoice.status)}
             <tr class="hover:bg-slate-50">
               <td class="px-4 py-3">
-                <a href="/admin/invoices/{invoice.id}" class="text-sm font-medium text-blue-600 hover:underline">
+                <a href={`/admin/invoices/${invoice.id}`} class="text-sm font-medium text-blue-600 hover:underline">
                   {invoice.id}
                 </a>
               </td>
               <td class="px-4 py-3">
                 <div>
-                  <a href="/admin/users/{invoice.customerId}" class="text-sm font-medium text-slate-900 hover:underline">
+                  <a href={`/admin/users/${invoice.customerId}`} class="text-sm font-medium text-slate-900 hover:underline">
                     {invoice.customer}
                   </a>
                   <p class="text-xs text-slate-500">{invoice.email}</p>
                 </div>
               </td>
               <td class="px-4 py-3">
-                <a href="/admin/shipments/{invoice.shipmentId}" class="text-sm text-blue-600 hover:underline">
+                <a href={`/admin/shipments/${invoice.shipmentId}`} class="text-sm text-blue-600 hover:underline">
                   {invoice.shipmentId}
                 </a>
               </td>

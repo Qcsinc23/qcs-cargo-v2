@@ -34,6 +34,7 @@
   let totalItems = 0;
   let totalPages = 1;
   let loading = true;
+  let hasMounted = false;
   let stats = {
     today: 0,
     pending: 0,
@@ -120,13 +121,17 @@
     }
   }
 
-  // Load data when filters change
-  $: if (currentPage, searchQuery, statusFilter, dateFilter) {
+  // Load data on the client when filters change
+  $: if (hasMounted) {
+    void currentPage;
+    void searchQuery;
+    void statusFilter;
+    void dateFilter;
     loadBookings();
   }
 
   onMount(() => {
-    loadBookings();
+    hasMounted = true;
   });
 </script>
 
@@ -255,13 +260,13 @@
               {@const statusStyle = getStatusStyle(booking.status)}
               <tr class="hover:bg-slate-50">
                 <td class="px-4 py-3">
-                  <a href="/admin/bookings/{booking.id}" class="text-sm font-medium text-blue-600 hover:underline">
+                  <a href={`/admin/bookings/${booking.id}`} class="text-sm font-medium text-blue-600 hover:underline">
                     {booking.id.substring(0, 8)}...
                   </a>
                 </td>
                 <td class="px-4 py-3">
                   <div>
-                    <a href="/admin/users/{booking.customerId}" class="text-sm font-medium text-slate-900 hover:underline">
+                    <a href={`/admin/users/${booking.customerId}`} class="text-sm font-medium text-slate-900 hover:underline">
                       {booking.customer}
                     </a>
                     <p class="text-xs text-slate-500">{booking.email}</p>

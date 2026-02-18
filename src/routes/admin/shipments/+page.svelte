@@ -39,6 +39,7 @@
   let totalItems = 0;
   let totalPages = 1;
   let loading = true;
+  let hasMounted = false;
 
   const destinations = ['Guyana', 'Trinidad', 'Jamaica', 'Barbados', 'Suriname'];
   const shipmentStatuses = [
@@ -151,13 +152,17 @@
     alert(`Preparing labels for ${selectedIds.length} shipments...`);
   }
 
-  // Load data when filters change
-  $: if (currentPage, searchQuery, statusFilter, destinationFilter) {
+  // Load data on the client when filters change
+  $: if (hasMounted) {
+    void currentPage;
+    void searchQuery;
+    void statusFilter;
+    void destinationFilter;
     loadShipments();
   }
 
   onMount(() => {
-    loadShipments();
+    hasMounted = true;
   });
 </script>
 
@@ -314,7 +319,7 @@
                   />
                 </td>
                 <td class="px-4 py-3">
-                  <a href="/admin/shipments/{shipment.shipmentId}" class="text-sm font-medium text-blue-600 hover:underline">
+                  <a href={`/admin/shipments/${shipment.shipmentId}`} class="text-sm font-medium text-blue-600 hover:underline">
                     {shipment.id}
                   </a>
                   {#if shipment.notes}
@@ -325,7 +330,7 @@
                   {/if}
                 </td>
                 <td class="px-4 py-3">
-                  <a href="/admin/users/{shipment.customerId}" class="text-sm text-slate-900 hover:underline">
+                  <a href={`/admin/users/${shipment.customerId}`} class="text-sm text-slate-900 hover:underline">
                     {shipment.customer}
                   </a>
                 </td>

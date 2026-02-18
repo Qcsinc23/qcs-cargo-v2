@@ -196,7 +196,7 @@
                     {user.name.charAt(0)}
                   </div>
                   <div>
-                    <a href="/admin/users/{user.id}" class="text-sm font-medium text-slate-900 hover:underline">
+                    <a href={`/admin/users/${user.id}`} class="text-sm font-medium text-slate-900 hover:underline">
                       {user.name}
                     </a>
                     <p class="text-xs text-slate-500">Since {new Date(user.created).toLocaleDateString()}</p>

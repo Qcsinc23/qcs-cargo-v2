@@ -5,11 +5,12 @@ import { hasRole } from '$lib/server/authz';
 async function countByFilter(
   locals: App.Locals,
   collection: string,
-  filter: string
+  filter: string,
+  requestKey: string
 ): Promise<number> {
   return locals.pb
     .collection(collection)
-    .getList(1, 1, { filter, fields: 'id' })
+    .getList(1, 1, { filter, fields: 'id', requestKey })
     .then((res) => res.totalItems)
     .catch(() => 0);
 }
@@ -22,7 +23,8 @@ async function sumInvoiceAmounts(locals: App.Locals, filter: string): Promise<nu
   while (page <= totalPages) {
     const invoicePage = await locals.pb.collection('invoices').getList(page, 200, {
       filter,
-      fields: 'amount'
+      fields: 'amount',
+      requestKey: `admin-dashboard-revenue-${page}`
     });
 
     for (const invoice of invoicePage.items) {
@@ -50,36 +52,54 @@ export const GET: RequestHandler = async ({ locals }) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [todayBookings, pendingBookings, activeShipments, recentShipments, activeCustomers, revenueMTD, recentActivity] = await Promise.all([
+    const [
+      todayBookings,
+      pendingBookings,
+      activeShipments,
+      recentShipments,
+      activeCustomers,
+      revenueMTD,
+      recentActivity
+    ] = await Promise.all([
       // Get today's bookings
       locals.pb.collection('bookings').getList(1, 50, {
         filter: `scheduled_date >= "${startOfDay.toISOString()}" && scheduled_date < "${endOfDay.toISOString()}"`,
         sort: '-created',
-        expand: 'user,recipient'
+        expand: 'user,recipient',
+        requestKey: 'admin-dashboard-today-bookings'
       }),
       // Get pending bookings for action cards
       locals.pb.collection('bookings').getList(1, 20, {
-        filter: 'status = "confirmed" && payment_status = "pending"',
+        filter: 'status = "pending_payment" || status = "payment_failed"',
         sort: '-created',
-        expand: 'user,recipient'
+        expand: 'user,recipient',
+        requestKey: 'admin-dashboard-pending-bookings'
       }),
       // Count active shipments
-      countByFilter(locals, 'shipments', 'status != "delivered" && status != "returned" && status != "exception"'),
+      countByFilter(
+        locals,
+        'shipments',
+        'status != "delivered" && status != "returned" && status != "exception"',
+        'admin-dashboard-active-shipments-count'
+      ),
       // Get recent shipments
       locals.pb.collection('shipments').getList(1, 10, {
         sort: '-created',
-        expand: 'user,booking,package'
+        expand: 'user,booking,package',
+        requestKey: 'admin-dashboard-recent-shipments'
       }),
       // "Active customers" currently represented as customers created in the last 30 days
       locals.pb.collection('users').getList(1, 1, {
-        filter: `role = "customer" && created >= "${thirtyDaysAgo.toISOString()}"`
+        filter: `role = "customer" && created >= "${thirtyDaysAgo.toISOString()}"`,
+        requestKey: 'admin-dashboard-active-customers'
       }),
       // Get MTD revenue without loading all invoice fields
       sumInvoiceAmounts(locals, `status = "paid" && paid_at >= "${firstDayOfMonth.toISOString()}"`),
       // Get recent activity logs
       locals.pb.collection('activity_logs').getList(1, 20, {
         sort: '-created',
-        expand: 'user'
+        expand: 'user',
+        requestKey: 'admin-dashboard-recent-activity'
       })
     ]);
 
@@ -99,14 +119,14 @@ export const GET: RequestHandler = async ({ locals }) => {
         urgent: true,
         bookingId: booking.id
       })),
-      recentShipments: recentShipments.items.map(shipment => ({
+      recentShipments: recentShipments.items.map((shipment) => ({
         id: shipment.tracking_number,
         customer: shipment.expand?.user?.name || 'Unknown',
         destination: shipment.destination,
         weight: shipment.weight ? `${shipment.weight} lbs` : 'Unknown',
         status: shipment.status
       })),
-      todaySchedule: todayBookings.items.map(booking => ({
+      todaySchedule: todayBookings.items.map((booking) => ({
         time: booking.time_slot,
         customer: booking.expand?.user?.name || 'Unknown',
         type: 'Drop-off',

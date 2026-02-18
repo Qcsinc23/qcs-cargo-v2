@@ -25,7 +25,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     }
 
     // Check if booking is in a payable state
-    if (booking.status !== 'pending_payment' && booking.payment_status !== 'failed') {
+    const status = String(booking.status || '');
+    const paymentStatus = String(booking.payment_status || '');
+    const payableStatuses = new Set(['pending_payment', 'payment_failed']);
+    if (!payableStatuses.has(status) && paymentStatus !== 'failed') {
       throw error(400, { message: 'This booking cannot be paid for' });
     }
 

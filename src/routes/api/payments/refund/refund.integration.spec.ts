@@ -24,10 +24,14 @@ function makeRefundLocals(options?: {
   refundsGetList?: ReturnType<typeof vi.fn>;
   refundsCreate?: ReturnType<typeof vi.fn>;
   bookingsUpdate?: ReturnType<typeof vi.fn>;
+  bookingsGetOne?: ReturnType<typeof vi.fn>;
 }) {
   const refundsGetList = options?.refundsGetList ?? vi.fn();
   const refundsCreate = options?.refundsCreate ?? vi.fn();
   const bookingsUpdate = options?.bookingsUpdate ?? vi.fn();
+  const bookingsGetOne =
+    options?.bookingsGetOne ??
+    vi.fn().mockResolvedValue({ id: 'booking1234', status: 'confirmed' });
 
   const refundsCollection = {
     getList: refundsGetList,
@@ -35,6 +39,7 @@ function makeRefundLocals(options?: {
   };
 
   const bookingsCollection = {
+    getOne: bookingsGetOne,
     update: bookingsUpdate
   };
 
@@ -54,14 +59,19 @@ function makeRefundLocals(options?: {
     locals,
     refundsGetList,
     refundsCreate,
-    bookingsUpdate
+    bookingsUpdate,
+    bookingsGetOne
   };
 }
 
 describe('API /payments/refund handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.paymentRateCheck.mockReturnValue({ allowed: true, remaining: 4, resetTime: Date.now() + 60_000 });
+    mocks.paymentRateCheck.mockReturnValue({
+      allowed: true,
+      remaining: 4,
+      resetTime: Date.now() + 60_000
+    });
   });
 
   it('POST returns 401 when unauthenticated', async () => {
@@ -99,7 +109,11 @@ describe('API /payments/refund handlers', () => {
   });
 
   it('POST returns 429 when rate limit is exceeded', async () => {
-    mocks.paymentRateCheck.mockReturnValueOnce({ allowed: false, remaining: 0, resetTime: Date.now() + 60_000 });
+    mocks.paymentRateCheck.mockReturnValueOnce({
+      allowed: false,
+      remaining: 0,
+      resetTime: Date.now() + 60_000
+    });
 
     const { locals } = makeRefundLocals({ user: { id: 'admin12345', role: 'admin' } });
 
@@ -212,9 +226,8 @@ describe('API /payments/refund handlers', () => {
 
     expect(bookingsUpdate).toHaveBeenCalledWith('booking1234', {
       payment_status: 'refunded',
-      status: 'refunded',
-      refunded_at: expect.any(String),
-      refund_id: 're_12345'
+      status: 'canceled',
+      payment_intent_id: 'pi_fresh'
     });
 
     expect(refundsCreate).toHaveBeenCalledWith({

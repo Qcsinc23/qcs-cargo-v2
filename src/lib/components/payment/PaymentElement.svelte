@@ -5,33 +5,43 @@
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
   import { CreditCard, AlertTriangle, Loader2, CheckCircle } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
+  import { PUBLIC_STRIPE_KEY } from '$env/static/public';
+  import type { Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 
   export let clientSecret: string;
-  export let paymentIntentId: string;
+  export let bookingId: string;
   export let amount: number;
   export let onPaymentSuccess: (paymentIntentId: string) => void;
   export let onPaymentError: (error: Error) => void;
 
-  let stripe: any;
-  let elements: any;
+  let stripe: Stripe | null = null;
+  let elements: StripeElements | null = null;
+  let paymentElement: StripePaymentElement | null = null;
   let processing = false;
   let error: string | null = null;
   let mounted = false;
 
-  onMount(async () => {
-    // Dynamically import Stripe to avoid SSR issues
-    const { loadStripe } = await import('@stripe/stripe-js');
+  onMount(() => {
+    let disposed = false;
 
-    if (!window.Stripe) {
-      // Load Stripe script if not already loaded
-      const script = document.createElement('script');
-      script.src = 'https://js.stripe.com/v3/';
-      script.async = true;
-      script.onload = async () => {
-        stripe = loadStripe(import.meta.env.PUBLIC_STRIPE_KEY);
+    async function initStripeElement() {
+      if (!PUBLIC_STRIPE_KEY) {
+        error = 'Payment configuration is missing. Please contact support.';
+        onPaymentError(new Error('PUBLIC_STRIPE_KEY is not configured'));
+        return;
+      }
+
+      try {
+        const { loadStripe } = await import('@stripe/stripe-js');
+        const stripeClient = await loadStripe(PUBLIC_STRIPE_KEY);
+        if (!stripeClient) {
+          throw new Error('Failed to initialize Stripe');
+        }
+        if (disposed) return;
+
+        stripe = stripeClient;
         elements = stripe.elements({ clientSecret });
-
-        const paymentElement = elements.create('payment', {
+        paymentElement = elements.create('payment', {
           layout: 'tabs',
           fields: {
             billingDetails: {
@@ -43,20 +53,29 @@
         });
 
         paymentElement.mount('#payment-element');
-
-        // Handle real-time validation errors
         paymentElement.on('change', (event: any) => {
-          if (event.error) {
-            error = event.error.message;
-          } else {
-            error = null;
-          }
+          error = event?.error?.message || null;
         });
 
         mounted = true;
-      };
-      document.head.appendChild(script);
+      } catch (initErr) {
+        const message =
+          initErr instanceof Error ? initErr.message : 'Failed to initialize payment form.';
+        error = message;
+        onPaymentError(new Error(message));
+      }
     }
+
+    void initStripeElement();
+
+    return () => {
+      disposed = true;
+      mounted = false;
+      paymentElement?.destroy();
+      paymentElement = null;
+      elements = null;
+      stripe = null;
+    };
   });
 
   async function handleSubmit(e: Event) {
@@ -83,7 +102,7 @@
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/dashboard/bookings/${paymentIntentId}/confirmation`,
+          return_url: `${window.location.origin}/dashboard/bookings/${bookingId}/confirmation`,
         },
         redirect: 'if_required' // Don't redirect by default, we'll handle it
       });
@@ -91,9 +110,24 @@
       if (confirmError) {
         error = confirmError.message || 'Payment failed';
         onPaymentError(new Error(confirmError.message || 'Payment failed'));
-      } else if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing')) {
+      } else if (paymentIntent?.status === 'succeeded') {
         toast.success('Payment successful!');
         onPaymentSuccess(paymentIntent.id);
+      } else if (paymentIntent?.status === 'processing') {
+        toast.info('Payment is processing. We will confirm shortly.');
+        onPaymentSuccess(paymentIntent.id);
+      } else if (paymentIntent?.status === 'requires_payment_method') {
+        const message = 'Payment was not completed. Please try a different payment method.';
+        error = message;
+        onPaymentError(new Error(message));
+      } else if (paymentIntent) {
+        const message = `Payment is ${paymentIntent.status}. Please wait and refresh shortly.`;
+        error = message;
+        onPaymentError(new Error(message));
+      } else {
+        const message = 'Payment confirmation did not return a result.';
+        error = message;
+        onPaymentError(new Error(message));
       }
     } catch (err) {
       console.error('Payment error:', err);

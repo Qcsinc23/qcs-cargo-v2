@@ -10,7 +10,7 @@
   import { toast } from '$lib/stores/toast';
 
   
-  const bookingId = $page.params.id;
+  const bookingId = $page.params.id ?? '';
   let booking: any = null;
   let loading = true;
   let paymentLoading = false;
@@ -44,7 +44,6 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: booking?.total_cost || 0,
           bookingId,
           description: `QCS Cargo Booking ${bookingId}`
         })
@@ -68,7 +67,24 @@
 
   async function handlePaymentSuccess(intentId: string) {
     paymentLoading = true;
-    toast.success('Payment successful! Redirecting...');
+    try {
+      const reconcileResponse = await fetch('/api/payments/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId, paymentIntentId: intentId })
+      });
+
+      const reconcileResult = await reconcileResponse.json().catch(() => null);
+      if (!reconcileResponse.ok || reconcileResult?.status !== 'success') {
+        console.warn('[payment_reconcile] Deferred to webhook processing', reconcileResult);
+        toast.warning('Payment received. Confirmation may take a few moments.');
+      } else {
+        toast.success('Payment successful! Redirecting...');
+      }
+    } catch (reconcileErr) {
+      console.warn('[payment_reconcile] Failed', reconcileErr);
+      toast.warning('Payment received. Confirmation may take a few moments.');
+    }
 
     // Give a moment for the user to see the success message
     setTimeout(() => {
@@ -106,7 +122,7 @@
   <!-- Payment Form -->
   <div>
     <div class="mb-6">
-      <Button variant="ghost" href="/dashboard/bookings/{bookingId}" class="mb-4">
+      <Button variant="ghost" href={`/dashboard/bookings/${bookingId}`} class="mb-4">
         <ArrowLeft class="w-4 h-4 mr-2" />
         Back to Booking
       </Button>
@@ -121,7 +137,7 @@
     {:else if clientSecret && paymentIntentId}
       <PaymentElement
         {clientSecret}
-        {paymentIntentId}
+        {bookingId}
         amount={booking?.total_cost || 0}
         onPaymentSuccess={handlePaymentSuccess}
         onPaymentError={handlePaymentError}

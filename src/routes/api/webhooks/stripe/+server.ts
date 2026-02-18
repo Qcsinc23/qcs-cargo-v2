@@ -229,8 +229,10 @@ async function handlePaymentSuccess(paymentIntent: PaymentIntentData) {
   }
 
   const booking = await pb.collection('bookings').getOne(bookingId, {
-    fields: 'id,user,total_cost,payment_status,payment_intent_id,destination,scheduled_date,time_slot,package_count'
+    fields: 'id,user,total_cost,status,payment_status,payment_intent_id,destination,scheduled_date,time_slot,package_count'
   });
+  const bookingStatus = String((booking as any).status || '');
+  const isCanceledBooking = bookingStatus === 'canceled' || bookingStatus === 'cancelled';
 
   if (booking.payment_status === 'paid' && booking.payment_intent_id === paymentIntent.id) {
     return;
@@ -256,7 +258,7 @@ async function handlePaymentSuccess(paymentIntent: PaymentIntentData) {
     payment_status: 'paid',
     payment_intent_id: paymentIntent.id,
     paid_at: new Date().toISOString(),
-    status: 'confirmed'
+    status: isCanceledBooking ? 'canceled' : 'confirmed'
   });
 
   const existingInvoice = await pb
@@ -278,7 +280,7 @@ async function handlePaymentSuccess(paymentIntent: PaymentIntentData) {
   }
 
   const userId = metadata.user_id || booking.user;
-  if (!userId) return;
+  if (!userId || isCanceledBooking) return;
 
   try {
     const user = await pb.collection('users').getOne(userId);

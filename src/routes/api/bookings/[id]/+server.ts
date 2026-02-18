@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isAdminOrStaff } from '$lib/server/authz';
 import { escapePbFilterValue, sanitizePocketBaseId } from '$lib/server/pb-filter';
+import { cancelPaymentIntent } from '$lib/server/stripe';
 
 const PACKAGE_PAGE_SIZE = 100;
 
@@ -162,10 +163,29 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
       throw error(400, { message: 'Only pending bookings can be canceled' });
     }
 
+    const paymentStatus = String(booking.payment_status || 'pending');
+    const paymentIntentId =
+      typeof booking.payment_intent_id === 'string' ? booking.payment_intent_id.trim() : '';
+    const isSettledPayment = paymentStatus === 'paid' || paymentStatus === 'refunded';
+    const nextPaymentStatus = isSettledPayment ? paymentStatus : 'canceled';
+
+    if (paymentIntentId && !isSettledPayment) {
+      try {
+        await cancelPaymentIntent(paymentIntentId);
+      } catch (cancelErr) {
+        // Stripe intent cancellation is best-effort; booking cancellation should still succeed.
+        console.warn('[cancel_booking] Failed to cancel Stripe payment intent', {
+          bookingId: id,
+          paymentIntentId,
+          error: cancelErr instanceof Error ? cancelErr.message : String(cancelErr)
+        });
+      }
+    }
+
     // Soft delete - mark as canceled
     await locals.pb.collection('bookings').update(id, {
       status: 'canceled',
-      payment_status: booking.payment_status === 'pending' ? 'canceled' : booking.payment_status
+      payment_status: nextPaymentStatus
     });
 
     console.log('[cancel_booking]', {
@@ -187,7 +207,6 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
     throw error(500, { message: 'Failed to cancel booking' });
   }
 };
-
 
 
 

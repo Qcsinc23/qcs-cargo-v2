@@ -53,7 +53,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const correlationId = locals.correlationId || crypto.randomUUID();
 
   try {
-    const parsed = CreateIntentBodySchema.safeParse(await request.json());
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return json(
+        {
+          status: 'error',
+          error_code: 'INVALID_JSON',
+          message: 'Request body must be valid JSON'
+        },
+        { status: 400 }
+      );
+    }
+
+    const parsed = CreateIntentBodySchema.safeParse(rawBody);
     if (!parsed.success) {
       return json(
         {
@@ -85,7 +99,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     if (booking.user !== locals.user.id) {
       return json(
-        { status: 'error', error_code: 'FORBIDDEN', message: 'Booking does not belong to current user' },
+        {
+          status: 'error',
+          error_code: 'FORBIDDEN',
+          message: 'Booking does not belong to current user'
+        },
         { status: 403 }
       );
     }
@@ -130,7 +148,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     const amountCents = dollarsToCents(bookingTotal);
-    const existingPaymentIntentId = typeof booking.payment_intent_id === 'string' ? booking.payment_intent_id : '';
+    const existingPaymentIntentId =
+      typeof booking.payment_intent_id === 'string' ? booking.payment_intent_id : '';
 
     if (existingPaymentIntentId) {
       try {
@@ -171,14 +190,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           fields: 'stripe_customer_id'
         });
         if (!fresh?.stripe_customer_id) {
-          await locals.pb.collection('users').update(locals.user.id, { stripe_customer_id: stripeCustomerId });
+          await locals.pb
+            .collection('users')
+            .update(locals.user.id, { stripe_customer_id: stripeCustomerId });
         }
       } catch (saveCustomerErr) {
-        console.error('[create_payment_intent] Failed to persist stripe_customer_id', saveCustomerErr);
+        console.error(
+          '[create_payment_intent] Failed to persist stripe_customer_id',
+          saveCustomerErr
+        );
       }
     }
 
-    const idempotencyKey = `payment_intent_${locals.user.id}_${booking.id}_${amountCents}`;
+    const idempotencyKey = existingPaymentIntentId
+      ? `payment_intent_retry_${booking.id}_${amountCents}_${correlationId}`
+      : `payment_intent_${locals.user.id}_${booking.id}_${amountCents}`;
 
     const paymentIntent = await createPaymentIntent({
       amount: amountCents,
@@ -193,6 +219,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       },
       idempotencyKey
     });
+
+    if (!paymentIntent.client_secret) {
+      throw new Error('Stripe did not return a client secret for payment intent');
+    }
 
     try {
       await locals.pb.collection('bookings').update(booking.id, {

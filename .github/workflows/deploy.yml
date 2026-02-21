@@ -13,6 +13,11 @@ jobs:
   check:
     name: Type Check & Lint
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_POCKETBASE_URL: https://api.qcs-cargo.com
+      PUBLIC_SITE_URL: https://qcs-cargo.com
+      PUBLIC_COMPANY_NAME: "QCS Cargo"
+      PUBLIC_STRIPE_KEY: pk_placeholder
     steps:
       - uses: actions/checkout@v4
 
@@ -63,6 +68,7 @@ jobs:
         env:
           PUBLIC_POCKETBASE_URL: https://api.qcs-cargo.com
           PUBLIC_SITE_URL: https://qcs-cargo.com
+          PUBLIC_COMPANY_NAME: "QCS Cargo"
           PUBLIC_STRIPE_KEY: pk_placeholder
 
   deploy:

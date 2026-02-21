@@ -460,8 +460,8 @@ export function initConnectivityMonitor(): () => void {
 // Audio Feedback
 // ============================================
 
-let successSound: HTMLAudioElement | null = null;
-let errorSound: HTMLAudioElement | null = null;
+const successSound: HTMLAudioElement | null = null;
+const errorSound: HTMLAudioElement | null = null;
 let audioContext: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {

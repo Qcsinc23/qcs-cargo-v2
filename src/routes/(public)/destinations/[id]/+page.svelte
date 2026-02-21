@@ -1,201 +1,214 @@
 <script lang="ts">
-  import { Shield, Clock, MapPin, Plane, ArrowRight, Calculator, CheckCircle2, Phone } from 'lucide-svelte';
+  import { page } from '$app/stores';
   import { Button } from '$lib/components/ui/button';
-  import type { PageData } from './$types';
+  import { Card, CardContent } from '$lib/components/ui/card';
+  import { ArrowLeft, Plane, Clock, Package, DollarSign, CheckCircle, MapPin } from 'lucide-svelte';
 
-  export let data: PageData;
-  $: ({ destination } = data);
+  interface DestinationInfo {
+    id: string;
+    flag: string;
+    name: string;
+    capital: string;
+    description: string;
+    highlights: string[];
+    standardTransit: string;
+    expressTransit: string;
+    standardRate: string;
+    expressRate: string;
+    services: string[];
+    restrictions: string[];
+    localAgent?: string;
+  }
+
+  const DESTINATION_DATA: Record<string, DestinationInfo> = {
+    guyana: {
+      id: 'guyana', flag: '🇬🇾', name: 'Guyana', capital: 'Georgetown',
+      description: 'Ship to Guyana with reliable, affordable air cargo service from the US. QCS Cargo serves Georgetown and surrounding regions through our trusted local network.',
+      highlights: ['Lowest rates to Guyana', 'Door-to-door available', 'Temperature-sensitive cargo handled', 'Customs clearance assistance'],
+      standardTransit: '7–10 business days', expressTransit: '3–5 business days',
+      standardRate: '$4.50/lb', expressRate: '$7.00/lb',
+      services: ['Air Cargo', 'Express Delivery', 'Door-to-Door', 'Consolidated Cargo', 'Customs Brokerage'],
+      restrictions: ['No firearms or ammunition', 'No perishables without documentation', 'Currency >$10,000 requires declaration'],
+      localAgent: 'QCS Cargo Georgetown'
+    },
+    jamaica: {
+      id: 'jamaica', flag: '🇯🇲', name: 'Jamaica', capital: 'Kingston',
+      description: 'Fast, reliable shipping to Jamaica. QCS Cargo serves Kingston, Montego Bay, and major parishes across the island.',
+      highlights: ['Island-wide delivery', 'Customs expertise', 'Competitive rates', 'Weekly departures'],
+      standardTransit: '5–8 business days', expressTransit: '2–4 business days',
+      standardRate: '$4.75/lb', expressRate: '$7.50/lb',
+      services: ['Air Cargo', 'Express Delivery', 'Parish Delivery', 'Consolidated Cargo'],
+      restrictions: ['No prohibited agricultural products', 'Firearms require special permits', 'Some electronics require import licenses'],
+      localAgent: 'QCS Cargo Kingston'
+    },
+    trinidad: {
+      id: 'trinidad', flag: '🇹🇹', name: 'Trinidad & Tobago', capital: 'Port of Spain',
+      description: 'Shipping to Trinidad & Tobago. QCS Cargo provides reliable service to Port of Spain, San Fernando, and across both islands.',
+      highlights: ['Both islands served', 'Competitive pricing', 'Regular departures', 'Experienced customs team'],
+      standardTransit: '6–9 business days', expressTransit: '3–5 business days',
+      standardRate: '$4.75/lb', expressRate: '$7.25/lb',
+      services: ['Air Cargo', 'Express Delivery', 'Island-to-Island Transfer', 'Consolidated Cargo'],
+      restrictions: ['Agricultural items require TTMA permit', 'Medicines require prescription', 'No Styrofoam packing material'],
+      localAgent: 'QCS Cargo PoS'
+    },
+    barbados: {
+      id: 'barbados', flag: '🇧🇧', name: 'Barbados', capital: 'Bridgetown',
+      description: 'Reliable cargo service to Barbados. QCS Cargo delivers to Bridgetown and all parish districts across the island.',
+      highlights: ['Parish-wide delivery', 'Strict quality standards', 'Efficient customs clearance', 'Weekly flights'],
+      standardTransit: '7–10 business days', expressTransit: '3–5 business days',
+      standardRate: '$5.00/lb', expressRate: '$7.75/lb',
+      services: ['Air Cargo', 'Express Delivery', 'Door-to-Door', 'Consolidated Cargo'],
+      restrictions: ['CARICOM rules apply', 'Agricultural products require permits', 'No live animals'],
+      localAgent: 'QCS Cargo Bridgetown'
+    },
+    suriname: {
+      id: 'suriname', flag: '🇸🇷', name: 'Suriname', capital: 'Paramaribo',
+      description: 'QCS Cargo ships to Suriname with competitive rates and reliable service to Paramaribo and surrounding areas.',
+      highlights: ['Competitive rates', 'Experienced customs team', 'Reliable departures', 'Tracking included'],
+      standardTransit: '8–12 business days', expressTransit: '4–6 business days',
+      standardRate: '$5.00/lb', expressRate: '$8.00/lb',
+      services: ['Air Cargo', 'Express Delivery', 'Consolidated Cargo'],
+      restrictions: ['Documentation requirements vary by item type', 'Electrical equipment may need certification', 'Certain food items restricted'],
+      localAgent: 'QCS Cargo Paramaribo'
+    }
+  };
+
+  $: destId = ($page.params.id as string) || '';
+  $: dest = (DESTINATION_DATA[destId] || null) as DestinationInfo | null;
+  $: isValid = dest !== null;
 </script>
 
 <svelte:head>
-  <title>{destination.name} | Destinations | QCS Cargo</title>
-  <meta name="description" content="Premium air freight services to {destination.name}. Transit times from {destination.transitDays.min}-{destination.transitDays.max} days. Reliable Caribbean shipping network." />
+  {#if dest}
+    <title>Shipping to {dest.name} | QCS Cargo</title>
+    <meta name="description" content="Ship to {dest.name} with QCS Cargo. {dest.standardTransit} standard transit, starting at {dest.standardRate}/lb. Trusted Caribbean air cargo service." />
+  {:else}
+    <title>Destination Not Found | QCS Cargo</title>
+  {/if}
 </svelte:head>
 
-<main class="min-h-screen bg-background text-foreground">
-  <!-- Hero Section -->
-  <section class="relative overflow-hidden bg-gradient-to-r from-[#023E8A] via-[#0077B6] to-[#023E8A] py-32 sm:py-48">
-    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-      <div
-        class="absolute inset-0 opacity-30"
-        style="background-image: linear-gradient(90deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px), linear-gradient(0deg, rgba(144, 224, 239, 0.12) 1px, transparent 1px); background-size: 96px 96px;"
-      ></div>
-      <div class="absolute -top-32 left-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[#90E0EF]/20 blur-3xl"></div>
-      <div class="absolute -bottom-40 right-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[#CAF0F8]/15 blur-3xl"></div>
+{#if !isValid}
+  <div class="min-h-screen flex items-center justify-center">
+    <div class="text-center">
+      <p class="text-6xl mb-4">🌍</p>
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Destination not found</h1>
+      <p class="text-gray-600 mb-6">We don't currently ship to that location.</p>
+      <Button href="/destinations">View All Destinations</Button>
+    </div>
+  </div>
+{:else}
+  {@const d = dest as DestinationInfo}
+  <!-- Hero -->
+  <section class="relative overflow-hidden bg-gradient-to-r from-[#023E8A] via-[#0077B6] to-[#023E8A] py-24 sm:py-32">
+    <div class="pointer-events-none absolute inset-0 opacity-20" style="background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(0deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 80px 80px;"></div>
+    <div class="container mx-auto px-4 text-center relative">
+      <a href="/destinations" class="inline-flex items-center gap-2 text-blue-200 hover:text-white mb-8 text-sm transition-colors">
+        <ArrowLeft class="w-4 h-4" />
+        All Destinations
+      </a>
+      <div class="text-7xl mb-4">{d.flag}</div>
+      <h1 class="font-display text-4xl md:text-6xl text-white mb-4">Shipping to {d.name}</h1>
+      <p class="text-blue-200 text-lg max-w-2xl mx-auto">{d.description}</p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+        <Button href="/calculator?destination={d.id}" size="lg" class="bg-white text-blue-900 hover:bg-blue-50">
+          Get a Rate Quote
+        </Button>
+        <Button href="/dashboard/bookings/new?destination={d.id}" size="lg" variant="outline" class="border-white text-white hover:bg-white/10">
+          Book a Shipment
+        </Button>
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-4 py-16 space-y-12">
+    <!-- Key Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {#each [
+        { icon: Clock, label: 'Standard Transit', value: d.standardTransit },
+        { icon: Plane, label: 'Express Transit', value: d.expressTransit },
+        { icon: DollarSign, label: 'Standard Rate', value: d.standardRate },
+        { icon: DollarSign, label: 'Express Rate', value: d.expressRate }
+      ] as stat}
+        <Card class="text-center p-4">
+          <svelte:component this={stat.icon} class="w-6 h-6 text-primary-600 mx-auto mb-2" />
+          <p class="text-xs text-gray-500">{stat.label}</p>
+          <p class="font-bold text-gray-900 mt-1">{stat.value}</p>
+        </Card>
+      {/each}
     </div>
 
-    <div class="container relative mx-auto px-4">
-      <div class="mx-auto max-w-4xl text-center">
-        <div class="mb-8 inline-flex items-center gap-2 rounded-full border border-[#90E0EF]/25 bg-white/5 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-[#CAF0F8]">
-          <MapPin class="h-3 w-3 text-[#90E0EF]" />
-          Direct Network Route
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Services -->
+      <Card>
+        <div class="p-4 border-b bg-gray-50">
+          <h2 class="font-semibold text-gray-900 flex items-center gap-2">
+            <Package class="w-4 h-4 text-primary-600" />
+            Available Services
+          </h2>
         </div>
-        
-        <h1 class="font-display text-6xl sm:text-7xl md:text-8xl leading-[0.95] text-[#F0F9FF] mb-8">
-          {destination.name}
-          <span class="block text-2xl sm:text-3xl font-light tracking-[0.4em] uppercase text-[#90E0EF]/70 mt-4">
-            {destination.capital} ({destination.code})
-          </span>
-        </h1>
-        
-        <p class="mx-auto max-w-2xl text-lg sm:text-xl font-light leading-relaxed tracking-wide text-[#CAF0F8]/80">
-          Seamless logistics and white‑glove handling for every shipment to {destination.name}.
-          Experience Caribbean shipping redefined.
+        <CardContent class="p-4 space-y-2">
+          {#each d.services as service}
+            <div class="flex items-center gap-3">
+              <CheckCircle class="w-4 h-4 text-green-500 flex-shrink-0" />
+              <span class="text-sm text-gray-700">{service}</span>
+            </div>
+          {/each}
+        </CardContent>
+      </Card>
+
+      <!-- Highlights -->
+      <Card>
+        <div class="p-4 border-b bg-gray-50">
+          <h2 class="font-semibold text-gray-900 flex items-center gap-2">
+            <MapPin class="w-4 h-4 text-primary-600" />
+            Why Ship With Us?
+          </h2>
+        </div>
+        <CardContent class="p-4 space-y-2">
+          {#each d.highlights as highlight}
+            <div class="flex items-center gap-3">
+              <CheckCircle class="w-4 h-4 text-primary-500 flex-shrink-0" />
+              <span class="text-sm text-gray-700">{highlight}</span>
+            </div>
+          {/each}
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Restrictions -->
+    <Card>
+      <div class="p-4 border-b bg-amber-50 border-amber-100">
+        <h2 class="font-semibold text-amber-900">Import Restrictions & Notes</h2>
+        <p class="text-sm text-amber-700 mt-1">Please review before booking</p>
+      </div>
+      <CardContent class="p-4">
+        <ul class="space-y-2">
+          {#each d.restrictions as r}
+            <li class="flex items-start gap-3 text-sm text-gray-700">
+              <span class="text-amber-500 font-bold mt-0.5">•</span>
+              {r}
+            </li>
+          {/each}
+        </ul>
+        <p class="text-xs text-gray-500 mt-4">
+          For a complete list of prohibited items, visit our
+          <a href="/prohibited-items" class="text-primary-600 underline">Prohibited Items page</a>.
         </p>
+      </CardContent>
+    </Card>
 
-        <div class="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button
-            size="lg"
-            href={`/shipping-calculator?destination=${destination.id}`}
-            class="ghost-cta h-14 px-10 bg-transparent border border-[#90E0EF]/50 text-[#F0F9FF] hover:bg-white/5 hover:border-[#CAF0F8]/60 tracking-[0.3em] uppercase text-xs font-semibold"
-          >
-            Get Instant Quote
-            <ArrowRight class="ml-3 h-5 w-5 text-[#90E0EF]" />
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            href="/track"
-            class="ghost-cta h-14 px-10 bg-transparent border border-[#90E0EF]/30 text-[#CAF0F8] hover:bg-white/5 hover:border-[#CAF0F8]/50 tracking-[0.3em] uppercase text-xs font-semibold"
-          >
-            Track Shipment
-          </Button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Service Details -->
-  <section class="py-24 sm:py-32 bg-background relative z-10">
-    <div class="container mx-auto px-4">
-      <div class="grid lg:grid-cols-3 gap-8">
-        <!-- Quick Stats -->
-        <div class="lg:col-span-1 space-y-6">
-          <div class="rounded-2xl border border-border/40 bg-muted/30 p-8">
-            <h3 class="font-display text-2xl mb-6">Service Summary</h3>
-            <div class="space-y-6">
-              <div class="flex items-start gap-4">
-                <div class="rounded-lg bg-primary/10 p-2">
-                  <Clock class="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div class="text-sm font-medium">Transit Time</div>
-                  <div class="text-muted-foreground text-sm">{destination.transitDays.min}-{destination.transitDays.max} Business Days</div>
-                </div>
-              </div>
-              <div class="flex items-start gap-4">
-                <div class="rounded-lg bg-primary/10 p-2">
-                  <Plane class="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div class="text-sm font-medium">Base Rate</div>
-                  <div class="text-muted-foreground text-sm">From ${destination.baseRate.toFixed(2)} / lb</div>
-                </div>
-              </div>
-              <div class="flex items-start gap-4">
-                <div class="rounded-lg bg-primary/10 p-2">
-                  <Shield class="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div class="text-sm font-medium">Duty Free Threshold</div>
-                  <div class="text-muted-foreground text-sm">Up to ${destination.customs.dutyFree} (Est.)</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-border/40 bg-muted/30 p-8">
-            <h3 class="font-display text-2xl mb-6">Required Docs</h3>
-            <ul class="space-y-3">
-              {#each destination.customs.documents as doc}
-                <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                  <CheckCircle2 class="h-4 w-4 text-primary" />
-                  {doc}
-                </li>
-              {/each}
-            </ul>
-          </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="lg:col-span-2 space-y-12">
-          <div>
-            <h2 class="font-display text-4xl mb-6">Premium Shipping to {destination.name}</h2>
-            <p class="text-lg text-muted-foreground/85 font-light leading-relaxed mb-8">
-              At QCS Cargo, we understand the unique requirements of shipping to {destination.name}. 
-              Whether you're sending personal effects, commercial samples, or luxury goods, our 
-              dedicated logistics team ensures your cargo moves efficiently through our New Jersey 
-              hub directly to {destination.capital}.
-            </p>
-            <div class="grid sm:grid-cols-2 gap-6">
-              <div class="p-6 rounded-xl border border-border/30 hover:border-primary/20 transition-colors">
-                <h4 class="font-display text-xl mb-3">Air Freight Excellence</h4>
-                <p class="text-sm text-muted-foreground font-light leading-relaxed">
-                  Twice-weekly flights from our NJ hub ensure your packages never sit idle. 
-                  We prioritize speed without compromising on safety.
-                </p>
-              </div>
-              <div class="p-6 rounded-xl border border-border/30 hover:border-primary/20 transition-colors">
-                <h4 class="font-display text-xl mb-3">Local Expertise</h4>
-                <p class="text-sm text-muted-foreground font-light leading-relaxed">
-                  Our agents in {destination.capital} possess deep knowledge of local customs 
-                  regulations, expediting the clearance process for your peace of mind.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- FAQ / Guidelines -->
-          <div class="space-y-6">
-            <h3 class="font-display text-3xl">Shipping Guidelines</h3>
-            <div class="space-y-4">
-              <details class="group rounded-xl border border-border/30 p-4 transition-all hover:bg-muted/20">
-                <summary class="flex cursor-pointer items-center justify-between font-medium">
-                  What can I ship to {destination.name}?
-                  <span class="transition-transform group-open:rotate-180">
-                    <ArrowRight class="h-4 w-4 rotate-90" />
-                  </span>
-                </summary>
-                <div class="mt-4 text-sm text-muted-foreground leading-relaxed font-light">
-                  Most consumer goods can be shipped. However, hazardous materials, perishables, 
-                  and restricted items (like weapons or specific electronics) require special handling 
-                  or are prohibited. Please check our <a href="/prohibited-items" class="text-primary hover:underline">prohibited items list</a>.
-                </div>
-              </details>
-              <details class="group rounded-xl border border-border/30 p-4 transition-all hover:bg-muted/20">
-                <summary class="flex cursor-pointer items-center justify-between font-medium">
-                  How are customs duties calculated?
-                  <span class="transition-transform group-open:rotate-180">
-                    <ArrowRight class="h-4 w-4 rotate-90" />
-                  </span>
-                </summary>
-                <div class="mt-4 text-sm text-muted-foreground leading-relaxed font-light">
-                  Customs duties in {destination.name} are typically based on the declared value 
-                  plus shipping costs (CIF). While personal items under ${destination.customs.dutyFree} 
-                  may be exempt, commercial goods are subject to standard tariffs.
-                </div>
-              </details>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="py-24 sm:py-32 bg-muted/30">
-    <div class="container mx-auto px-4 text-center">
-      <h2 class="font-display text-4xl md:text-5xl mb-8">Ready to ship to {destination.name}?</h2>
-      <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-        <Button size="lg" href={`/shipping-calculator?destination=${destination.id}`} class="h-14 px-10 bg-ocean-blue text-white hover:bg-ocean-blue/90 tracking-widest uppercase text-xs">
-          <Calculator class="mr-2 h-4 w-4" />
+    <!-- CTA -->
+    <div class="text-center bg-gradient-to-r from-primary-600 to-blue-700 rounded-2xl p-10 text-white">
+      <h2 class="text-2xl font-bold mb-3">Ready to ship to {d.name}?</h2>
+      <p class="text-blue-200 mb-6">Get an instant quote or book your shipment online in minutes.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button href="/calculator?destination={d.id}" class="bg-white text-blue-900 hover:bg-blue-50">
           Calculate Rates
         </Button>
-        <Button variant="outline" size="lg" href="/contact" class="h-14 px-10 border-ocean-blue/20 text-ocean-blue hover:bg-ocean-blue/5 tracking-widest uppercase text-xs">
-          <Phone class="mr-2 h-4 w-4" />
-          Contact Support
+        <Button href="/contact" variant="outline" class="border-white text-white hover:bg-white/10">
+          Contact Us
         </Button>
       </div>
     </div>
-  </section>
-</main>
+  </div>
+{/if}

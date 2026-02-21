@@ -19,7 +19,12 @@ import {
   Warehouse,
   Scan,
   LayoutGrid,
-  AlertTriangle
+  AlertTriangle,
+  BookTemplate,
+  MessageSquare,
+  BarChart2,
+  FileBarChart,
+  Box
 } from 'lucide-svelte';
 
 export interface NavItem {
@@ -72,6 +77,13 @@ export const navigationConfig: {
       label: 'Recipients',
       href: '/dashboard/recipients',
       icon: Users,
+      desktopOnly: true
+    },
+    {
+      id: 'templates',
+      label: 'Templates',
+      href: '/dashboard/templates',
+      icon: BookTemplate,
       desktopOnly: true
     },
     {
@@ -182,6 +194,24 @@ export const navigationConfig: {
       label: 'Exceptions',
       href: '/admin/exceptions',
       icon: AlertTriangle
+    },
+    {
+      id: 'manifests',
+      label: 'Manifests',
+      href: '/admin/manifests',
+      icon: FileBarChart
+    },
+    {
+      id: 'communications',
+      label: 'Communications',
+      href: '/admin/communications',
+      icon: MessageSquare
+    },
+    {
+      id: 'reports',
+      label: 'Reports',
+      href: '/admin/reports',
+      icon: BarChart2
     },
     {
       id: 'activity',

@@ -126,6 +126,11 @@
             Sign up
           </a>
         </p>
+        <p class="mt-2">
+          <a href="/forgot-password" class="text-primary-700 underline underline-offset-2 hover:text-primary-800">
+            Forgot your password?
+          </a>
+        </p>
       </div>
     </CardContent>
   </Card>
